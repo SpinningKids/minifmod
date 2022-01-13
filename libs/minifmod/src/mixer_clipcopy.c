@@ -2,15 +2,15 @@
 /* MIXER_CLIPCOPY.C                                                           */
 /* ----------------                                                           */
 /* MiniFMOD public source code release.                                       */
-/* This source is provided as-is.  Firelight Technologies will not support    */
+/* This source is provided as-is.  Firelight Multimedia will not support      */
 /* or answer questions about the source provided.                             */
-/* MiniFMOD Sourcecode is copyright (c) Firelight Technologies, 2000-2004.    */
+/* MiniFMOD Sourcecode is copyright (c) 2000, Firelight Multimedia.           */
 /* MiniFMOD Sourcecode is in no way representative of FMOD 3 source.          */
-/* Firelight Technologies is a registered company.                            */
+/* Firelight Multimedia is a registered business name.                        */
 /* This source must not be redistributed without this notice.                 */
 /******************************************************************************/
 
-#include "sound.h"
+#include "Sound.h"
 
 static unsigned long mix_temp1		= 0;
 static const float	 mix_3times2pow51 = 3.0f * (float)(1L<<25) * (float)(1L<<26);
@@ -48,14 +48,7 @@ void FSOUND_MixerClipCopy_Float32(void *dest, void *src, long len)
 
 	for (count=0; count<len<<1; count++)
 	{
-		int val;
-		__asm
-		{
-			mov eax, srcptr
-			fld [eax]
-			add srcptr, 4
-			fistp val
-		}
+		int val = (int)*srcptr++;
 		*destptr++ = (val < -32768 ? -32768 : val > 32767 ? 32767 : val);
 	}
 

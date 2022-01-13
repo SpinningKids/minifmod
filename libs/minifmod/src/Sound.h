@@ -2,11 +2,11 @@
 /* SOUND.H                                                                    */
 /* ----------------                                                           */
 /* MiniFMOD public source code release.                                       */
-/* This source is provided as-is.  Firelight Technologies will not support    */
+/* This source is provided as-is.  Firelight Multimedia will not support      */
 /* or answer questions about the source provided.                             */
-/* MiniFMOD Sourcecode is copyright (c) Firelight Technologies, 2000-2004.    */
+/* MiniFMOD Sourcecode is copyright (c) 2000, Firelight Multimedia.           */
 /* MiniFMOD Sourcecode is in no way representative of FMOD 3 source.          */
-/* Firelight Technologies is a registered company.                            */
+/* Firelight Multimedia is a registered business name.                        */
 /* This source must not be redistributed without this notice.                 */
 /******************************************************************************/
 
@@ -15,6 +15,7 @@
 
 #include <windows.h>
 #include <mmsystem.h>
+#include <stdint.h>
 
 #include "system_memory.h"
 
@@ -26,7 +27,7 @@
 #ifndef TRUE
 	#define TRUE 1L
 #endif
-#ifndef FALSE    
+#ifndef FALSE
 	#define FALSE 0L
 #endif
 
@@ -35,12 +36,12 @@
 #define BLOCK_ON_SOFTWAREUPDATE() while(FSOUND_Software_UpdateMutex);
 
 /*
-[DEFINE_START] 
+[DEFINE_START]
 [
- 	[NAME] 
+ 	[NAME]
 	FSOUND_MODES
-	
-	[DESCRIPTION]	
+
+	[DESCRIPTION]
 	Sample description bitfields, OR them together for loading and describing samples.
 ]
 */
@@ -62,14 +63,14 @@
 
 
 /*
-[DEFINE_START] 
+[DEFINE_START]
 [
- 	[NAME] 
+ 	[NAME]
 	FSOUND_SAMPLEMODE
-	
-	[DESCRIPTION]	
 
-	[SEE_ALSO]		
+	[DESCRIPTION]
+
+	[SEE_ALSO]
 	FSOUND_CD_Play
 ]
 */
@@ -78,12 +79,12 @@
 
 
 // ==============================================================================================
-// STRUCTURE DEFINITIONS 
+// STRUCTURE DEFINITIONS
 // ==============================================================================================
 
 // Sample type - contains info on sample
 typedef struct FSOUND_SAMPLE
-{                	
+{
 	unsigned char 	*buff;			// pointer to sound data
 
 	// ====================================================================================
@@ -91,33 +92,33 @@ typedef struct FSOUND_SAMPLE
 	// DONT CHANGE THE ORDER OF THESE NEXT MEMBERS AS THEY ARE ALL LOADED IN A SINGLE READ
 	unsigned int 	length;       	// sample length (samples)
 	unsigned int 	loopstart;    	// sample loop start (samples)
-	unsigned int 	looplen;      	// sample loop length (samples) 
+	unsigned int 	looplen;      	// sample loop length (samples)
 	unsigned char	defvol;    		// sample default volume
-	signed char		finetune;		// finetune value from -128 to 127 
+	signed char		finetune;		// finetune value from -128 to 127
 	// ====================================================================================
 
 	int 			deffreq;     	// sample default speed in hz
 	int				defpan;       	// sample default pan
 
 	unsigned char	bits;			// bits per sample
-	unsigned char	loopmode;      	// loop type 
+	unsigned char	loopmode;      	// loop type
 
 	// music stuff
 	unsigned char 	globalvol;    	// sample global volume (scalar)
-	signed char		relative;	  	// relative note 
-	int				middlec;      	// finetuning adjustment to make for music samples.. relative to 8363hz 
+	signed char		relative;	  	// relative note
+	int				middlec;      	// finetuning adjustment to make for music samples.. relative to 8363hz
 	unsigned int 	susloopbegin;  	// sample loop start
 	unsigned int 	susloopend;    	// sample loop length
-	unsigned char 	vibspeed;		// vibrato speed 0-64 
-	unsigned char	vibdepth;		// vibrato depth 0-64 
+	unsigned char 	vibspeed;		// vibrato speed 0-64
+	unsigned char	vibdepth;		// vibrato depth 0-64
 	unsigned char	vibtype;		// vibrato type 0=sine, 1=rampdown, 2=square, 3=random
-	unsigned char	vibrate;		// vibrato rate 0-64 (like sweep?) 
+	unsigned char	vibrate;		// vibrato rate 0-64 (like sweep?)
 
 } FSOUND_SAMPLE;
 
 
 // Channel type - contains information on a mixing channel
-typedef struct 
+typedef struct
 {
 	int				index;			// position in channel pool.
 	int				volume;   		// current volume (00-FFh).
@@ -132,25 +133,35 @@ typedef struct
 	// software mixer stuff
 	unsigned int	leftvolume;     // mixing information. adjusted volume for left channel (panning involved)
 	unsigned int	rightvolume;    // mixing information. adjusted volume for right channel (panning involved)
-	unsigned int	mixpos;			// mixing information. high part of 32:32 fractional position in sample
-	unsigned int	mixposlo;		// mixing information. low part of 32:32 fractional position in sample
-	unsigned int	speedlo;		// mixing information. playback rate - low part fractional
-	unsigned int	speedhi;		// mixing information. playback rate - high part fractional
+	union {
+		uint64_t mixpos64;
+		struct {
+			unsigned int	mixposlo;		// mixing information. low part of 32:32 fractional position in sample
+    	    unsigned int	mixpos;			// mixing information. high part of 32:32 fractional position in sample
+		};
+	};
+	union {
+		uint64_t speed64;
+		struct {
+			unsigned int	speedlo;		// mixing information. playback rate - low part fractional
+			unsigned int	speedhi;		// mixing information. playback rate - high part fractional
+		};
+	};
 	unsigned int	speeddir;		// mixing information. playback direction - forwards or backwards
 
 	// software mixer volume ramping stuff
-	unsigned int	ramp_lefttarget;     
-	unsigned int	ramp_righttarget;    
-	unsigned int	ramp_leftvolume;     
-	unsigned int	ramp_rightvolume;    
-	unsigned int	ramp_leftspeed;
-	unsigned int	ramp_rightspeed;
+	unsigned int	ramp_lefttarget;
+	unsigned int	ramp_righttarget;
+	unsigned int	ramp_leftvolume;
+	unsigned int	ramp_rightvolume;
+	float			ramp_leftspeed;
+	float			ramp_rightspeed;
 	unsigned int	ramp_count;
 } FSOUND_CHANNEL;
 
 //= FUNCTIONS =================================================================================
 
-typedef struct 
+typedef struct
 {
 	WAVEHDR		wavehdr;
 	signed char	*data;
@@ -159,7 +170,7 @@ typedef struct
 
 //= VARIABLE EXTERNS ==========================================================================
 #ifdef __cplusplus
-extern "C" 
+extern "C"
 {
 #endif
 

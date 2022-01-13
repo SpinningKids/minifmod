@@ -1,6 +1,6 @@
 # minifmod
 
-MiniFMOD 1.7.1 CMake source code release
+MiniFMOD 1.8.0-pre CMake source code release
 
 Copyright Firelight Technologies, 1999-2003.
 
@@ -66,6 +66,10 @@ Hi's go out to sulphur, gaffer, Nix, gyr, zoon, pheon, and gay russian aktion.
 
 Revision History.
 ------------------
+
+Version 1.8.0-pre (2022/01/14 Pan/SK)
+-----------
+- Asm code removed, but x64 configuration won't work yet.
 
 Version 1.7.1 (2022/01/13 Pan/SK)
 -----------
