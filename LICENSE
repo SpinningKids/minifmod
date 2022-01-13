@@ -1,0 +1,14 @@
+- *MiniFMOD is not FMOD*.  The code is a complete hack, and does
+  by no way represent the source contained within the main FMOD library.
+  I stripped and copied code around, took out functions and
+  inlined them (ie i put waveout code in the music file!), and generally
+  turned it upside down to try and squeeze some size!
+- MiniFMOD may not replay XM files 100% as FMOD does, due to some cutting of
+  corners.  It seems to be ok so far.
+- This source is provided as-is.  Firelight Technologies will not support or answer
+  questions about the source provided.  (unless there are some REALLY nasty bugs..
+  remember im NOT going to spend time on this! fix it yourself!)
+- MiniFMOD Sourcecode is copyright (c) 2000, Firelight Technologies.
+- This source must not be redistributed without this text.
+- The source can be modified, and redistributed as long as no copyright or comment
+  blocks (see at the top of each source file) are removed.
