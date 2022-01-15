@@ -2,11 +2,11 @@
 /* FORMATXM.C                                                                 */
 /* ----------------                                                           */
 /* MiniFMOD public source code release.                                       */
-/* This source is provided as-is.  Firelight Multimedia will not support      */
+/* This source is provided as-is.  Firelight Technologies will not support    */
 /* or answer questions about the source provided.                             */
-/* MiniFMOD Sourcecode is copyright (c) 2000, Firelight Multimedia.           */
+/* MiniFMOD Sourcecode is copyright (c) Firelight Technologies, 2000-2004.    */
 /* MiniFMOD Sourcecode is in no way representative of FMOD 3 source.          */
-/* Firelight Multimedia is a registered business name.                        */
+/* Firelight Technologies is a registered company.                            */
 /* This source must not be redistributed without this notice.                 */
 /******************************************************************************/
 
@@ -47,7 +47,9 @@ void FMUSIC_XM_Portamento(FMUSIC_CHANNEL *cptr)
 	{
 		cptr->freq += (int)cptr->portaspeed << 2;
 		if (cptr->freq > cptr->portatarget)
+        {
 			cptr->freq = cptr->portatarget;
+	}
 	}
 
 	// slide pitch up if it needs too.
@@ -55,7 +57,9 @@ void FMUSIC_XM_Portamento(FMUSIC_CHANNEL *cptr)
 	{
 		cptr->freq -= (int)cptr->portaspeed << 2;
 		if (cptr->freq < cptr->portatarget)
+        {
 			cptr->freq=cptr->portatarget;
+	}
 	}
 
 	 //
@@ -101,7 +105,9 @@ void FMUSIC_XM_Vibrato(FMUSIC_CHANNEL *cptr)
 				break;
 		case 1: temp <<= 3;									// ramp down
 				if (cptr->vibpos < 0)
+                {
 					temp=255-temp;
+                }
 				delta=temp;
 				break;
 		case 2:
@@ -116,9 +122,13 @@ void FMUSIC_XM_Vibrato(FMUSIC_CHANNEL *cptr)
 	delta <<=2;   // we use 4*periods so make vibrato 4 times bigger
 
 	if (cptr->vibpos >= 0)
+    {
 		cptr->freqdelta = -delta;
+    }
 	else
+    {
 		cptr->freqdelta = delta;
+    }
 
 	cptr->notectrl |= FMUSIC_FREQ;
 }
@@ -140,9 +150,13 @@ void FMUSIC_XM_InstrumentVibrato(FMUSIC_CHANNEL *cptr, FMUSIC_INSTRUMENT *iptr)
 				//delta = (int)FMUSIC_FineSineTable[cptr->ivibpos];	// sine
 				break;
 		case 1: if (cptr->ivibpos < 128)
+                {
 					delta=64;						// square
+                }
 				else
+                {
 					delta = -64;
+                }
 				break;
 		case 2: delta = (128-((cptr->ivibpos+128)%256))>>1;
 				break;
@@ -154,18 +168,24 @@ void FMUSIC_XM_InstrumentVibrato(FMUSIC_CHANNEL *cptr, FMUSIC_INSTRUMENT *iptr)
 
 	delta *= iptr->VIBdepth;
 	if (iptr->VIBsweep)
+    {
 		delta = delta * cptr->ivibsweeppos / iptr->VIBsweep;
+    }
 	delta >>=6;
 
 	cptr->freqdelta += delta;
 
 	cptr->ivibsweeppos++;
 	if (cptr->ivibsweeppos > iptr->VIBsweep)
+    {
 		cptr->ivibsweeppos = iptr->VIBsweep;
+    }
 
 	cptr->ivibpos += iptr->VIBrate;
 	if (cptr->ivibpos > 255)
+    {
 		cptr->ivibpos -= 256;
+    }
 
 	cptr->notectrl |= FMUSIC_FREQ;
 }
@@ -182,17 +202,19 @@ void FMUSIC_XM_Tremolo(FMUSIC_CHANNEL *cptr)
 	switch((cptr->wavecontrol>>4) & 3)
 	{
 //		case 0: cptr->voldelta = FMUSIC_SineTable[temp];			// sine
-		case 0: cptr->voldelta = (int)(fabs ((sin( (float)(cptr->vibpos) * 2 * 3.141592 / 64.0f )) * 256.0f));
+		case 0: cptr->voldelta = (int)(fabs ((sin( (float)(cptr->tremolopos) * 2 * 3.141592 / 64.0f )) * 256.0f));
 				break;
 		case 1: temp <<= 3;										// ramp down
 				if (cptr->tremolopos < 0)
+                {
 					temp=255-temp;
+                }
 				cptr->voldelta=temp;
 				break;
 		case 2: cptr->voldelta = 255;							// square
 				break;
 //		case 3: cptr->voldelta = FMUSIC_SineTable[temp];		// random (just use sine for now)
-		case 3: cptr->voldelta = (int)(fabs ((sin( (float)(cptr->vibpos) * 2 * 3.141592 / 64.0f )) * 256.0f));
+		case 3: cptr->voldelta = (int)(fabs ((sin( (float)(cptr->tremolopos) * 2 * 3.141592 / 64.0f )) * 256.0f));
 				break;
 	};
 
@@ -202,18 +224,24 @@ void FMUSIC_XM_Tremolo(FMUSIC_CHANNEL *cptr)
 	if (cptr->tremolopos >= 0)
 	{
 		if (cptr->volume+cptr->voldelta > 64)
+        {
 			cptr->voldelta = 64-cptr->volume;
+	}
 	}
 	else
 	{
 		if ((short)(cptr->volume-cptr->voldelta) < 0)
+        {
 			cptr->voldelta = cptr->volume;
+        }
 		cptr->voldelta = -cptr->voldelta;
 	}
 
 	cptr->tremolopos += cptr->tremolospeed;
 	if (cptr->tremolopos > 31)
+    {
 		cptr->tremolopos -=64;
+    }
 
 	cptr->notectrl |= FMUSIC_VOLUME;
 }
@@ -636,9 +664,13 @@ void FMUSIC_XM_Resetcptr(FMUSIC_CHANNEL *cptr, FSOUND_SAMPLE	*sptr)
 
 	// retrigger tremolo and vibrato waveforms
 	if ((cptr->wavecontrol & 0xF) < 4)
+    {
 		cptr->vibpos=0;
+    }
 	if ((cptr->wavecontrol >> 4) < 4)
+    {
 		cptr->tremolopos=0;
+    }
 
 	cptr->tremorpos	= 0;								// retrigger tremor count
 
@@ -721,12 +753,18 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
 			// set up some instrument and sample pointers
 			iptr = &mod->instrument[cptr->inst];
 			if (iptr->keymap[cptr->note] >= 16)
+            {
 				sptr = &FMUSIC_DummySample;
+            }
 			else
+            {
 				sptr = iptr->sample[iptr->keymap[cptr->note]];
+            }
 
 			if (!porta)
+            {
 				cptr->sptr = sptr;
+		}
 		}
 
 		oldvolume = cptr->volume;
@@ -735,7 +773,9 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
 
 		// if there is no more tremolo, set volume to volume + last tremolo delta
 		if (cptr->recenteffect == FMUSIC_XM_TREMOLO && current->effect != FMUSIC_XM_TREMOLO)
+        {
 			cptr->volume += cptr->voldelta;
+        }
 		cptr->recenteffect  = current->effect;
 
 		cptr->voldelta = 0;
@@ -827,7 +867,9 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
 			case FMUSIC_XM_PORTAUP :
 			{
 				if (current->eparam)
+                {
 					cptr->portaup = current->eparam;
+                }
 				break;
 			}
 #endif
@@ -835,7 +877,9 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
 			case FMUSIC_XM_PORTADOWN :
 			{
 				if (current->eparam)
+                {
 					cptr->portadown = current->eparam;
+                }
 				break;
 			}
 #endif
@@ -843,7 +887,9 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
 			case FMUSIC_XM_PORTATO :
 			{
 				if (current->eparam)
+                {
 					cptr->portaspeed = current->eparam;
+                }
 				cptr->portatarget = cptr->period;
 				cptr->notectrl &= ~FMUSIC_TRIGGER;
 				cptr->notectrl &= ~FMUSIC_FREQ;
@@ -855,7 +901,9 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
 			{
 				cptr->portatarget = cptr->period;
 				if (current->eparam)
+                {
 					cptr->volslide = current->eparam;
+                }
 				cptr->notectrl &= ~FMUSIC_TRIGGER;
 				cptr->notectrl &= ~FMUSIC_FREQ;
 				break;
@@ -865,9 +913,13 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
 			case FMUSIC_XM_VIBRATO :
 			{
 				if (paramx)
+                {
 					cptr->vibspeed = paramx;
+                }
 				if (paramy)
+                {
 					cptr->vibdepth = paramy;
+                }
 				FMUSIC_XM_Vibrato(cptr);
 				break;
 			}
@@ -876,7 +928,9 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
 			case FMUSIC_XM_VIBRATOVOLSLIDE :
 			{
 				if (current->eparam)
+                {
 					cptr->volslide = current->eparam;
+                }
 				FMUSIC_XM_Vibrato(cptr);
 				break;								// not processed on tick 0
 			}
@@ -885,9 +939,13 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
 			case FMUSIC_XM_TREMOLO :
 			{
 				if (paramx)
+                {
 					cptr->tremolospeed = paramx;
+                }
 				if (paramy)
+                {
 					cptr->tremolodepth = paramy;
+                }
 				break;
 			}
 #endif
@@ -905,9 +963,14 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
 				unsigned int offset;
 
 				if (current->eparam)
+                {
 					cptr->sampleoffset = current->eparam;
+                }
 
-				if (!cptr->cptr) break;
+				if (!cptr->cptr) 
+                {
+                    break;
+                }
 
 				offset = (int)(cptr->sampleoffset) << 8;
 
@@ -917,7 +980,9 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
 					cptr->notectrl |= FMUSIC_STOP;
 				}
 				else
+                {
 					cptr->cptr->sampleoffset = offset;
+                }
 				break;
 			}
 #endif
@@ -925,7 +990,9 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
 			case FMUSIC_XM_VOLUMESLIDE :
 			{
 				if (current->eparam)
+                {
 					cptr->volslide  = current->eparam;
+                }
 				break;
 			}
 #endif
@@ -935,7 +1002,9 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
 				mod->nextorder = current->eparam;
 				mod->nextrow = 0;
 				if (mod->nextorder >= (int)mod->numorders)
+                {
 					mod->nextorder=0;
+                }
 				jumpflag = 1;
 				break;
 			}
@@ -953,11 +1022,17 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
 			{
 				mod->nextrow = (paramx*10) + paramy;
 				if (mod->nextrow > 63)
+                {
 					mod->nextrow = 0;
+                }
 				if (!breakflag && !jumpflag)
+                {
 					mod->nextorder = mod->order+1;
+                }
 				if (mod->nextorder >= (int)mod->numorders)
+                {
 					mod->nextorder=0;
+                }
 				break;
 			}
 #endif
@@ -978,7 +1053,9 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
 					case FMUSIC_XM_FINEPORTAUP :
 					{
 						if (paramy)
+                        {
 							cptr->fineportaup = paramy;
+                        }
 						cptr->freq -= (cptr->fineportaup << 2);
 						break;
 					}
@@ -987,7 +1064,9 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
 					case FMUSIC_XM_FINEPORTADOWN :
 					{
 						if (paramy)
+                        {
 							cptr->fineportadown = paramy;
+                        }
 						cptr->freq += (cptr->fineportadown << 2);
 						break;
 					}
@@ -1011,14 +1090,23 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
 					case FMUSIC_XM_PATTERNLOOP :
 					{
 						if (paramy == 0)
+                        {
 							cptr->patlooprow = mod->row;
+                        }
 						else
 						{
 							if (!cptr->patloopno)
+                            {
 								cptr->patloopno = paramy;
-							else cptr->patloopno--;
+                            }
+							else 
+                            {
+                                cptr->patloopno--;
+                            }
 							if (cptr->patloopno)
-								mod->row = cptr->patlooprow-1;
+                            {
+								mod->nextrow = cptr->patlooprow;
+                            }
 						}
 						break;
 					}
@@ -1043,12 +1131,16 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
 					case FMUSIC_XM_FINEVOLUMESLIDEUP :
 					{
 						if (paramy)
+                        {
 							cptr->finevslup = paramy;
+                        }
 
 						cptr->volume += cptr->finevslup;
 
 						if (cptr->volume > 64)
+                        {
 							cptr->volume=64;
+                        }
 
 						cptr->notectrl |= FMUSIC_VOLUME;
 						break;
@@ -1062,7 +1154,9 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
 						cptr->volume -= cptr->finevslup;
 
 						if (cptr->volume < 0)
+                        {
 							cptr->volume =0;
+                        }
 
 						cptr->notectrl |= FMUSIC_VOLUME;
 						break;
@@ -1096,9 +1190,13 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
 			case FMUSIC_XM_SETSPEED :
 			{
 				if (current->eparam < 0x20)
+                {
 					mod->speed = current->eparam;
+                }
 				else
+                {
 					FMUSIC_SetBPM(mod, current->eparam);
+                }
 				break;
 			}
 #endif
@@ -1107,7 +1205,9 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
 			{
 				mod->globalvolume = current->eparam;
 				if (mod->globalvolume > 64)
+                {
 					mod->globalvolume=64;
+                }
 				cptr->notectrl |= FMUSIC_VOLUME;
 				break;
 			}
@@ -1116,7 +1216,9 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
 			case FMUSIC_XM_GLOBALVOLSLIDE :
 			{
 				if (current->eparam)
+                {
 					mod->globalvsl = current->eparam;
+                }
 				break;
 			}
 #endif
@@ -1128,7 +1230,9 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
 				int currvol, nextvol, tickdiff;
 
 				if (!(iptr->VOLtype & FMUSIC_ENVELOPE_ON))
+                {
 					break;
+                }
 
 				currpos = 0;
 
@@ -1210,13 +1314,17 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
 				if (paramx == 1)
 				{
 					if (paramy)
+                    {
 						cptr->xtraportaup = paramy;
+                    }
 					cptr->freq -= cptr->xtraportaup;
 				}
 				else if (paramx == 2)
 				{
 					if (paramy)
+                    {
 						cptr->xtraportadown = paramy;
+                    }
 					cptr->freq += cptr->xtraportadown;
 				}
 				break;
@@ -1257,7 +1365,9 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE *mod)
 	current = mod->pattern[mod->orderlist[mod->order]].data + (mod->row*mod->numchannels);
 
 	if (!current)
+    {
 		return;
+    }
 
 	for (count=0; count<mod->numchannels; count++,current++)
 	{
@@ -1285,12 +1395,18 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE *mod)
 		{
 			iptr = &mod->instrument[cptr->inst];
 			if (iptr->keymap[cptr->note] >= 16)
+            {
 				sptr = &FMUSIC_DummySample;
+            }
 			else
+            {
 				sptr = iptr->sample[iptr->keymap[cptr->note]];
+            }
 
 			if (!sptr)
+            {
 				sptr = &FMUSIC_DummySample;
+		}
 		}
 
 		effect = current->effect;			// grab the effect number
@@ -1304,11 +1420,15 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE *mod)
 		//= PROCESS ENVELOPES ==========================================================================
 #ifdef FMUSIC_XM_VOLUMEENVELOPE_ACTIVE
 		if (iptr->VOLtype & FMUSIC_ENVELOPE_ON && !cptr->envvolstopped)
+        {
 			FMUSIC_XM_ProcessEnvelope(cptr, &cptr->envvolpos, &cptr->envvoltick, iptr->VOLtype, iptr->VOLnumpoints, &iptr->VOLPoints[0], iptr->VOLLoopEnd, iptr->VOLLoopStart, iptr->VOLsustain, &cptr->envvol, &cptr->envvolfrac, &cptr->envvolstopped, &cptr->envvoldelta, FMUSIC_VOLUME);
+        }
 #endif
 #ifdef FMUSIC_XM_PANENVELOPE_ACTIVE
 		if (iptr->PANtype & FMUSIC_ENVELOPE_ON && !cptr->envpanstopped)
+        {
 			FMUSIC_XM_ProcessEnvelope(cptr, &cptr->envpanpos, &cptr->envpantick, iptr->PANtype, iptr->PANnumpoints, &iptr->PANPoints[0], iptr->PANLoopEnd, iptr->PANLoopStart, iptr->PANsustain, &cptr->envpan, &cptr->envpanfrac, &cptr->envpanstopped, &cptr->envpandelta, FMUSIC_PAN);
+        }
 #endif
 
 		//= PROCESS VOLUME FADEOUT =====================================================================
@@ -1316,7 +1436,9 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE *mod)
 		{
 			cptr->fadeoutvol -= iptr->VOLfade;
 			if (cptr->fadeoutvol < 0)
+            {
 				cptr->fadeoutvol = 0;
+            }
 			cptr->notectrl |= FMUSIC_VOLUME;
 		}
 
@@ -1334,7 +1456,9 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE *mod)
 			{
 				cptr->volume -= (current->volume & 0xF);
 				if (cptr->volume < 0)
+                {
 					cptr->volume = 0;
+                }
 				cptr->notectrl |= FMUSIC_VOLUME;
 				break;
 			}
@@ -1342,7 +1466,9 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE *mod)
 			{
 				cptr->volume += (current->volume & 0xF);
 				if (cptr->volume > 0x40)
+                {
 					cptr->volume = 0x40;
+                }
 				cptr->notectrl |= FMUSIC_VOLUME;
 				break;
 			}
@@ -1355,7 +1481,9 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE *mod)
 
 				cptr->vibpos += cptr->vibspeed;
 				if (cptr->vibpos > 31)
+                {
 					cptr->vibpos -= 64;
+                }
 				break;
 			}
 #endif
@@ -1426,7 +1554,9 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE *mod)
 
 				cptr->freq -= cptr->portaup << 2; // subtract freq
 				if (cptr->freq < 56)
+                {
 					cptr->freq=56;  // stop at B#8
+                }
 				cptr->notectrl |= FMUSIC_FREQ;
 				break;
 			}
@@ -1456,7 +1586,9 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE *mod)
 				FMUSIC_XM_Vibrato(cptr);
 				cptr->vibpos += cptr->vibspeed;
 				if (cptr->vibpos > 31)
+                {
 					cptr->vibpos -= 64;
+                }
 				break;
 			}
 #endif
@@ -1475,13 +1607,17 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE *mod)
 				{
 					cptr->volume += paramx;
 					if (cptr->volume > 64)
+                    {
 						cptr->volume = 64;
+				}
 				}
 				else if (paramy)
 				{
 					cptr->volume -= paramy;
 					if (cptr->volume < 0)
+                    {
 						cptr->volume = 0;
+				}
 				}
 
 				cptr->notectrl |= FMUSIC_VOLUME;
@@ -1494,7 +1630,9 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE *mod)
 				FMUSIC_XM_Vibrato(cptr);
 				cptr->vibpos += cptr->vibspeed;
 				if (cptr->vibpos > 31)
+                {
 					cptr->vibpos -= 64;
+                }
 
 				paramx = cptr->volslide >> 4;    // grab the effect parameter x
 				paramy = cptr->volslide & 0xF;   // grab the effect parameter y
@@ -1504,13 +1642,17 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE *mod)
 				{
 					cptr->volume += paramx;
 					if (cptr->volume > 64)
+                    {
 						cptr->volume = 64;
+				}
 				}
 				else if (paramy)
 				{
 					cptr->volume -= paramy;
 					if (cptr->volume < 0)
+                    {
 						cptr->volume = 0;
+				}
 				}
 
 				cptr->notectrl |= FMUSIC_VOLUME;
@@ -1535,13 +1677,17 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE *mod)
 				{
 					cptr->volume += paramx;
 					if (cptr->volume > 64)
+                    {
 						cptr->volume = 64;
+				}
 				}
 				else if (paramy)
 				{
 					cptr->volume -= paramy;
 					if (cptr->volume < 0)
+                    {
 						cptr->volume = 0;
+				}
 				}
 
 				cptr->notectrl |= FMUSIC_VOLUME;
@@ -1568,7 +1714,9 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE *mod)
 					case FMUSIC_XM_RETRIG :
 					{
 						if (!paramy)
+                        {
 							break; // divide by 0 bugfix
+                        }
 						if (!(mod->tick % paramy))
 						{
 							cptr->notectrl |= FMUSIC_TRIGGER;
@@ -1590,7 +1738,9 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE *mod)
 							cptr->notectrl |= FMUSIC_FREQ;
 #ifdef FMUSIC_XM_VOLUMEBYTE_ACTIVE
 							if (current->volume)
+                            {
 								FMUSIC_XM_ProcessVolumeByte(cptr, current->volume);
+                            }
 #endif
 							cptr->notectrl |= FMUSIC_TRIGGER;
 						}
@@ -1612,7 +1762,10 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE *mod)
 #ifdef FMUSIC_XM_MULTIRETRIG_ACTIVE
 			case FMUSIC_XM_MULTIRETRIG :
 			{
-				if (!cptr->retrigy) break; // divide by 0 bugfix
+				if (!cptr->retrigy) 
+                {
+                    break; // divide by 0 bugfix
+                }
 
 				if (!(mod->tick % cptr->retrigy))
 				{
@@ -1675,13 +1828,17 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE *mod)
 				{
 					mod->globalvolume += paramx;
 					if (mod->globalvolume > 64)
+                    {
 						mod->globalvolume = 64;
+				}
 				}
 				else if (paramy)
 				{
 					mod->globalvolume -= paramy;
 					if (mod->globalvolume < 0)
+                    {
 						mod->globalvolume = 0;
+				}
 				}
 				break;
 			}
@@ -1697,13 +1854,17 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE *mod)
 				{
 					cptr->pan += paramx;
 					if (cptr->pan > 255)
+                    {
 						cptr->pan = 255;
+				}
 				}
 				else if (paramy)
 				{
 					cptr->pan -= paramy;
 					if (cptr->pan < 0)
+                    {
 						cptr->pan = 0;
+				}
 				}
 
 				cptr->notectrl |= FMUSIC_PAN;
@@ -1752,9 +1913,13 @@ void FMUSIC_UpdateXM(FMUSIC_MODULE *mod)
 	{
 		// process any rows commands to set the next order/row
 		if (mod->nextorder >= 0)
+        {
 			mod->order = mod->nextorder;
+        }
 		if (mod->nextrow >= 0)
+        {
 			mod->row = mod->nextrow;
+        }
 
 		FMUSIC_UpdateXMNote(mod);					// Update and play the note
 
@@ -1766,13 +1931,17 @@ void FMUSIC_UpdateXM(FMUSIC_MODULE *mod)
 			{
 				mod->nextorder = mod->order+1;			// so increment the order
 				if (mod->nextorder >= (int)mod->numorders)
+                {
 					mod->nextorder = (int)mod->restart;
+                }
 				mod->nextrow = 0;						// start at top of pattn
 			}
 		}
 	}
 	else
+    {
 		FMUSIC_UpdateXMEffects(mod);					// Else update the inbetween row effects
+    }
 
 
 	mod->tick++;
@@ -1813,8 +1982,12 @@ signed char FMUSIC_LoadXM(FMUSIC_MODULE *mod, FSOUND_FILE_HANDLE *fp)
 	FSOUND_File_Read(str, 17, fp);
 
 	for (count=0; count < 17; count++)
+    {
 		if (str[count] != ComparisonStr[count])
+        {
 			return FALSE;
+        }
+    }
 
 	// set a few default values for this format
 	mod->Update			= &FMUSIC_UpdateXM;
@@ -1853,7 +2026,9 @@ signed char FMUSIC_LoadXM(FMUSIC_MODULE *mod, FSOUND_FILE_HANDLE *fp)
 	for (count=0; count<(int)mod->numorders; count++)
 	{
 		if (mod->orderlist[count] >= mod->numpatterns)
+        {
 			mod->numpatterns = mod->orderlist[count]+1;
+	}
 	}
 
 	// alloc pattern array (whatever is bigger.. filenumpatterns or mod->numpatterns)
@@ -1902,16 +2077,22 @@ signed char FMUSIC_LoadXM(FMUSIC_MODULE *mod, FSOUND_FILE_HANDLE *fp)
 				else
 				{
 					if (dat)
+                    {
 						nptr->note = dat;
+                    }
 
 					FSOUND_File_Read(&nptr->number, 4, fp);
 
 				}
 				if (nptr->note == 97)
+                {
 					nptr->note = FMUSIC_KEYOFF;
+                }
 
 				if (nptr->number > 0x80)
+                {
 					nptr->number = 0;
+                }
 
 				nptr++;
 			}
@@ -1957,7 +2138,9 @@ signed char FMUSIC_LoadXM(FMUSIC_MODULE *mod, FSOUND_FILE_HANDLE *fp)
 		FSOUND_File_Read(&numsamples, 2, fp);				// number of samples in this instrument
 
 		if (numsamples >16)
+        {
 			return FALSE;
+        }
 
 		iptr->numsamples = numsamples;
 
@@ -1994,9 +2177,13 @@ signed char FMUSIC_LoadXM(FMUSIC_MODULE *mod, FSOUND_FILE_HANDLE *fp)
 			iptr->VOLfade *= 2;		// i DONT KNOW why i needed this.. it just made it work
 
 			if (iptr->VOLnumpoints < 2)
+            {
 				iptr->VOLtype = FMUSIC_ENVELOPE_OFF;
+            }
 			if (iptr->PANnumpoints < 2)
+            {
 				iptr->PANtype = FMUSIC_ENVELOPE_OFF;
+            }
 
 			// seek to first sample
 			FSOUND_File_Seek(fp, firstsampleoffset, SEEK_SET);
@@ -2068,22 +2255,32 @@ signed char FMUSIC_LoadXM(FMUSIC_MODULE *mod, FSOUND_FILE_HANDLE *fp)
 				{
 					int lenbytes = sptr->length;
 //					if (sptr->bits == 16)
+                    {
 						lenbytes <<= 1;
+                    }
 
 					if (sptr->buff)
+                    {
 						FSOUND_Memory_Free(sptr->buff);
+                    }
 
 					if (lenbytes)
+                    {
 						sptr->buff = (unsigned char *)FSOUND_Memory_Calloc(lenbytes+16);
+                    }
 					else
+                    {
 						sptr->buff = NULL;
+				}
 				}
 
 			}
 
 			// clear out the rest of the samples
 			for (;count2<16; count2++)
+            {
 				iptr->sample[count2] = &FMUSIC_DummySample;
+            }
 
 
 
@@ -2107,7 +2304,9 @@ signed char FMUSIC_LoadXM(FMUSIC_MODULE *mod, FSOUND_FILE_HANDLE *fp)
 						FSOUND_File_Seek(fp, samplelenbytes, SEEK_CUR);
 					}
 					else
+                    {
 						FSOUND_File_Read(buff, samplelenbytes, fp);
+                    }
 
 					if (sptr->bits == 8)
 					{
@@ -2117,7 +2316,9 @@ signed char FMUSIC_LoadXM(FMUSIC_MODULE *mod, FSOUND_FILE_HANDLE *fp)
 						wptr = (signed short *)sptr->buff;
 
 						for (count3=0; count3 < (int)sptr->length; count3++)
+                        {
 							*wptr++ = (signed short)(buff[count3]) << 8;
+                        }
 
 						sptr->bits = 16;
 
@@ -2131,7 +2332,6 @@ signed char FMUSIC_LoadXM(FMUSIC_MODULE *mod, FSOUND_FILE_HANDLE *fp)
 
 					mode = FSOUND_DELTA | FSOUND_SIGNED;
 					mode |= FSOUND_16BITS;
-
 
 					if (!mod->samplecallback)
 					{
@@ -2172,7 +2372,9 @@ signed char FMUSIC_LoadXM(FMUSIC_MODULE *mod, FSOUND_FILE_HANDLE *fp)
 		{
 			// clear out the rest of the samples
 			for (count2=0; count2<16; count2++)
+            {
 				iptr->sample[count2] = &FMUSIC_DummySample;
+            }
 
 			FSOUND_File_Seek(fp, firstsampleoffset, SEEK_SET);
 		}

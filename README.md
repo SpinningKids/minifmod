@@ -69,13 +69,10 @@ Revision History.
 
 Version 1.8.0 (2022/01/15 Pan/SK)
 -----------
-- Asm code removed, x64 configuration works!
-
-Version 1.7.1 (2022/01/13 Pan/SK)
------------
 - After just 19 years... the CMake version!
-- Not really optimizing for size anymore, but you can rebuild your custom project files from CMake and customize them.
-- Do not use x64 configuration from this version, they won't work (no `__asm` blocks allowed).
+- Asm code removed, x64 compilation enabled!
+- Not really optimizing for size anymore in the default settings, but you can recreate your
+  custom project files from CMake and customize them.
 
 Version 1.7 (5/12/03)
 -----------

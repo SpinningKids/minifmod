@@ -13,9 +13,9 @@
 #include <minifmod/minifmod.h>
 
 #include "mixer_fpu_ramp.h"
-#include "music.h"
+#include "Music.h"
 #include "music_formatxm.h"
-#include "sound.h"
+#include "Sound.h"
 #include "system_file.h"
 #include "system_memory.h"
 
@@ -77,14 +77,10 @@ FMUSIC_INSTRUMENT		FMUSIC_DummyInstrument;
 
 void FMUSIC_SetBPM(FMUSIC_MODULE *module, int bpm)
 {
-	float hz;
-
 	module->bpm = bpm;
 
-	hz = (float)bpm * 2.0f / 5.0f;
-
 	// number of samples
-	module->mixer_samplespertick = (int)((float)FSOUND_MixRate * (1000.0f / hz) / 1000.0f);
+	module->mixer_samplespertick = FSOUND_MixRate * 5 / (bpm * 2);
 }
 
 

@@ -10,16 +10,12 @@
 /* This source must not be redistributed without this notice.                 */
 /******************************************************************************/
 
-#include <minifmod/minifmod.h>
-#include "mixer.h"
 #include "mixer_clipcopy.h"
 #include "mixer_fpu_ramp.h"
-#include "music.h"
-#include "sound.h"
-#include "system_file.h"
-#include "system_memory.h"
+#include "Music.h"
+#include "Sound.h"
 
-#include <windows.h>
+#include <Windows.h>
 #include <mmsystem.h>
 
 //= GLOBALS ================================================================================
