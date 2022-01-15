@@ -20,11 +20,11 @@
 #include "sound.h"
 
 
-unsigned int	(*FSOUND_File_OpenCallback)(char *name) = NULL;
-void			(*FSOUND_File_CloseCallback)(unsigned int handle) = NULL;
-int				(*FSOUND_File_ReadCallback)(void *buffer, int size, unsigned int handle) = NULL;
-void			(*FSOUND_File_SeekCallback)(unsigned int handle, int pos, signed char mode) = NULL;
-int				(*FSOUND_File_TellCallback)(unsigned int handle) = NULL;
+void*			(*FSOUND_File_OpenCallback)(char *name) = NULL;
+void			(*FSOUND_File_CloseCallback)(void* handle) = NULL;
+int				(*FSOUND_File_ReadCallback)(void *buffer, int size, void* handle) = NULL;
+void			(*FSOUND_File_SeekCallback)(void* handle, int pos, signed char mode) = NULL;
+int				(*FSOUND_File_TellCallback)(void* handle) = NULL;
 
 
 /*
@@ -38,11 +38,11 @@ int				(*FSOUND_File_TellCallback)(unsigned int handle) = NULL;
 
 	[PARAMETERS]
 
-	'OpenCallback'		
-	Callback for opening a file.  
+	'OpenCallback'
+	Callback for opening a file.
 	Parameters:
 	-----------
-	"name"	This is the filename.  You may treat this how you like.  
+	"name"	This is the filename.  You may treat this how you like.
 	Instructions:
 	-------------
 	You MUST open the file and return a handle for future file function calls.  Cast the handle to an unsigned int when returning it, then in later functions, cast it back to your own handle type.
@@ -59,7 +59,7 @@ int				(*FSOUND_File_TellCallback)(unsigned int handle) = NULL;
 	Close your file handle and do any cleanup here.
 
 	'ReadCallback'
-	Callback for opening a file.  
+	Callback for opening a file.
 	Parameters:
 	-----------
 	"buffer"	You must read and copy your file data into this pointer.
@@ -103,7 +103,7 @@ int				(*FSOUND_File_TellCallback)(unsigned int handle) = NULL;
 	used properly.
 ]
 */
-void FSOUND_File_SetCallbacks(unsigned int (*OpenCallback)(char *name), void	(*CloseCallback)(unsigned int handle),	int (*ReadCallback)(void *buffer, int size, unsigned int handle), void (*SeekCallback)(unsigned int handle, int pos, signed char mode), int (*TellCallback)(unsigned int handle))
+void FSOUND_File_SetCallbacks(void* (*OpenCallback)(char *name), void	(*CloseCallback)(void* handle),	int (*ReadCallback)(void *buffer, int size, void* handle), void (*SeekCallback)(void*, int pos, signed char mode), int (*TellCallback)(void* handle))
 {
 	if (!OpenCallback || !CloseCallback || !ReadCallback || !SeekCallback || !TellCallback)
 	{
@@ -129,7 +129,7 @@ void FSOUND_File_SetCallbacks(unsigned int (*OpenCallback)(char *name), void	(*C
 	[DESCRIPTION]
 
 	[PARAMETERS]
- 
+
 	[RETURN_VALUE]
 
 	[REMARKS]
@@ -161,7 +161,7 @@ FSOUND_FILE_HANDLE *FSOUND_File_Open(void *data, signed char type, int length)
 	[DESCRIPTION]
 
 	[PARAMETERS]
- 
+
 	[RETURN_VALUE]
 
 	[REMARKS]
@@ -171,7 +171,7 @@ FSOUND_FILE_HANDLE *FSOUND_File_Open(void *data, signed char type, int length)
 */
 void FSOUND_File_Close(FSOUND_FILE_HANDLE *handle)
 {
-	if (!handle) 
+	if (!handle)
     {
 		return;
     }
@@ -186,7 +186,7 @@ void FSOUND_File_Close(FSOUND_FILE_HANDLE *handle)
 	[DESCRIPTION]
 
 	[PARAMETERS]
- 
+
 	[RETURN_VALUE]
 
 	[REMARKS]
@@ -196,7 +196,7 @@ void FSOUND_File_Close(FSOUND_FILE_HANDLE *handle)
 */
 int FSOUND_File_Read(void *buffer, int size, FSOUND_FILE_HANDLE *handle)
 {
-	if (!handle) 
+	if (!handle)
     {
 		return 0;
     }
@@ -211,7 +211,7 @@ int FSOUND_File_Read(void *buffer, int size, FSOUND_FILE_HANDLE *handle)
 	[DESCRIPTION]
 
 	[PARAMETERS]
- 
+
 	[RETURN_VALUE]
 
 	[REMARKS]
@@ -221,7 +221,7 @@ int FSOUND_File_Read(void *buffer, int size, FSOUND_FILE_HANDLE *handle)
 */
 void FSOUND_File_Seek(FSOUND_FILE_HANDLE *handle, int pos, signed char mode)
 {
-	if (!handle) 
+	if (!handle)
     {
 		return;
     }
@@ -235,7 +235,7 @@ void FSOUND_File_Seek(FSOUND_FILE_HANDLE *handle, int pos, signed char mode)
 	[DESCRIPTION]
 
 	[PARAMETERS]
- 
+
 	[RETURN_VALUE]
 
 	[REMARKS]

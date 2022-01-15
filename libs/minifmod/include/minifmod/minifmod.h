@@ -40,11 +40,11 @@ typedef void (*SAMPLELOADCALLBACK)(void *buff, int lenbytes, int numbits, int in
 typedef void (*FMUSIC_CALLBACK)(FMUSIC_MODULE *mod, unsigned char param);
 
 // this must be called before FSOUND_Init!
-void FSOUND_File_SetCallbacks(unsigned int	(*OpenCallback)(char *name),
-                              void			(*CloseCallback)(unsigned int handle),
-                              int			(*ReadCallback)(void *buffer, int size, unsigned int handle),
-                              void			(*SeekCallback)(unsigned int handle, int pos, signed char mode),
-                              int			(*TellCallback)(unsigned int handle));
+void FSOUND_File_SetCallbacks(void*         (*OpenCallback)(char *name),
+                              void			(*CloseCallback)(void* handle),
+                              int			(*ReadCallback)(void *buffer, int size, void* handle),
+                              void			(*SeekCallback)(void* handle, int pos, signed char mode),
+                              int			(*TellCallback)(void* handle));
 
 // =============================================================================================
 // FMUSIC API
@@ -64,7 +64,7 @@ signed char		FMUSIC_StopSong(FMUSIC_MODULE *mod);
 int				FMUSIC_GetOrder(FMUSIC_MODULE *mod);
 int				FMUSIC_GetRow(FMUSIC_MODULE *mod);
 unsigned int	FMUSIC_GetTime(FMUSIC_MODULE *mod);
-  
+
 #ifdef __cplusplus
 }
 #endif

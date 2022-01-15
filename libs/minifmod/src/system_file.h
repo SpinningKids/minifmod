@@ -13,13 +13,13 @@
 #ifndef _SYSTEM_FILE_H_
 #define _SYSTEM_FILE_H_
 
-typedef struct tag_FSOUND_FILE_HANDLE 
+typedef struct tag_FSOUND_FILE_HANDLE
 {
 	signed char		type;
 	void			*fp;
 	signed char		*mem;
 	int				basepos;
-	unsigned int	userhandle;
+	void*			userhandle;
 	int				length;
 } FSOUND_FILE_HANDLE;
 
@@ -30,10 +30,10 @@ void				FSOUND_File_Seek(FSOUND_FILE_HANDLE *handle, int pos, signed char mode);
 int					FSOUND_File_Tell(FSOUND_FILE_HANDLE *handle);
 
 
-extern unsigned int	(*FSOUND_File_OpenCallback)(char *name);
-extern void			(*FSOUND_File_CloseCallback)(unsigned int handle);
-extern int			(*FSOUND_File_ReadCallback)(void *buffer, int size, unsigned int handle);
-extern void			(*FSOUND_File_SeekCallback)(unsigned int handle, int pos, signed char mode);
-extern int			(*FSOUND_File_TellCallback)(unsigned int handle);
+extern void*		(*FSOUND_File_OpenCallback)(char *name);
+extern void			(*FSOUND_File_CloseCallback)(void* handle);
+extern int			(*FSOUND_File_ReadCallback)(void *buffer, int size, void* handle);
+extern void			(*FSOUND_File_SeekCallback)(void* handle, int pos, signed char mode);
+extern int			(*FSOUND_File_TellCallback)(void* handle);
 
 #endif

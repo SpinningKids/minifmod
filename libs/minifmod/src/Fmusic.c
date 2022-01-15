@@ -33,7 +33,7 @@ FSOUND_SAMPLE		FMUSIC_DummySample;
 	0,								// loopstart
 	0,								// looplen
 	0,								// default volume
-	0,								// finetune value from -128 to 127 
+	0,								// finetune value from -128 to 127
 
 	44100,							// default frequency
 	128,							// default pan
@@ -44,14 +44,14 @@ FSOUND_SAMPLE		FMUSIC_DummySample;
 
 	TRUE,							// music owned
 	0,								// sample global volume (scalar)
-	0,								// relative note 
+	0,								// relative note
 	8363,							// finetuning adjustment to make for music samples.. relative to 8363hz
 	0,								// sample loop start
 	0,								// sample loop length
-	0,								// vibrato speed 0-64 
-	0,								// vibrato depth 0-64 
+	0,								// vibrato speed 0-64
+	0,								// vibrato depth 0-64
 	0,								// vibrato type 0=sine, 1=rampdown, 2=square, 3=random
-	0,								// vibrato rate 0-64 (like sweep?) 
+	0,								// vibrato rate 0-64 (like sweep?)
 };
 */
 
@@ -66,7 +66,7 @@ FMUSIC_INSTRUMENT		FMUSIC_DummyInstrument;
 	[DESCRIPTION]
 
 	[PARAMETERS]
- 
+
 	[RETURN_VALUE]
 
 	[REMARKS]
@@ -82,9 +82,9 @@ void FMUSIC_SetBPM(FMUSIC_MODULE *module, int bpm)
 	module->bpm = bpm;
 
 	hz = (float)bpm * 2.0f / 5.0f;
-	
+
 	// number of samples
-	module->mixer_samplespertick = (int)((float)FSOUND_MixRate * (1000.0f / hz) / 1000.0f);	
+	module->mixer_samplespertick = (int)((float)FSOUND_MixRate * (1000.0f / hz) / 1000.0f);
 }
 
 
@@ -94,7 +94,7 @@ void FMUSIC_SetBPM(FMUSIC_MODULE *module, int bpm)
 [API]
 [
 	[DESCRIPTION]
-	To load a module with a given filename.  FMUSIC Supports loading of 
+	To load a module with a given filename.  FMUSIC Supports loading of
 	- .MOD (protracker/fasttracker modules)
 	- .S3M (screamtracker 3 modules)
 	- .XM  (fasttracker 2 modules)
@@ -102,7 +102,7 @@ void FMUSIC_SetBPM(FMUSIC_MODULE *module, int bpm)
 
 	[PARAMETERS]
 	'name'		Filename of module to load.
- 
+
 	[RETURN_VALUE]
 	On success, a pointer to a FMUSIC_MODULE handle is returned.
 	On failure, NULL is returned.
@@ -154,7 +154,7 @@ FMUSIC_MODULE * FMUSIC_LoadSong(signed char *name, SAMPLELOADCALLBACK sampleload
 
 	[PARAMETERS]
 	'mod'		Pointer to the song to be freed.
- 
+
 	[RETURN_VALUE]
 	void
 
@@ -168,7 +168,7 @@ signed char FMUSIC_FreeSong(FMUSIC_MODULE *mod)
 {
 	int count;
 
-	if (!mod) 
+	if (!mod)
 		return FALSE;
 
 	BLOCK_ON_SOFTWAREUPDATE();
@@ -178,12 +178,12 @@ signed char FMUSIC_FreeSong(FMUSIC_MODULE *mod)
 	// free samples
 	if (mod->instrument)
 	{
-		for (count=0; count<(int)mod->numinsts; count++) 
+		for (count=0; count<(int)mod->numinsts; count++)
 		{
 			int count2;
 
 			FMUSIC_INSTRUMENT	*iptr = &mod->instrument[count];
-			for (count2=0; count2<iptr->numsamples; count2++) 
+			for (count2=0; count2<iptr->numsamples; count2++)
 			{
 				if (iptr->sample[count2])
 				{
@@ -208,13 +208,13 @@ signed char FMUSIC_FreeSong(FMUSIC_MODULE *mod)
 	{
 		for (count=0; count<mod->numpatternsmem; count++)
         {
-			if (mod->pattern[count].data) 
+			if (mod->pattern[count].data)
             {
 				FSOUND_Memory_Free(mod->pattern[count].data);
             }
         }
 
-		if (mod->pattern) 
+		if (mod->pattern)
         {
 			FSOUND_Memory_Free(mod->pattern);
         }
@@ -235,7 +235,7 @@ signed char FMUSIC_FreeSong(FMUSIC_MODULE *mod)
 
 	[PARAMETERS]
 	'mod'		Pointer to the song to be played.
- 
+
 	[RETURN_VALUE]
 	TRUE		song succeeded playing
 	FALSE		song failed playing
@@ -250,9 +250,9 @@ signed char FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 {
 	int				count;
 	FMUSIC_CHANNEL	*cptr;
-	int				totalblocks; 
+	int				totalblocks;
 
-	if (!mod) 
+	if (!mod)
     {
 		return FALSE;
     }
@@ -265,7 +265,7 @@ signed char FMUSIC_PlaySong(FMUSIC_MODULE *mod)
     }
 
 	// ========================================================================================================
-	// INITIALIZE SOFTWARE MIXER 
+	// INITIALIZE SOFTWARE MIXER
 	// ========================================================================================================
 
 	FSOUND_OOMixRate    = 1.0f / (float)FSOUND_MixRate;
@@ -328,17 +328,17 @@ signed char FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 		// ========================================================================================================
 		// INITIALIZE WAVEOUT
 		// ========================================================================================================
-		pcmwf.wFormatTag		= WAVE_FORMAT_PCM; 
+		pcmwf.wFormatTag		= WAVE_FORMAT_PCM;
 		pcmwf.nChannels			= 2;
-		pcmwf.wBitsPerSample	= 16; 
+		pcmwf.wBitsPerSample	= 16;
 		pcmwf.nBlockAlign		= pcmwf.nChannels * pcmwf.wBitsPerSample / 8;
 		pcmwf.nSamplesPerSec	= FSOUND_MixRate;
-		pcmwf.nAvgBytesPerSec	= pcmwf.nSamplesPerSec * pcmwf.nBlockAlign; 
+		pcmwf.nAvgBytesPerSec	= pcmwf.nSamplesPerSec * pcmwf.nBlockAlign;
 		pcmwf.cbSize			= 0;
 
 		hr = waveOutOpen(&FSOUND_WaveOutHandle, WAVE_MAPPER, &pcmwf, 0, 0, 0);
 
-		if (hr) 
+		if (hr)
         {
 			return FALSE;
         }
@@ -355,7 +355,7 @@ signed char FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 		length <<= 2;	// 16bits
 
 		FSOUND_MixBlock.data = FSOUND_Memory_Calloc(length);
-		
+
 		wavehdr->dwFlags			= WHDR_BEGINLOOP | WHDR_ENDLOOP;
 		wavehdr->lpData				= (LPSTR)FSOUND_MixBlock.data;
 		wavehdr->dwBufferLength		= length;
@@ -370,13 +370,13 @@ signed char FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 	// ========================================================================================================
 
 	FSOUND_MixBufferMem = (signed char *)FSOUND_Memory_Calloc((FSOUND_BufferSize << 3) + 256);
-	FSOUND_MixBuffer = (signed char *)(((unsigned int)FSOUND_MixBufferMem + 15) & 0xFFFFFFF0);
+	FSOUND_MixBuffer = FSOUND_MixBufferMem + ((16 - (unsigned int)FSOUND_MixBufferMem) & 15);
 
 	// ========================================================================================================
-	// PREFILL THE MIXER BUFFER 
+	// PREFILL THE MIXER BUFFER
 	// ========================================================================================================
 
-	do 
+	do
 	{
 		FSOUND_Software_Fill();
 	} while (FSOUND_Software_FillBlock);
@@ -411,7 +411,7 @@ signed char FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 
 	[PARAMETERS]
 	'mod'		Pointer to the song to be stopped.
- 
+
 	[RETURN_VALUE]
 	void
 
@@ -423,7 +423,7 @@ signed char FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 */
 signed char FMUSIC_StopSong(FMUSIC_MODULE *mod)
 {
-	if (!mod) 
+	if (!mod)
     {
 		return FALSE;
     }
@@ -434,9 +434,9 @@ signed char FMUSIC_StopSong(FMUSIC_MODULE *mod)
 	// wait until callback has settled down and exited
 	BLOCK_ON_SOFTWAREUPDATE();
 
-	if (FSOUND_Software_hThread) 
+	if (FSOUND_Software_hThread)
 	{
-		while (!FSOUND_Software_ThreadFinished) 
+		while (!FSOUND_Software_ThreadFinished)
         {
 			Sleep(10);
         }
@@ -454,7 +454,7 @@ signed char FMUSIC_StopSong(FMUSIC_MODULE *mod)
     {
     	waveOutUnprepareHeader(FSOUND_WaveOutHandle, &FSOUND_MixBlock.wavehdr, sizeof(WAVEHDR));
 	    FSOUND_MixBlock.wavehdr.dwFlags &= ~WHDR_PREPARED;
-        
+
         FSOUND_Memory_Free(FSOUND_MixBlock.wavehdr.lpData);
         FSOUND_MixBlock.wavehdr.lpData = 0;
     }
@@ -468,7 +468,7 @@ signed char FMUSIC_StopSong(FMUSIC_MODULE *mod)
     }
 
 	// ========================================================================================================
-	// SHUT DOWN OUTPUT DRIVER 
+	// SHUT DOWN OUTPUT DRIVER
 	// ========================================================================================================
 	waveOutReset(FSOUND_WaveOutHandle);
 
@@ -490,7 +490,7 @@ signed char FMUSIC_StopSong(FMUSIC_MODULE *mod)
 
 	[PARAMETERS]
 	'mod'		Pointer to the song to retrieve current order number from.
- 
+
 	[RETURN_VALUE]
 	The song's current order number.
 	On failure, 0 is returned.
@@ -532,7 +532,7 @@ int FMUSIC_GetOrder(FMUSIC_MODULE *mod)
 */
 int FMUSIC_GetRow(FMUSIC_MODULE *mod)
 {
-	if (!mod || !FMUSIC_TimeInfo) 
+	if (!mod || !FMUSIC_TimeInfo)
     {
 		return 0;
     }
@@ -546,14 +546,14 @@ int FMUSIC_GetRow(FMUSIC_MODULE *mod)
 [
 	[DESCRIPTION]
 	Returns the time in milliseconds since the song was started.  This is useful for
-	synchronizing purposes becuase it will be exactly the same every time, and it is 
-	reliably retriggered upon starting the song.  Trying to synchronize using other 
+	synchronizing purposes becuase it will be exactly the same every time, and it is
+	reliably retriggered upon starting the song.  Trying to synchronize using other
 	windows timers can lead to varying results, and inexact performance.  This fixes that
 	problem by actually using the number of samples sent to the soundcard as a reference.
 
 	[PARAMETERS]
 	'mod'		Pointer to the song to get time from.
- 
+
 	[RETURN_VALUE]
 	On success, the time played in milliseconds is returned.
 	On failure, 0 is returned.
@@ -565,7 +565,7 @@ int FMUSIC_GetRow(FMUSIC_MODULE *mod)
 */
 unsigned int FMUSIC_GetTime(FMUSIC_MODULE *mod)
 {
-	if (!mod || !FMUSIC_TimeInfo) 
+	if (!mod || !FMUSIC_TimeInfo)
     {
 		return 0;
     }

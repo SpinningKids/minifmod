@@ -67,9 +67,9 @@ Hi's go out to sulphur, gaffer, Nix, gyr, zoon, pheon, and gay russian aktion.
 Revision History.
 ------------------
 
-Version 1.8.0-pre (2022/01/14 Pan/SK)
+Version 1.8.0 (2022/01/15 Pan/SK)
 -----------
-- Asm code removed, but x64 configuration won't work yet.
+- Asm code removed, x64 configuration works!
 
 Version 1.7.1 (2022/01/13 Pan/SK)
 -----------
