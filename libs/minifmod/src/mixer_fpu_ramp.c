@@ -10,32 +10,25 @@
 /* This source must not be redistributed without this notice.                 */
 /******************************************************************************/
 
-#include <minifmod/minifmod.h>
 #include "Sound.h"
 #include "Mixer.h"
-#include "mixer_clipcopy.h"
 #include "mixer_fpu_ramp.h"
 
 #include <stdint.h>
 
-#include "system_memory.h"
+#define FSOUND_OUTPUTBUFF_END		0
+#define FSOUND_SAMPLEBUFF_END		1
+#define FSOUND_VOLUMERAMP_END		2
 
-#pragma warning(disable:4731)
 
 // =========================================================================================
 // GLOBAL VARIABLES
 // =========================================================================================
 
 //= made global to free ebp.============================================================================
-static unsigned int mix_endflag		= 0;
-static float		mix_leftvol		= 0;
-static float		mix_rightvol	= 0;
-
-static unsigned int mix_count_old	= 0;
 unsigned int		mix_volumerampsteps	= 0;
 float				mix_1overvolumerampsteps = 0;
 
-static const float	mix_255			= 255.0f;
 static const float	mix_256m255		= 256.0f*255.0f;
 static const float	mix_1over255	= 1.0f / 255.0f;
 static const float	mix_1over256over255	= 1.0f / 256.0f / 255.0f;
@@ -56,25 +49,21 @@ static const float	mix_1over4gig   = 1.0f / 4294967296.0f;
 ]
 */
 
-void FSOUND_Mixer_FPU_Ramp(void *mixptr, int len, char returnaddress)
+void FSOUND_Mixer_FPU_Ramp(void *mixptr, int len)
 {
-	FSOUND_CHANNEL *cptr;
-	int count;
-	// IMPORTANT no local variables on stack.. we are trashing EBP.  static puts values on heap.
+    // IMPORTANT no local variables on stack.. we are trashing EBP.  static puts values on heap.
 
 	if (len <=0)
 		return;
 
 	float* target = (float*)mixptr;
-    float* target_end = target + (len << 1);
-
 
 	//==============================================================================================
 	// LOOP THROUGH CHANNELS
 	//==============================================================================================
-	for (count=0; count<64; count++)
+	for (int count = 0; count<64; count++)
 	{
-		cptr = &FSOUND_Channel[count];
+		FSOUND_CHANNEL* cptr = &FSOUND_Channel[count];
         int sample_index = 0;
 		if (!cptr->sptr)
             continue;
@@ -95,13 +84,13 @@ void FSOUND_Mixer_FPU_Ramp(void *mixptr, int len, char returnaddress)
         // first base mixcount on size of OUTPUT BUFFER (in samples not bytes)
         do
         {
-            mix_endflag = FSOUND_OUTPUTBUFF_END;
+            unsigned int mix_endflag = FSOUND_OUTPUTBUFF_END;
             uint64_t samples_to_mix = (cptr->speeddir == FSOUND_MIXDIR_FORWARDS) ?
                                           (((uint64_t)(cptr->sptr->loopstart + cptr->sptr->looplen)) << 32) - cptr->mixpos64 :
                                           cptr->mixpos64 - (((uint64_t)cptr->sptr->loopstart) << 32);
             if (samples_to_mix < 0x100000000000000)
             {
-                unsigned int samples = (samples_to_mix / cptr->speed64) + (((samples_to_mix % cptr->speed64) == 0)?0:1); // TODO: +1 if the remainder is 0
+                unsigned int samples = (samples_to_mix / cptr->speed64) + (((samples_to_mix % cptr->speed64) == 0)?0:1);
                 if (samples <= mix_count)
                 {
                     mix_count = samples;
@@ -115,7 +104,7 @@ void FSOUND_Mixer_FPU_Ramp(void *mixptr, int len, char returnaddress)
             // 3. sample ends (ramp last n number of samples from volume to 0)
 
             // now if the volume has changed, make end condition equal a volume ramp
-            mix_count_old = mix_count;
+            unsigned int mix_count_old = mix_count;
             if (
                 (cptr->ramp_count == 0) ||
                 (cptr->leftvolume != cptr->ramp_lefttarget) ||
@@ -136,8 +125,6 @@ void FSOUND_Mixer_FPU_Ramp(void *mixptr, int len, char returnaddress)
                     mix_count = cptr->ramp_count;
                 }
             }
-            mix_rightvol = cptr->rightvolume * mix_1over255;
-            mix_leftvol = cptr->leftvolume * mix_1over255;
 
             int64_t speed = cptr->speed64;
 

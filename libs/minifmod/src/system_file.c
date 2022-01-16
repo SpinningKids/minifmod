@@ -10,14 +10,10 @@
 /* This source must not be redistributed without this notice.                 */
 /******************************************************************************/
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include <minifmod/minifmod.h>
 #include "system_file.h"
 #include "system_memory.h"
-#include "sound.h"
+#include "Sound.h"
 
 
 void*			(*FSOUND_File_OpenCallback)(char *name) = NULL;
@@ -139,9 +135,7 @@ void FSOUND_File_SetCallbacks(void* (*OpenCallback)(char *name), void	(*CloseCal
 */
 FSOUND_FILE_HANDLE *FSOUND_File_Open(void *data, signed char type, int length)
 {
-	FSOUND_FILE_HANDLE *handle;
-
-	handle = (FSOUND_FILE_HANDLE *)FSOUND_Memory_Alloc(sizeof(FSOUND_FILE_HANDLE));
+    FSOUND_FILE_HANDLE* handle = (FSOUND_FILE_HANDLE*)FSOUND_Memory_Alloc(sizeof(FSOUND_FILE_HANDLE));
 	handle->type = type;
 	handle->length = length;
 	handle->userhandle = FSOUND_File_OpenCallback(data);

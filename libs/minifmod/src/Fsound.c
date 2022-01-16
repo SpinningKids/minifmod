@@ -16,7 +16,6 @@
 #include "Sound.h"
 
 #include <Windows.h>
-#include <mmsystem.h>
 
 //= GLOBALS ================================================================================
 
@@ -55,12 +54,11 @@ volatile int			FSOUND_Software_RealBlock;
 */
 void FSOUND_Software_Fill()
 {
-	void  *	mixbuffer;
-	int		mixpos		= FSOUND_Software_FillBlock * FSOUND_BlockSize;
+    int		mixpos		= FSOUND_Software_FillBlock * FSOUND_BlockSize;
 	int		totalblocks = FSOUND_BufferSize / FSOUND_BlockSize;
 
 
-	mixbuffer = (char *)FSOUND_MixBuffer + (mixpos << 3);
+	void* mixbuffer = (char*)FSOUND_MixBuffer + (mixpos << 3);
 
 	//==============================================================================
 	// MIXBUFFER CLEAR
@@ -76,10 +74,9 @@ void FSOUND_Software_Fill()
 		int MixedSoFar = 0;
 		int MixedLeft = FMUSIC_PlayingSong->mixer_samplesleft;
 		int SamplesToMix;
-		signed char *MixPtr;
 
-		// keep resetting the mix pointer to the beginning of this portion of the ring buffer
-		MixPtr = mixbuffer;
+        // keep resetting the mix pointer to the beginning of this portion of the ring buffer
+		signed char* MixPtr = mixbuffer;
 
 		while (MixedSoFar < FSOUND_BlockSize)
 		{
@@ -99,7 +96,7 @@ void FSOUND_Software_Fill()
 				SamplesToMix = FSOUND_BlockSize - MixedSoFar;
             }
 
-			FSOUND_Mixer_FPU_Ramp(MixPtr, SamplesToMix, FALSE);
+			FSOUND_Mixer_FPU_Ramp(MixPtr, SamplesToMix);
 
 			MixedSoFar	+= SamplesToMix;
 			MixPtr		+= (SamplesToMix << 3);
@@ -119,17 +116,7 @@ void FSOUND_Software_Fill()
 	// ====================================================================================
 	// CLIP AND COPY BLOCK TO OUTPUT BUFFER
 	// ====================================================================================
-	{
-		void  			*ptr1, *ptr2;
-		unsigned int	len1, len2;
-
-		ptr1 = FSOUND_MixBlock.data + (mixpos << 2);
-		ptr2 = NULL;
-		len1 = FSOUND_BlockSize << 2;
-		len2 = 0;
-
-		FSOUND_MixerClipCopy_Float32(ptr1, mixbuffer, len1>>2);
-	}
+    FSOUND_MixerClipCopy_Float32(FSOUND_MixBlock.data + (mixpos << 2), mixbuffer, FSOUND_BlockSize);
 
 	FSOUND_Software_FillBlock++;
 
@@ -153,30 +140,19 @@ void FSOUND_Software_Fill()
 */
 DWORD FSOUND_Software_DoubleBufferThread(LPDWORD lpdwParam)
 {
-	int totalblocks;
+    FSOUND_Software_ThreadFinished = FALSE;
 
-	FSOUND_Software_ThreadFinished = FALSE;
-
-	totalblocks = FSOUND_BufferSize / FSOUND_BlockSize;
+	int totalblocks = FSOUND_BufferSize / FSOUND_BlockSize;
 
 	while (!FSOUND_Software_Exit)
 	{
-		int		cursorpos,cursorblock,prevblock;
-		MMTIME	mmt;
+        MMTIME	mmt;
 
 		mmt.wType = TIME_BYTES;
 		waveOutGetPosition(FSOUND_WaveOutHandle, &mmt, sizeof(MMTIME));
-		mmt.u.cb >>= 2;
-		cursorpos = mmt.u.cb;
 
-		cursorpos %= FSOUND_BufferSize;
-		cursorblock = cursorpos / FSOUND_BlockSize;
-
-		prevblock = cursorblock - 1;
-		if (prevblock < 0)
-        {
-			prevblock = totalblocks - 1;
-        }
+		int cursorpos = (mmt.u.cb >> 2) % FSOUND_BufferSize;
+		int cursorblock = cursorpos / FSOUND_BlockSize;
 
 		while (FSOUND_Software_FillBlock != cursorblock)
 		{
@@ -194,11 +170,9 @@ DWORD FSOUND_Software_DoubleBufferThread(LPDWORD lpdwParam)
 		}
 
 		Sleep(5);
-	};
+	}
 
 	FSOUND_Software_ThreadFinished = TRUE;
 
 	return 0;
 }
-
-

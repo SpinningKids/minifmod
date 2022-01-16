@@ -13,11 +13,8 @@
 #ifndef _SOUND_H_
 #define _SOUND_H_
 
-#include <windows.h>
-#include <mmsystem.h>
+#include <Windows.h>
 #include <stdint.h>
-
-#include "system_memory.h"
 
 //= DEFINITIONS ===============================================================================
 

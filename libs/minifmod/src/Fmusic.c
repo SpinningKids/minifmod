@@ -15,7 +15,6 @@
 #include "mixer_fpu_ramp.h"
 #include "Music.h"
 #include "music_formatxm.h"
-#include "Sound.h"
 #include "system_file.h"
 #include "system_memory.h"
 
@@ -112,23 +111,18 @@ void FMUSIC_SetBPM(FMUSIC_MODULE *module, int bpm)
 */
 FMUSIC_MODULE * FMUSIC_LoadSong(signed char *name, SAMPLELOADCALLBACK sampleloadcallback)
 {
-    FMUSIC_MODULE		*mod;
-    signed char			retcode=FALSE;
-    FSOUND_FILE_HANDLE	*fp;
-
-    // create a mod instance
-    mod = FSOUND_Memory_Calloc(sizeof(FMUSIC_MODULE));
-
-    fp = FSOUND_File_Open(name, 0, 0);
+    FSOUND_FILE_HANDLE* fp = FSOUND_File_Open(name, 0, 0);
     if (!fp)
     {
         return NULL;
     }
 
-    mod->samplecallback = sampleloadcallback;
+	// create a mod instance
+	FMUSIC_MODULE* mod = FSOUND_Memory_Calloc(sizeof(FMUSIC_MODULE));
+	mod->samplecallback = sampleloadcallback;
 
     // try opening all as all formats until correct loader is found
-	retcode = FMUSIC_LoadXM(mod, fp);
+	signed char retcode = FMUSIC_LoadXM(mod, fp);
 
     FSOUND_File_Close(fp);
 
@@ -162,7 +156,6 @@ FMUSIC_MODULE * FMUSIC_LoadSong(signed char *name, SAMPLELOADCALLBACK sampleload
 */
 signed char FMUSIC_FreeSong(FMUSIC_MODULE *mod)
 {
-	int count;
 
 	if (!mod)
 		return FALSE;
@@ -174,12 +167,10 @@ signed char FMUSIC_FreeSong(FMUSIC_MODULE *mod)
 	// free samples
 	if (mod->instrument)
 	{
-		for (count=0; count<(int)mod->numinsts; count++)
+        for (int count = 0; count<(int)mod->numinsts; count++)
 		{
-			int count2;
-
-			FMUSIC_INSTRUMENT	*iptr = &mod->instrument[count];
-			for (count2=0; count2<iptr->numsamples; count2++)
+            FMUSIC_INSTRUMENT	*iptr = &mod->instrument[count];
+			for (int count2 = 0; count2<iptr->numsamples; count2++)
 			{
 				if (iptr->sample[count2])
 				{
@@ -188,8 +179,6 @@ signed char FMUSIC_FreeSong(FMUSIC_MODULE *mod)
 					FSOUND_Memory_Free(sptr);
 				}
 			}
-
-
 		}
 	}
 
@@ -202,7 +191,7 @@ signed char FMUSIC_FreeSong(FMUSIC_MODULE *mod)
 	// free patterns
 	if (mod->pattern)
 	{
-		for (count=0; count<mod->numpatternsmem; count++)
+        for (int count = 0; count<mod->numpatternsmem; count++)
         {
 			if (mod->pattern[count].data)
             {
@@ -244,11 +233,7 @@ signed char FMUSIC_FreeSong(FMUSIC_MODULE *mod)
 */
 signed char FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 {
-	int				count;
-	FMUSIC_CHANNEL	*cptr;
-	int				totalblocks;
-
-	if (!mod)
+    if (!mod)
     {
 		return FALSE;
     }
@@ -271,7 +256,7 @@ signed char FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 
 	mix_volumerampsteps      = FSOUND_MixRate * FSOUND_VOLUMERAMP_STEPS / 44100;
 	mix_1overvolumerampsteps = 1.0f / mix_volumerampsteps;
-    totalblocks              = FSOUND_BufferSize / FSOUND_BlockSize;
+	int totalblocks = FSOUND_BufferSize / FSOUND_BlockSize;
 
 	//=======================================================================================
 	// ALLOC GLOBAL CHANNEL POOL
@@ -282,7 +267,7 @@ signed char FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 	// SET UP CHANNELS
 	// ========================================================================================================
 
-	for (count=0; count < 256; count++)
+	for (int count = 0; count < 256; count++)
 	{
 		FSOUND_Channel[count].index = count;
 		FSOUND_Channel[count].speedhi = 1;
@@ -304,10 +289,9 @@ signed char FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 	memset(FMUSIC_Channel, 0, mod->numchannels * sizeof(FMUSIC_CHANNEL));
 //	memset(FSOUND_Channel, 0, 256 * sizeof(FSOUND_CHANNEL));
 
-	for (count=0; count < mod->numchannels; count++)
+	for (int count=0; count < mod->numchannels; count++)
 	{
-		cptr = &FMUSIC_Channel[count];
-		cptr->cptr = &FSOUND_Channel[count];
+		FMUSIC_Channel[count].cptr = &FSOUND_Channel[count];
 	}
 
 	FMUSIC_PlayingSong = mod;
@@ -318,12 +302,11 @@ signed char FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 	// PREPARE THE OUTPUT
 	// ========================================================================================================
 	{
-		WAVEFORMATEX	pcmwf;
-		UINT			hr;
 
-		// ========================================================================================================
+        // ========================================================================================================
 		// INITIALIZE WAVEOUT
 		// ========================================================================================================
+		WAVEFORMATEX	pcmwf;
 		pcmwf.wFormatTag		= WAVE_FORMAT_PCM;
 		pcmwf.nChannels			= 2;
 		pcmwf.wBitsPerSample	= 16;
@@ -332,7 +315,7 @@ signed char FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 		pcmwf.nAvgBytesPerSec	= pcmwf.nSamplesPerSec * pcmwf.nBlockAlign;
 		pcmwf.cbSize			= 0;
 
-		hr = waveOutOpen(&FSOUND_WaveOutHandle, WAVE_MAPPER, &pcmwf, 0, 0, 0);
+		UINT hr = waveOutOpen(&FSOUND_WaveOutHandle, WAVE_MAPPER, &pcmwf, 0, 0, 0);
 
 		if (hr)
         {
@@ -341,32 +324,27 @@ signed char FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 	}
 
 	{
-		WAVEHDR	*wavehdr;
-		int	length = 0;
+        // CREATE AND START LOOPING WAVEOUT BLOCK
 
-		// CREATE AND START LOOPING WAVEOUT BLOCK
-		wavehdr = &FSOUND_MixBlock.wavehdr;
-
-		length = FSOUND_BufferSize;
-		length <<= 2;	// 16bits
+		int length = FSOUND_BufferSize << 2; // 16bits
 
 		FSOUND_MixBlock.data = FSOUND_Memory_Calloc(length);
 
-		wavehdr->dwFlags			= WHDR_BEGINLOOP | WHDR_ENDLOOP;
-		wavehdr->lpData				= (LPSTR)FSOUND_MixBlock.data;
-		wavehdr->dwBufferLength		= length;
-		wavehdr->dwBytesRecorded	= 0;
-		wavehdr->dwUser				= 0;
-		wavehdr->dwLoops			= -1;
-		waveOutPrepareHeader(FSOUND_WaveOutHandle, wavehdr, sizeof(WAVEHDR));
+		FSOUND_MixBlock.wavehdr.dwFlags			= WHDR_BEGINLOOP | WHDR_ENDLOOP;
+		FSOUND_MixBlock.wavehdr.lpData				= (LPSTR)FSOUND_MixBlock.data;
+		FSOUND_MixBlock.wavehdr.dwBufferLength		= length;
+		FSOUND_MixBlock.wavehdr.dwBytesRecorded	= 0;
+		FSOUND_MixBlock.wavehdr.dwUser				= 0;
+		FSOUND_MixBlock.wavehdr.dwLoops			= -1;
+		waveOutPrepareHeader(FSOUND_WaveOutHandle, &FSOUND_MixBlock.wavehdr, sizeof(WAVEHDR));
 	}
 
 	// ========================================================================================================
 	// ALLOCATE MIXBUFFER
 	// ========================================================================================================
 
-	FSOUND_MixBufferMem = (signed char *)FSOUND_Memory_Calloc((FSOUND_BufferSize << 3) + 256);
-	FSOUND_MixBuffer = FSOUND_MixBufferMem + ((16 - (unsigned int)FSOUND_MixBufferMem) & 15);
+	FSOUND_MixBufferMem = (signed char *)FSOUND_Memory_Calloc((FSOUND_BufferSize << 3) + 15);
+	FSOUND_MixBuffer = FSOUND_MixBufferMem + ((16 - (uintptr_t)FSOUND_MixBufferMem) & 15);
 
 	// ========================================================================================================
 	// PREFILL THE MIXER BUFFER
