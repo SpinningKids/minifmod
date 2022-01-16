@@ -285,6 +285,5 @@ extern FMUSIC_TIMMEINFO *		FMUSIC_TimeInfo;
 
 // private (internal functions)
 void	FMUSIC_SetBPM(FMUSIC_MODULE *mod, int bpm);
-int		FMUSIC_FineTune2Hz(unsigned char ft);
 
 #endif
