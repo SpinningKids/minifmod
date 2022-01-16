@@ -15,7 +15,6 @@
 #include "mixer_fpu_ramp.h"
 #include "Music.h"
 #include "music_formatxm.h"
-#include "system_file.h"
 #include "system_memory.h"
 
 FMUSIC_MODULE *		FMUSIC_PlayingSong = NULL;
@@ -111,7 +110,7 @@ void FMUSIC_SetBPM(FMUSIC_MODULE *module, int bpm)
 */
 FMUSIC_MODULE * FMUSIC_LoadSong(signed char *name, SAMPLELOADCALLBACK sampleloadcallback)
 {
-    FSOUND_FILE_HANDLE* fp = FSOUND_File_Open(name, 0, 0);
+    FSOUND_FILE_HANDLE* fp = FSOUND_File_Open(name);
     if (!fp)
     {
         return NULL;
@@ -240,7 +239,7 @@ signed char FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 
 	FMUSIC_StopSong(mod);
 
-	if (!FSOUND_File_OpenCallback || !FSOUND_File_CloseCallback || !FSOUND_File_ReadCallback || !FSOUND_File_SeekCallback || !FSOUND_File_TellCallback)
+	if (!FSOUND_File_Open || !FSOUND_File_Close || !FSOUND_File_Read || !FSOUND_File_Seek || !FSOUND_File_Tell)
     {
 		return FALSE;
     }
@@ -261,13 +260,13 @@ signed char FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 	//=======================================================================================
 	// ALLOC GLOBAL CHANNEL POOL
 	//=======================================================================================
-	memset(FSOUND_Channel, 0, sizeof(FSOUND_CHANNEL) * 256);
+	memset(FSOUND_Channel, 0, sizeof(FSOUND_CHANNEL) * 64);
 
 	// ========================================================================================================
 	// SET UP CHANNELS
 	// ========================================================================================================
 
-	for (int count = 0; count < 256; count++)
+	for (int count = 0; count < 64; count++)
 	{
 		FSOUND_Channel[count].index = count;
 		FSOUND_Channel[count].speedhi = 1;
@@ -287,7 +286,7 @@ signed char FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 	FMUSIC_SetBPM(mod, mod->defaultbpm);
 
 	memset(FMUSIC_Channel, 0, mod->numchannels * sizeof(FMUSIC_CHANNEL));
-//	memset(FSOUND_Channel, 0, 256 * sizeof(FSOUND_CHANNEL));
+//	memset(FSOUND_Channel, 0, 64 * sizeof(FSOUND_CHANNEL));
 
 	for (int count=0; count < mod->numchannels; count++)
 	{
@@ -520,7 +519,7 @@ int FMUSIC_GetRow(FMUSIC_MODULE *mod)
 [
 	[DESCRIPTION]
 	Returns the time in milliseconds since the song was started.  This is useful for
-	synchronizing purposes becuase it will be exactly the same every time, and it is
+	synchronizing purposes because it will be exactly the same every time, and it is
 	reliably retriggered upon starting the song.  Trying to synchronize using other
 	windows timers can lead to varying results, and inexact performance.  This fixes that
 	problem by actually using the number of samples sent to the soundcard as a reference.

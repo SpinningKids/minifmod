@@ -16,8 +16,8 @@
 #include <minifmod/minifmod.h>
 #include "Sound.h"
 
-#define FMUSIC_FLAGS_NORMALVOLUMESLIDES	0
-#define FMUSIC_FLAGS_FASTVOLUMESLIDES		1
+//#define FMUSIC_FLAGS_NORMALVOLUMESLIDES	0
+//#define FMUSIC_FLAGS_FASTVOLUMESLIDES		1
 //#define FMUSIC_FLAGS_LINEARFREQUENCY		2
 //#define FMUSIC_FLAGS_AMIGAFREQUENCY		4
 
@@ -40,16 +40,10 @@
 #define FMUSIC_ENVELOPE_LOOP				4
 #define FMUSIC_ENVELOPE_CARRY				8
 
-#define FMUSIC_CUT							0
-#define FMUSIC_CONTINUE						1
-#define FMUSIC_OFF							2
-#define FMUSIC_FADEOUT						3
-
-#define FMUSIC_PLAYPACKED					TRUE
-
-#if !defined (FMUSIC_PLAYPACKED) && defined (FINAL)
-	#error Error - packed music playing is not turned on for FINAL
-#endif
+//#define FMUSIC_CUT							0
+//#define FMUSIC_CONTINUE						1
+//#define FMUSIC_OFF							2
+//#define FMUSIC_FADEOUT						3
 
 // Single note type - contains info on 1 note in a pattern
 typedef struct

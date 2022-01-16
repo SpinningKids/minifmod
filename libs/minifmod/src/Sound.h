@@ -57,24 +57,6 @@
 #define FSOUND_IT215		0x800		// For source data stored using IT215 compression.
 // [DEFINE_END]
 
-
-
-/*
-[DEFINE_START]
-[
- 	[NAME]
-	FSOUND_SAMPLEMODE
-
-	[DESCRIPTION]
-
-	[SEE_ALSO]
-	FSOUND_CD_Play
-]
-*/
-#define FSOUND_FREE					-1	// definition for dynamically allocated channel or sample
-// [DEFINE_END]
-
-
 // ==============================================================================================
 // STRUCTURE DEFINITIONS
 // ==============================================================================================

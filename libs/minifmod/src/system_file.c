@@ -12,15 +12,14 @@
 
 #include <minifmod/minifmod.h>
 #include "system_file.h"
-#include "system_memory.h"
 #include "Sound.h"
 
 
-void*			(*FSOUND_File_OpenCallback)(char *name) = NULL;
-void			(*FSOUND_File_CloseCallback)(void* handle) = NULL;
-int				(*FSOUND_File_ReadCallback)(void *buffer, int size, void* handle) = NULL;
-void			(*FSOUND_File_SeekCallback)(void* handle, int pos, signed char mode) = NULL;
-int				(*FSOUND_File_TellCallback)(void* handle) = NULL;
+void*			(*FSOUND_File_Open)(char* name) = NULL;
+void			(*FSOUND_File_Close)(void* handle) = NULL;
+int				(*FSOUND_File_Read)(void* buffer, int size, void* handle) = NULL;
+void			(*FSOUND_File_Seek)(void* handle, int pos, signed char mode) = NULL;
+int				(*FSOUND_File_Tell)(void* handle) = NULL;
 
 
 /*
@@ -87,7 +86,7 @@ int				(*FSOUND_File_TellCallback)(void* handle) = NULL;
 	-------------
 	You must return the offset from the base of the file, using this routine.
 
- 	[RETURN_VALUE]
+	[RETURN_VALUE]
 	void
 
 	[REMARKS]
@@ -99,150 +98,11 @@ int				(*FSOUND_File_TellCallback)(void* handle) = NULL;
 	used properly.
 ]
 */
-void FSOUND_File_SetCallbacks(void* (*OpenCallback)(char *name), void	(*CloseCallback)(void* handle),	int (*ReadCallback)(void *buffer, int size, void* handle), void (*SeekCallback)(void*, int pos, signed char mode), int (*TellCallback)(void* handle))
+void FSOUND_File_SetCallbacks(void* (*OpenCallback)(char* name), void	(*CloseCallback)(void* handle), int (*ReadCallback)(void* buffer, int size, void* handle), void (*SeekCallback)(void*, int pos, signed char mode), int (*TellCallback)(void* handle))
 {
-	if (!OpenCallback || !CloseCallback || !ReadCallback || !SeekCallback || !TellCallback)
-	{
-		FSOUND_File_OpenCallback = NULL;
-		FSOUND_File_CloseCallback = NULL;
-		FSOUND_File_ReadCallback = NULL;
-		FSOUND_File_SeekCallback = NULL;
-		FSOUND_File_TellCallback = NULL;
-	}
-	else
-	{
-		FSOUND_File_OpenCallback = OpenCallback;
-		FSOUND_File_CloseCallback = CloseCallback;
-		FSOUND_File_ReadCallback = ReadCallback;
-		FSOUND_File_SeekCallback = SeekCallback;
-		FSOUND_File_TellCallback = TellCallback;
-	}
-}
-
-
-/*
-[
-	[DESCRIPTION]
-
-	[PARAMETERS]
-
-	[RETURN_VALUE]
-
-	[REMARKS]
-
-	[SEE_ALSO]
-]
-*/
-FSOUND_FILE_HANDLE *FSOUND_File_Open(void *data, signed char type, int length)
-{
-    FSOUND_FILE_HANDLE* handle = (FSOUND_FILE_HANDLE*)FSOUND_Memory_Alloc(sizeof(FSOUND_FILE_HANDLE));
-	handle->type = type;
-	handle->length = length;
-	handle->userhandle = FSOUND_File_OpenCallback(data);
-
-	if (!handle->userhandle)
-	{
-		FSOUND_Memory_Free(handle);
-		return NULL;
-	}
-
-	return handle;
-}
-
-
-/*
-[
-	[DESCRIPTION]
-
-	[PARAMETERS]
-
-	[RETURN_VALUE]
-
-	[REMARKS]
-
-	[SEE_ALSO]
-]
-*/
-void FSOUND_File_Close(FSOUND_FILE_HANDLE *handle)
-{
-	if (!handle)
-    {
-		return;
-    }
-
-	FSOUND_File_CloseCallback(handle->userhandle);
-	FSOUND_Memory_Free(handle);
-}
-
-
-/*
-[
-	[DESCRIPTION]
-
-	[PARAMETERS]
-
-	[RETURN_VALUE]
-
-	[REMARKS]
-
-	[SEE_ALSO]
-]
-*/
-int FSOUND_File_Read(void *buffer, int size, FSOUND_FILE_HANDLE *handle)
-{
-	if (!handle)
-    {
-		return 0;
-    }
-
-	return FSOUND_File_ReadCallback(buffer, size, handle->userhandle);
-}
-
-
-
-/*
-[
-	[DESCRIPTION]
-
-	[PARAMETERS]
-
-	[RETURN_VALUE]
-
-	[REMARKS]
-
-	[SEE_ALSO]
-]
-*/
-void FSOUND_File_Seek(FSOUND_FILE_HANDLE *handle, int pos, signed char mode)
-{
-	if (!handle)
-    {
-		return;
-    }
-
-	FSOUND_File_SeekCallback(handle->userhandle, pos, mode);
-}
-
-
-/*
-[
-	[DESCRIPTION]
-
-	[PARAMETERS]
-
-	[RETURN_VALUE]
-
-	[REMARKS]
-
-	[SEE_ALSO]
-]
-*/
-int FSOUND_File_Tell(FSOUND_FILE_HANDLE *handle)
-{
-	if (!handle)
-    {
-		return 0;
-    }
-
-	return FSOUND_File_TellCallback(handle->userhandle);
+	FSOUND_File_Open = OpenCallback;
+	FSOUND_File_Close = CloseCallback;
+	FSOUND_File_Read = ReadCallback;
+	FSOUND_File_Seek = SeekCallback;
+	FSOUND_File_Tell = TellCallback;
 }

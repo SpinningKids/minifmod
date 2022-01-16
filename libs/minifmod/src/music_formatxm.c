@@ -50,7 +50,7 @@ void FMUSIC_XM_Portamento(FMUSIC_CHANNEL *cptr)
 		if (cptr->freq > cptr->portatarget)
         {
 			cptr->freq = cptr->portatarget;
-	}
+	    }
 	}
 
 	// slide pitch up if it needs too.
@@ -60,7 +60,7 @@ void FMUSIC_XM_Portamento(FMUSIC_CHANNEL *cptr)
 		if (cptr->freq < cptr->portatarget)
         {
 			cptr->freq=cptr->portatarget;
-	}
+	    }
 	}
 
 	 //
@@ -100,7 +100,7 @@ void FMUSIC_XM_Vibrato(FMUSIC_CHANNEL *cptr)
 	{
 		case 0:
 		    {
-		        delta = (int)fabsf(sinf( (float)(cptr->vibpos) * (2 * 3.141592f / 64.0f)) * 256.0f);
+		        delta = (int)fabsf(sinf( (float)cptr->vibpos * (2 * 3.141592f / 64.0f)) * 256.0f);
 		        break;
 		    }
 		case 1:
@@ -154,7 +154,7 @@ void FMUSIC_XM_InstrumentVibrato(FMUSIC_CHANNEL *cptr, FMUSIC_INSTRUMENT *iptr)
 	{
 		case 0:
 		    {
-		        delta = (int)(sinf( (float)(cptr->ivibpos) * (2 * 3.141592f / 256.0f)) * 64.0f);
+		        delta = (int)(sinf( (float)cptr->ivibpos * (2 * 3.141592f / 256.0f)) * 64.0f);
 		        break;
 		    }
 		case 1:
@@ -218,7 +218,7 @@ void FMUSIC_XM_Tremolo(FMUSIC_CHANNEL *cptr)
 	{
 		case 0:
 		    {
-		        cptr->voldelta = (int)fabsf(sinf( (float)(cptr->tremolopos) * (2 * 3.141592f / 64.0f)) * 256.0f);
+		        cptr->voldelta = (int)fabsf(sinf( (float)cptr->tremolopos * (2 * 3.141592f / 64.0f)) * 256.0f);
 		        break;
 		    }
 		case 1:
@@ -238,7 +238,7 @@ void FMUSIC_XM_Tremolo(FMUSIC_CHANNEL *cptr)
 		    }
 		case 3:
 		    {
-		        cptr->voldelta = (int)(fabs ((sin( (float)(cptr->tremolopos) * 2 * 3.141592 / 64.0f )) * 256.0f));
+		        cptr->voldelta = (int)fabsf(sinf( (float)cptr->tremolopos * (2 * 3.141592f / 64.0f)) * 256.0f);
 		        break;
 		    }
 	}
@@ -251,7 +251,7 @@ void FMUSIC_XM_Tremolo(FMUSIC_CHANNEL *cptr)
 		if (cptr->volume+cptr->voldelta > 64)
         {
 			cptr->voldelta = 64-cptr->volume;
-	}
+	    }
 	}
 	else
 	{
@@ -732,17 +732,13 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
 	// Loop through each channel in the row until we have finished
 	for (int count = 0; count<mod->numchannels; count++,current++)
 	{
-		FMUSIC_CHANNEL			*cptr  = NULL;
-		FMUSIC_INSTRUMENT		*iptr  = NULL;
-		FSOUND_SAMPLE			*sptr  = NULL;
-		unsigned char			paramx, paramy;
-		int						oldvolume, oldfreq, oldpan;
-		signed char				porta = FALSE;
+        FMUSIC_INSTRUMENT		*iptr;
+		FSOUND_SAMPLE			*sptr;
 
-		paramx = current->eparam >> 4;			// get effect param x
-		paramy = current->eparam & 0xF;			// get effect param y
+        unsigned char paramx = current->eparam >> 4;			// get effect param x
+		unsigned char paramy = current->eparam & 0xF;			// get effect param y
 
-		cptr = &FMUSIC_Channel[count];
+		FMUSIC_CHANNEL* cptr = &FMUSIC_Channel[count];
 
 
 //			**** FIXME!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
@@ -751,7 +747,7 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
 //			**** FIXME!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
 
 
-		porta = (current->effect == FMUSIC_XM_PORTATO || current->effect == FMUSIC_XM_PORTATOVOLSLIDE);
+		signed char porta = (current->effect == FMUSIC_XM_PORTATO || current->effect == FMUSIC_XM_PORTATOVOLSLIDE);
 
 		// first store note and instrument number if there was one
 		if (current->number && !porta)							//  bugfix 3.20 (&& !porta)
@@ -782,12 +778,12 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
 			if (!porta)
             {
 				cptr->sptr = sptr;
-		}
+		    }
 		}
 
-		oldvolume = cptr->volume;
-		oldfreq   = cptr->freq;
-		oldpan    = cptr->pan;
+		int oldvolume = cptr->volume;
+		int oldfreq = cptr->freq;
+		int oldpan = cptr->pan;
 
 		// if there is no more tremolo, set volume to volume + last tremolo delta
 		if (cptr->recenteffect == FMUSIC_XM_TREMOLO && current->effect != FMUSIC_XM_TREMOLO)
@@ -978,9 +974,7 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
 #ifdef FMUSIC_XM_SETSAMPLEOFFSET_ACTIVE
 			case FMUSIC_XM_SETSAMPLEOFFSET :
 			{
-				unsigned int offset;
-
-				if (current->eparam)
+                if (current->eparam)
                 {
 					cptr->sampleoffset = current->eparam;
                 }
@@ -990,7 +984,7 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
                     break;
                 }
 
-				offset = (int)(cptr->sampleoffset) << 8;
+				unsigned int offset = (int)(cptr->sampleoffset) << 8;
 
 				if (offset >= sptr->loopstart + sptr->looplen)
 				{
@@ -2100,12 +2094,11 @@ signed char FMUSIC_LoadXM(FMUSIC_MODULE *mod, FSOUND_FILE_HANDLE *fp)
 	// unpack and read patterns
 	for (int count=0; count < filenumpatterns; count++)
 	{
-		FMUSIC_PATTERN *pptr;
-		unsigned short	patternsize, rows;
+        unsigned short	patternsize, rows;
 		unsigned int	patternHDRsize;
 		unsigned char tempchar = 0;
 
-		pptr = &mod->pattern[count];
+		FMUSIC_PATTERN* pptr = &mod->pattern[count];
 
 		FSOUND_File_Read(&patternHDRsize, 4, fp);
 		FSOUND_File_Read(&tempchar, 1, fp);
@@ -2118,12 +2111,9 @@ signed char FMUSIC_LoadXM(FMUSIC_MODULE *mod, FSOUND_FILE_HANDLE *fp)
 
 		if (patternsize > 0)
 		{
-			int count2;
-			FMUSIC_NOTE *nptr;
+            FMUSIC_NOTE* nptr = pptr->data;
 
-			nptr = pptr->data;
-
-			for (count2=0; count2< (pptr->rows*mod->numchannels); count2++)
+			for (int count2 = 0; count2< (pptr->rows*mod->numchannels); count2++)
 			{
 				unsigned char dat;
 
@@ -2166,9 +2156,7 @@ signed char FMUSIC_LoadXM(FMUSIC_MODULE *mod, FSOUND_FILE_HANDLE *fp)
 	{
 		for (int count=filenumpatterns; count < mod->numpatterns; count++)
 		{
-			FMUSIC_PATTERN *pptr;
-
-			pptr = &mod->pattern[count];
+            FMUSIC_PATTERN* pptr = &mod->pattern[count];
 			pptr->rows = 64;
 
 			// allocate memory for pattern buffer
@@ -2183,7 +2171,6 @@ signed char FMUSIC_LoadXM(FMUSIC_MODULE *mod, FSOUND_FILE_HANDLE *fp)
 	// load instrument information
 	for (int count=0; count<(int)mod->numinsts; count++)
 	{
-		unsigned int		count2;
         unsigned int		instHDRsize;
 		unsigned short		numsamples;
 
@@ -2206,6 +2193,7 @@ signed char FMUSIC_LoadXM(FMUSIC_MODULE *mod, FSOUND_FILE_HANDLE *fp)
 
 		if (numsamples > 0)
 		{
+			unsigned int		count2;
 			unsigned int sampHDRsize;
 			unsigned char tempchar = 0;
 
@@ -2416,8 +2404,8 @@ signed char FMUSIC_LoadXM(FMUSIC_MODULE *mod, FSOUND_FILE_HANDLE *fp)
 		}
 		else
 		{
-			// clear out the rest of the samples
-			for (count2=0; count2<16; count2++)
+            // clear out the rest of the samples
+			for (unsigned int count2 = 0; count2<16; count2++)
             {
 				iptr->sample[count2] = &FMUSIC_DummySample;
             }

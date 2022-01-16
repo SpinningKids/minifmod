@@ -19,7 +19,7 @@
 
 //= GLOBALS ================================================================================
 
-FSOUND_CHANNEL		FSOUND_Channel[256];             // channel pool
+FSOUND_CHANNEL		FSOUND_Channel[64];             // channel pool
 int					FSOUND_MixRate      = 44100;     // mixing rate in hz.
 int					FSOUND_BufferSizeMs = 1000;
 HWAVEOUT			FSOUND_WaveOutHandle;
