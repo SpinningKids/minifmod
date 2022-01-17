@@ -151,7 +151,6 @@ extern "C"
 
 FSOUND_CHANNEL		FSOUND_Channel[];
 int					FSOUND_MixRate;
-int					FSOUND_BufferSize;			// software buffersize
 int					FSOUND_BufferSizeMs;
 HWAVEOUT			FSOUND_WaveOutHandle;
 FSOUND_SoundBlock	FSOUND_MixBlock;
