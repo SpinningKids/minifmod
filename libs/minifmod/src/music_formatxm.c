@@ -10,16 +10,17 @@
 /* This source must not be redistributed without this notice.                 */
 /******************************************************************************/
 
+#include "music_formatxm.h"
+
 #include <string.h>
 #include <math.h>
 
 #include <minifmod/minifmod.h>
 #include "Mixer.h"
 #include "Music.h"
-#include "music_formatxm.h"
 #include "Sound.h"
+#include "system_file.h"
 #include "system_memory.h"
-
 #include "xmeffects.h"
 
 // Frequency = 8363*2^((6*12*16*4 - Period) / (12*16*4));
@@ -2022,7 +2023,7 @@ void FMUSIC_UpdateXM(FMUSIC_MODULE *mod)
 	[SEE_ALSO]
 ]
 */
-char FMUSIC_LoadXM(FMUSIC_MODULE *mod, FSOUND_FILE_HANDLE *fp)
+char FMUSIC_LoadXM(FMUSIC_MODULE *mod, void *fp)
 {
 	unsigned short	filenumpatterns=0;
 	unsigned int	mainHDRsize;

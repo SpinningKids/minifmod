@@ -10,11 +10,12 @@
 /* This source must not be redistributed without this notice.                 */
 /******************************************************************************/
 
-#include "Sound.h"
-#include "Mixer.h"
 #include "mixer_fpu_ramp.h"
 
 #include <stdint.h>
+
+#include "Sound.h"
+#include "Mixer.h"
 
 #define FSOUND_OUTPUTBUFF_END		0
 #define FSOUND_SAMPLEBUFF_END		1

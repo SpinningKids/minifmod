@@ -13,8 +13,7 @@
 #ifndef _FMUSIC_FORMATXM
 #define _FMUSIC_FORMATXM
 
-#include "system_file.h"
-
+#include "Music.h"
 
 enum FMUSIC_XMCOMMANDS
 {
@@ -113,7 +112,7 @@ typedef struct
 } FMUSIC_XM_INSTSAMPLEHEADER;
 
 
-char FMUSIC_LoadXM(FMUSIC_MODULE *mod, FSOUND_FILE_HANDLE *fp);
+char FMUSIC_LoadXM(FMUSIC_MODULE *mod, void *fp);
 void FMUSIC_UpdateXM(FMUSIC_MODULE* mod);
 
 #endif

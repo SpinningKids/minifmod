@@ -10,10 +10,9 @@
 /* This source must not be redistributed without this notice.                 */
 /******************************************************************************/
 
-#include <minifmod/minifmod.h>
 #include "system_file.h"
-#include "Sound.h"
 
+#include <stddef.h>
 
 void*			(*FSOUND_File_Open)(char* name) = NULL;
 void			(*FSOUND_File_Close)(void* handle) = NULL;

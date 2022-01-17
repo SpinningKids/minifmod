@@ -10,7 +10,7 @@
 /* This source must not be redistributed without this notice.                 */
 /******************************************************************************/
 
-#include "Sound.h"
+#include "mixer_clipcopy.h"
 
 /*
 [API]

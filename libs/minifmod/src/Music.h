@@ -16,11 +16,6 @@
 #include <minifmod/minifmod.h>
 #include "Sound.h"
 
-//#define FMUSIC_FLAGS_NORMALVOLUMESLIDES	0
-//#define FMUSIC_FLAGS_FASTVOLUMESLIDES		1
-//#define FMUSIC_FLAGS_LINEARFREQUENCY		2
-//#define FMUSIC_FLAGS_AMIGAFREQUENCY		4
-
 #define FMUSIC_MAXORDERS					256
 
 #define FMUSIC_KEYCUT						254
@@ -39,11 +34,6 @@
 #define FMUSIC_ENVELOPE_SUSTAIN				2
 #define FMUSIC_ENVELOPE_LOOP				4
 #define FMUSIC_ENVELOPE_CARRY				8
-
-//#define FMUSIC_CUT							0
-//#define FMUSIC_CONTINUE						1
-//#define FMUSIC_OFF							2
-//#define FMUSIC_FADEOUT						3
 
 // Single note type - contains info on 1 note in a pattern
 typedef struct
@@ -76,7 +66,7 @@ typedef struct
 // Multi sample extended instrument
 typedef struct FMUSIC_INSTRUMENT
 {
-	int			numsamples;			// number of samples in this instrument
+	int				numsamples;			// number of samples in this instrument
 	FSOUND_SAMPLE	*sample[16];		// 16 samples per instrument
 	unsigned char	keymap[96];			// sample keymap assignments
 

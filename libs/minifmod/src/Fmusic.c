@@ -10,11 +10,12 @@
 /* This source must not be redistributed without this notice.                 */
 /******************************************************************************/
 
-#include <minifmod/minifmod.h>
-
-#include "mixer_fpu_ramp.h"
 #include "Music.h"
+
+#include <minifmod/minifmod.h>
+#include "mixer_fpu_ramp.h"
 #include "music_formatxm.h"
+#include "system_file.h"
 #include "system_memory.h"
 
 FMUSIC_MODULE *		FMUSIC_PlayingSong = NULL;
@@ -102,7 +103,7 @@ void FMUSIC_SetBPM(FMUSIC_MODULE *module, int bpm)
 */
 FMUSIC_MODULE * FMUSIC_LoadSong(char *name, SAMPLELOADCALLBACK sampleloadcallback)
 {
-    FSOUND_FILE_HANDLE* fp = FSOUND_File_Open(name);
+    void* fp = FSOUND_File_Open(name);
     if (!fp)
     {
         return NULL;

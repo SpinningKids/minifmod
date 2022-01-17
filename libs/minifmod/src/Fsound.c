@@ -10,13 +10,13 @@
 /* This source must not be redistributed without this notice.                 */
 /******************************************************************************/
 
-#include "mixer_clipcopy.h"
-#include "mixer_fpu_ramp.h"
-#include "Music.h"
 #include "Sound.h"
 
 #include <Windows.h>
 
+#include "mixer_clipcopy.h"
+#include "mixer_fpu_ramp.h"
+#include "Music.h"
 #include "music_formatxm.h"
 
 //= GLOBALS ================================================================================

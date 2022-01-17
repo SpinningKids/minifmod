@@ -13,8 +13,6 @@
 #ifndef _SYSTEM_FILE_H_
 #define _SYSTEM_FILE_H_
 
-typedef void FSOUND_FILE_HANDLE;
-
 extern void*		(*FSOUND_File_Open)(char *name);
 extern void			(*FSOUND_File_Close)(void* handle);
 extern int			(*FSOUND_File_Read)(void *buffer, int size, void* handle);
