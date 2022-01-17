@@ -90,9 +90,6 @@ typedef struct FSOUND_SAMPLE
 	unsigned int 	susloopend;    	// sample loop length
 	unsigned char 	vibspeed;		// vibrato speed 0-64
 	unsigned char	vibdepth;		// vibrato depth 0-64
-	unsigned char	vibtype;		// vibrato type 0=sine, 1=rampdown, 2=square, 3=random
-	unsigned char	vibrate;		// vibrato rate 0-64 (like sweep?)
-
 } FSOUND_SAMPLE;
 
 
@@ -101,7 +98,6 @@ typedef struct
 {
 	int				index;			// position in channel pool.
 	int				volume;   		// current volume (00-FFh).
-	int				frequency;		// speed or rate of playback in hz.
 	int				pan;   			// panning value (00-FFh).
 	int				actualvolume;   // driver level current volume.
 	int				actualpan;   	// driver level panning value.
@@ -143,7 +139,7 @@ typedef struct
 typedef struct
 {
 	WAVEHDR		wavehdr;
-	signed char	*data;
+	char		*data;
 } FSOUND_SoundBlock;
 
 
@@ -153,31 +149,31 @@ extern "C"
 {
 #endif
 
-FSOUND_CHANNEL			FSOUND_Channel[];
-int						FSOUND_MixRate;
-int						FSOUND_BufferSize;			// software buffersize
-int						FSOUND_BufferSizeMs;
-HWAVEOUT				FSOUND_WaveOutHandle;
-FSOUND_SoundBlock		FSOUND_MixBlock;
+FSOUND_CHANNEL		FSOUND_Channel[];
+int					FSOUND_MixRate;
+int					FSOUND_BufferSize;			// software buffersize
+int					FSOUND_BufferSizeMs;
+HWAVEOUT			FSOUND_WaveOutHandle;
+FSOUND_SoundBlock	FSOUND_MixBlock;
 
 // mixing info
-signed char *			FSOUND_MixBufferMem;		// mix buffer memory block
-signed char	*			FSOUND_MixBuffer;			// mix output buffer (16bit or 32bit)
-unsigned int			FSOUND_MixerAddress;		// actual address of the function
-int						FSOUND_HWMixOffset;			// the offset in the output buffer to mix into in bytes
-float					FSOUND_OOMixRate;			// mixing rate in hz.
-int						FSOUND_BufferSize;			// size of 1 'latency' ms buffer in bytes
-int						FSOUND_BlockSize;			// LATENCY ms worth of samples
+char*				FSOUND_MixBufferMem;		// mix buffer memory block
+char*				FSOUND_MixBuffer;			// mix output buffer (16bit or 32bit)
+unsigned int		FSOUND_MixerAddress;		// actual address of the function
+int					FSOUND_HWMixOffset;			// the offset in the output buffer to mix into in bytes
+float				FSOUND_OOMixRate;			// mixing rate in hz.
+int					FSOUND_BufferSize;			// size of 1 'latency' ms buffer in bytes
+int					FSOUND_BlockSize;			// LATENCY ms worth of samples
 
-volatile signed char	FSOUND_Software_Exit;		// mixing thread termination flag
-volatile signed char	FSOUND_Software_UpdateMutex;
-volatile signed char	FSOUND_Software_ThreadFinished;
-volatile HANDLE			FSOUND_Software_hThread;
-volatile int			FSOUND_Software_FillBlock;
-volatile int			FSOUND_Software_RealBlock;
+volatile char		FSOUND_Software_Exit;		// mixing thread termination flag
+volatile char		FSOUND_Software_UpdateMutex;
+volatile char		FSOUND_Software_ThreadFinished;
+volatile HANDLE		FSOUND_Software_hThread;
+volatile int		FSOUND_Software_FillBlock;
+volatile int		FSOUND_Software_RealBlock;
 
-DWORD					FSOUND_Software_DoubleBufferThread(LPDWORD lpdwParam);
-void					FSOUND_Software_Fill();
+DWORD				FSOUND_Software_DoubleBufferThread(LPDWORD lpdwParam);
+void				FSOUND_Software_Fill();
 
 #ifdef __cplusplus
 }

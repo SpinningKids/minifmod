@@ -75,8 +75,6 @@ FMUSIC_INSTRUMENT		FMUSIC_DummyInstrument;
 
 void FMUSIC_SetBPM(FMUSIC_MODULE *module, int bpm)
 {
-	module->bpm = bpm;
-
 	// number of samples
 	module->mixer_samplespertick = FSOUND_MixRate * 5 / (bpm * 2);
 }
@@ -88,11 +86,8 @@ void FMUSIC_SetBPM(FMUSIC_MODULE *module, int bpm)
 [API]
 [
 	[DESCRIPTION]
-	To load a module with a given filename.  FMUSIC Supports loading of
-	- .MOD (protracker/fasttracker modules)
-	- .S3M (screamtracker 3 modules)
-	- .XM  (fasttracker 2 modules)
-	- .IT  (impulse tracker modules)
+	To load a module with a given filename.  Supports loading of
+	.XM  (fasttracker 2 modules)
 
 	[PARAMETERS]
 	'name'		Filename of module to load.
@@ -101,14 +96,11 @@ void FMUSIC_SetBPM(FMUSIC_MODULE *module, int bpm)
 	On success, a pointer to a FMUSIC_MODULE handle is returned.
 	On failure, NULL is returned.
 
-	[REMARKS]
-	This function autodetects the format type, regardless of filename.
-
 	[SEE_ALSO]
 	FMUSIC_FreeSong
 ]
 */
-FMUSIC_MODULE * FMUSIC_LoadSong(signed char *name, SAMPLELOADCALLBACK sampleloadcallback)
+FMUSIC_MODULE * FMUSIC_LoadSong(char *name, SAMPLELOADCALLBACK sampleloadcallback)
 {
     FSOUND_FILE_HANDLE* fp = FSOUND_File_Open(name);
     if (!fp)
@@ -121,7 +113,7 @@ FMUSIC_MODULE * FMUSIC_LoadSong(signed char *name, SAMPLELOADCALLBACK sampleload
 	mod->samplecallback = sampleloadcallback;
 
     // try opening all as all formats until correct loader is found
-	signed char retcode = FMUSIC_LoadXM(mod, fp);
+	char retcode = FMUSIC_LoadXM(mod, fp);
 
     FSOUND_File_Close(fp);
 
@@ -153,7 +145,7 @@ FMUSIC_MODULE * FMUSIC_LoadSong(signed char *name, SAMPLELOADCALLBACK sampleload
 	FMUSIC_LoadSong
 ]
 */
-signed char FMUSIC_FreeSong(FMUSIC_MODULE *mod)
+char FMUSIC_FreeSong(FMUSIC_MODULE *mod)
 {
 
 	if (!mod)
@@ -230,7 +222,7 @@ signed char FMUSIC_FreeSong(FMUSIC_MODULE *mod)
 	FMUSIC_StopSong
 ]
 */
-signed char FMUSIC_PlaySong(FMUSIC_MODULE *mod)
+char FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 {
     if (!mod)
     {
@@ -272,7 +264,7 @@ signed char FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 		FSOUND_Channel[count].speedhi = 1;
 	}
 
-	mod->globalvolume       = mod->defaultglobalvolume;
+	mod->globalvolume       = 64;
  	mod->speed              = (int)mod->defaultspeed;
 	mod->row                = 0;
 	mod->order              = 0;
@@ -342,7 +334,7 @@ signed char FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 	// ALLOCATE MIXBUFFER
 	// ========================================================================================================
 
-	FSOUND_MixBufferMem = (signed char *)FSOUND_Memory_Calloc((FSOUND_BufferSize << 3) + 15);
+	FSOUND_MixBufferMem = (char *)FSOUND_Memory_Calloc((FSOUND_BufferSize << 3) + 15);
 	FSOUND_MixBuffer = FSOUND_MixBufferMem + ((16 - (uintptr_t)FSOUND_MixBufferMem) & 15);
 
 	// ========================================================================================================
@@ -394,7 +386,7 @@ signed char FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 	FMUSIC_PlaySong
 ]
 */
-signed char FMUSIC_StopSong(FMUSIC_MODULE *mod)
+char FMUSIC_StopSong(FMUSIC_MODULE *mod)
 {
 	if (!mod)
     {

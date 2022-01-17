@@ -71,13 +71,6 @@ typedef struct
 	unsigned int  ms;
 } FMUSIC_TIMMEINFO;
 
-typedef struct
-{
-	signed char value;
-	unsigned short tick;
-} FMUSIC_ENVNODE;
-
-
 #pragma pack()
 
 // Multi sample extended instrument
@@ -87,8 +80,8 @@ typedef struct FMUSIC_INSTRUMENT
 	FSOUND_SAMPLE	*sample[16];		// 16 samples per instrument
 	unsigned char	keymap[96];			// sample keymap assignments
 
-	unsigned short	VOLPoints[40];		// Volume envelope points (80 bytes - enough for 25 3 byte IT envelopes)
-	unsigned short	PANPoints[40];		// Panning envelope points
+	unsigned short	VOLPoints[24];		// Volume envelope points (80 bytes - enough for 25 3 byte IT envelopes)
+	unsigned short	PANPoints[24];		// Panning envelope points
 
 	// ====================================================================================
 	// 16 bytes read here in the loader for size, dont alter order or insert!!!
@@ -108,8 +101,6 @@ typedef struct FMUSIC_INSTRUMENT
 	unsigned char	VIBrate;			// rate of vibrato
 	unsigned short	VOLfade;			// fade out value
 	// ====================================================================================
-
-
 } FMUSIC_INSTRUMENT;
 
 
@@ -117,43 +108,37 @@ typedef struct FMUSIC_INSTRUMENT
 // Channel type - contains information on a mod channel
 typedef struct FMUSIC_CHANNEL
 {
-
 	unsigned char  	note;  				// last note set in channel
-	unsigned char	samp;				// last sample set in channel
 
 	unsigned char	notectrl;			// flags for FSOUND
 
 	FSOUND_CHANNEL	*cptr;				// pointer to FSOUND system mixing channel
 	FSOUND_SAMPLE	*sptr;				// pointer to FSOUND system sample
 
-	int			freq;				// current mod frequency period for this channel
-	int			volume;				// current mod volume for this channel
-	int			pan;				// current mod pan for this channel
-	int			voldelta;			// delta for volume commands.. tremolo/tremor etc
-	int			freqdelta;			// delta for frequency commands.. vibrato/arpeggio etc
-	int			pandelta;			// delta for pan commands.. panbrello
+	int				freq;				// current mod frequency period for this channel
+	int				volume;				// current mod volume for this channel
+	int				pan;				// current mod pan for this channel
+	int				voldelta;			// delta for volume commands.. tremolo/tremor etc
+	int				freqdelta;			// delta for frequency commands.. vibrato/arpeggio etc
 
-	int			samp_globalvol;		// this current sample's global volume
+	int				envvoltick;			// tick counter for envelope position
+	int				envvolpos;			// envelope position
+	int				envvolfrac;			// fractional interpolated envelope volume
+	int				envvol;				// final interpolated envelope volume
+	int				envvoldelta;		// delta step between points
+	unsigned char	envvolstopped;		// flag to say whether envelope has finished or not
 
-	int			envvoltick;			// tick counter for envelope position
-	int			envvolpos;			// envelope position
-	int			envvolfrac;			// fractional interpolated envelope volume
-	int			envvol;				// final interpolated envelope volume
-	int			envvoldelta;		// delta step between points
-	signed char	envvolstopped;		// flag to say whether envelope has finished or not
+	int				envpantick;			// tick counter for envelope position
+	int				envpanpos;			// envelope position
+	int				envpanfrac;			// fractional interpolated envelope pan
+	int				envpan;				// final interpolated envelope pan
+	int				envpandelta;		// delta step between points
+	unsigned char	envpanstopped;		// flag to say whether envelope has finished or not
 
-	int			envpantick;			// tick counter for envelope position
-	int			envpanpos;			// envelope position
-	int			envpanfrac;			// fractional interpolated envelope pan
-	int			envpan;				// final interpolated envelope pan
-	int			envpandelta;		// delta step between points
-	signed char	envpanstopped;		// flag to say whether envelope has finished or not
-
-	int			fadeoutvol;			// volume fade out
-	int			ivibpos;   			// instrument vibrato position
-	int			ivibsweeppos;		// instrument vibrato sweep position
-	signed char	fade;				// flag whether to start fade or not
-	signed char	keyoff;				// flag whether keyoff has been hit or not)
+	int				fadeoutvol;			// volume fade out
+	int				ivibpos;   			// instrument vibrato position
+	int				ivibsweeppos;		// instrument vibrato sweep position
+	unsigned char	keyoff;				// flag whether keyoff has been hit or not)
 
 	unsigned char	inst;				// last instrument set in channel
 	unsigned char  	realnote;  			// last realnote set in channel
@@ -162,8 +147,6 @@ typedef struct FMUSIC_CHANNEL
 
 	unsigned int	sampleoffset;		// sample offset for this channel in SAMPLES
 
-	int			globalvolume;		// global volume for this channel
-//	unsigned char	portaupdown;  		// last porta up or down value (S3M / IT)
 	unsigned char	portadown;  		// last porta down value (XM)
 	unsigned char	portaup;   			// last porta up value (XM)
 	unsigned char	xtraportadown;		// last porta down value (XM)
@@ -172,45 +155,29 @@ typedef struct FMUSIC_CHANNEL
 	unsigned char	panslide;			// pan slide parameter (XM)
 	unsigned char	retrigx;   			// last retrig volume slide used (XM + S3M)
 	unsigned char	retrigy;   			// last retrig tick count used (XM + S3M)
-//	unsigned char	retrigcount;		// retrig timer (IT)
 
-	int			portatarget; 		// note to porta to
+	int				portatarget; 		// note to porta to
 	unsigned char	portaspeed;			// porta speed
-//	unsigned char	portareached;		// flag for IT to say portamento has been reached
 
 	signed char		vibpos;   			// vibrato position
 	unsigned char	vibspeed;  			// vibrato speed
 	unsigned char	vibdepth;  			// vibrato depth
-	unsigned char	vibtype;			// vibrato type (IT) .. I cant believe this shit
 
 	signed char		tremolopos;   		// tremolo position
 	unsigned char  	tremolospeed; 		// tremolo speed
 	unsigned char  	tremolodepth; 		// tremolo depth
 
-	int			panbrellopos;  		// panbrello position
-	unsigned char  	panbrellospeed;		// panbrello speed
-	unsigned char  	panbrellodepth;		// panbrello depth
-
 	unsigned char	tremorpos; 			// tremor position (XM + S3M)
 	unsigned char 	tremoron;   		// remembered parameters for tremor (XM + S3M)
 	unsigned char 	tremoroff;   		// remembered parameters for tremor (XM + S3M)
-	unsigned char	arpeggio;			// remembered parameters for arpeggio (S3M)
- 	int			patlooprow;
+ 	int				patlooprow;
  	int 			patloopno;  		// pattern loop variables for effect  E6x
-	unsigned char  	channelvsl;			// global volume slide parameters
 
-	unsigned char	specialparam;		// remembered parameter for Sxy
 	unsigned char 	wavecontrol;		// waveform type for vibrato and tremolo (4bits each)
-	unsigned char 	wavecontrolvib;		// waveform type for vibrato (IT)
-	unsigned char 	wavecontroltrem;	// waveform type for tremolo (IT)
-	unsigned char 	wavecontrolpan;		// waveform type for panbrello (IT)
 
-	unsigned char	finevsldown;		// parameter for fine volume slide down
 	unsigned char	finevslup;			// parameter for fine volume slide down
 	unsigned char	fineportaup;		// parameter for fine porta slide up
 	unsigned char	fineportadown;		// parameter for fine porta slide down
-	unsigned char	highoffset;			// high part of sample offset - ie the 'y' part of yxx00 (IT)
-	unsigned char	volcolumn_volslide; // volume column parameter remembered for volume sliding (IT)
 } FMUSIC_CHANNEL;
 
 
@@ -241,13 +208,10 @@ typedef struct FMUSIC_MODULE
 	unsigned char	orderlist[FMUSIC_MAXORDERS];	// pattern playing order list
 	// ====================================================================================
 
-	unsigned char	defaultglobalvolume;
-
 	int				globalvolume;		// global mod volume
 	unsigned char	globalvsl;			// global mod volume
 	int				tick;				// current mod tick
 	int				speed;				// speed of song in ticks per row
-	int				bpm;				// speed of song in bpm
 	int				row;				// current row in pattern
 	int				order;				// current song order position
 	int				patterndelay;		// pattern delay counter
@@ -255,7 +219,6 @@ typedef struct FMUSIC_MODULE
 	int				nextorder;			// current song order position
 	int				time_ms;			// time passed in seconds since song started
 
-	void			(*Update)(struct FMUSIC_MODULE *mod);	// playback routine callback... for different formats
 	SAMPLELOADCALLBACK	samplecallback;
 
 } FMUSIC_MODULE;

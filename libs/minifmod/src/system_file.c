@@ -18,7 +18,7 @@
 void*			(*FSOUND_File_Open)(char* name) = NULL;
 void			(*FSOUND_File_Close)(void* handle) = NULL;
 int				(*FSOUND_File_Read)(void* buffer, int size, void* handle) = NULL;
-void			(*FSOUND_File_Seek)(void* handle, int pos, signed char mode) = NULL;
+void			(*FSOUND_File_Seek)(void* handle, int pos, int mode) = NULL;
 int				(*FSOUND_File_Tell)(void* handle) = NULL;
 
 
@@ -98,7 +98,7 @@ int				(*FSOUND_File_Tell)(void* handle) = NULL;
 	used properly.
 ]
 */
-void FSOUND_File_SetCallbacks(void* (*OpenCallback)(char* name), void	(*CloseCallback)(void* handle), int (*ReadCallback)(void* buffer, int size, void* handle), void (*SeekCallback)(void*, int pos, signed char mode), int (*TellCallback)(void* handle))
+void FSOUND_File_SetCallbacks(void* (*OpenCallback)(char* name), void	(*CloseCallback)(void* handle), int (*ReadCallback)(void* buffer, int size, void* handle), void (*SeekCallback)(void*, int pos, int mode), int (*TellCallback)(void* handle))
 {
 	FSOUND_File_Open = OpenCallback;
 	FSOUND_File_Close = CloseCallback;

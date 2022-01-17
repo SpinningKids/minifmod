@@ -641,8 +641,6 @@ void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL *cptr, FSOUND_SAMPLE *sptr, FMUSIC_MOD
 		    freq = FMUSIC_PERIOD2HZ(cptr->freq+cptr->freqdelta);
 		}
 
-		ccptr->frequency = freq;
-
 		if (freq < 100)
 			freq = 100;
 
@@ -2024,7 +2022,7 @@ void FMUSIC_UpdateXM(FMUSIC_MODULE *mod)
 	[SEE_ALSO]
 ]
 */
-signed char FMUSIC_LoadXM(FMUSIC_MODULE *mod, FSOUND_FILE_HANDLE *fp)
+char FMUSIC_LoadXM(FMUSIC_MODULE *mod, FSOUND_FILE_HANDLE *fp)
 {
 	unsigned short	filenumpatterns=0;
 	unsigned int	mainHDRsize;
@@ -2044,10 +2042,6 @@ signed char FMUSIC_LoadXM(FMUSIC_MODULE *mod, FSOUND_FILE_HANDLE *fp)
 			return FALSE;
         }
     }
-
-	// set a few default values for this format
-	mod->Update			= &FMUSIC_UpdateXM;
-	mod->defaultglobalvolume = 64;
 
 //	FSOUND_File_Seek(fp, 21, SEEK_CUR);      		// read in module name.
 

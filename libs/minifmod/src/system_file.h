@@ -18,7 +18,7 @@ typedef void FSOUND_FILE_HANDLE;
 extern void*		(*FSOUND_File_Open)(char *name);
 extern void			(*FSOUND_File_Close)(void* handle);
 extern int			(*FSOUND_File_Read)(void *buffer, int size, void* handle);
-extern void			(*FSOUND_File_Seek)(void* handle, int pos, signed char mode);
+extern void			(*FSOUND_File_Seek)(void* handle, int pos, int mode);
 extern int			(*FSOUND_File_Tell)(void* handle);
 
 #endif

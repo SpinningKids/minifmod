@@ -43,7 +43,7 @@ typedef void (*FMUSIC_CALLBACK)(FMUSIC_MODULE *mod, unsigned char param);
 void FSOUND_File_SetCallbacks(void*         (*OpenCallback)(char *name),
                               void			(*CloseCallback)(void* handle),
                               int			(*ReadCallback)(void *buffer, int size, void* handle),
-                              void			(*SeekCallback)(void* handle, int pos, signed char mode),
+                              void			(*SeekCallback)(void* handle, int pos, int mode),
                               int			(*TellCallback)(void* handle));
 
 // =============================================================================================
@@ -54,9 +54,9 @@ void FSOUND_File_SetCallbacks(void*         (*OpenCallback)(char *name),
 // =====================================
 
 FMUSIC_MODULE * FMUSIC_LoadSong(char *data, SAMPLELOADCALLBACK sampleloadcallback);
-signed char		FMUSIC_FreeSong(FMUSIC_MODULE *mod);
-signed char		FMUSIC_PlaySong(FMUSIC_MODULE *mod);
-signed char		FMUSIC_StopSong(FMUSIC_MODULE *mod);
+char    		FMUSIC_FreeSong(FMUSIC_MODULE *mod);
+char    		FMUSIC_PlaySong(FMUSIC_MODULE *mod);
+char    		FMUSIC_StopSong(FMUSIC_MODULE *mod);
 
 // Runtime song information.
 // =========================

@@ -55,7 +55,7 @@ int fileread(void *buffer, int size, void* handle)
 	return fread(buffer, 1, size, (FILE *)handle);
 }
 
-void fileseek(void* handle, int pos, signed char mode)
+void fileseek(void* handle, int pos, int mode)
 {
 	fseek((FILE *)handle, pos, mode);
 }
@@ -134,7 +134,7 @@ int memread(void *buffer, int size, void* handle)
 	return size;
 }
 
-void memseek(void* handle, int pos, signed char mode)
+void memseek(void* handle, int pos, int mode)
 {
 	MEMFILE *memfile = (MEMFILE *)handle;
 
@@ -215,7 +215,8 @@ void main(int argc, char *argv[])
 	// ==========================================================================================
 	// PLAY SONG
 	// ==========================================================================================
-	FMUSIC_PlaySong(mod);
+
+    FMUSIC_PlaySong(mod);
 
 #endif
 
