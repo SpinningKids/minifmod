@@ -19,30 +19,6 @@
 #include "Music.h"
 #include "music_formatxm.h"
 
-//= GLOBALS ================================================================================
-
-FSOUND_CHANNEL		FSOUND_Channel[64];             // channel pool
-int					FSOUND_MixRate      = 44100;     // mixing rate in hz.
-int					FSOUND_BufferSizeMs = 1000;
-HWAVEOUT			FSOUND_WaveOutHandle;
-FSOUND_SoundBlock	FSOUND_MixBlock;
-
-// mixing info
-char *				FSOUND_MixBufferMem;		// mix buffer memory block
-char *				FSOUND_MixBuffer;			// mix output buffer (16bit or 32bit)
-float				FSOUND_OOMixRate;			// mixing rate in hz.
-int					FSOUND_BufferSize;			// size of 1 'latency' ms buffer in bytes
-int					FSOUND_BlockSize;			// LATENCY ms worth of samples
-
-// thread control variables
-volatile char		FSOUND_Software_Exit			= FALSE;		// mixing thread termination flag
-volatile char		FSOUND_Software_UpdateMutex		= FALSE;
-volatile char		FSOUND_Software_ThreadFinished	= TRUE;
-volatile HANDLE		FSOUND_Software_hThread			= NULL;
-volatile int		FSOUND_Software_FillBlock		= 0;
-volatile int		FSOUND_Software_RealBlock;
-
-
 /*
 	[DESCRIPTION]
 
@@ -60,7 +36,7 @@ void FSOUND_Software_Fill()
 	int		totalblocks = FSOUND_BufferSize / FSOUND_BlockSize;
 
 
-	void* mixbuffer = (char*)FSOUND_MixBuffer + (mixpos << 3);
+	float * const mixbuffer = FSOUND_MixBuffer + (mixpos << 1);
 
 	//==============================================================================
 	// MIXBUFFER CLEAR
@@ -78,7 +54,7 @@ void FSOUND_Software_Fill()
 		int SamplesToMix;
 
         // keep resetting the mix pointer to the beginning of this portion of the ring buffer
-		char* MixPtr = mixbuffer;
+		float* MixPtr = mixbuffer;
 
 		while (MixedSoFar < FSOUND_BlockSize)
 		{
@@ -101,7 +77,7 @@ void FSOUND_Software_Fill()
 			FSOUND_Mixer_FPU_Ramp(MixPtr, SamplesToMix);
 
 			MixedSoFar	+= SamplesToMix;
-			MixPtr		+= (SamplesToMix << 3);
+			MixPtr		+= (SamplesToMix*2);
 			MixedLeft	-= SamplesToMix;
 
 			FMUSIC_PlayingSong->time_ms += (int)(((float)SamplesToMix * FSOUND_OOMixRate) * 1000);
@@ -118,7 +94,7 @@ void FSOUND_Software_Fill()
 	// ====================================================================================
 	// CLIP AND COPY BLOCK TO OUTPUT BUFFER
 	// ====================================================================================
-    FSOUND_MixerClipCopy_Float32(FSOUND_MixBlock.data + (mixpos << 2), mixbuffer, FSOUND_BlockSize);
+    FSOUND_MixerClipCopy_Float32(FSOUND_MixBlock.data + (mixpos << 1), mixbuffer, FSOUND_BlockSize);
 
 	FSOUND_Software_FillBlock++;
 

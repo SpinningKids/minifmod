@@ -177,7 +177,7 @@ void songcallback(FMUSIC_MODULE *mod, unsigned char param)
 	[SEE_ALSO]
 ]
 */
-void main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 #ifdef USEFMOD
 	FMUSIC_MODULE *mod;
@@ -196,7 +196,7 @@ void main(int argc, char *argv[])
 		printf("Copyright (c) Firelight Technologies, 2000-2004.\n");
 		printf("-------------------------------------------------------------\n");
 		printf("Syntax: simplest infile.xm\n\n");
-		return;
+		return 0;
 	}
 
 
@@ -209,7 +209,7 @@ void main(int argc, char *argv[])
 	if (!mod)
 	{
 		printf("Error loading song\n");
-		return;
+		return 0;
 	}
 
 	// ==========================================================================================

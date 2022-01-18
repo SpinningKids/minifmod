@@ -20,7 +20,6 @@
 #include "Music.h"
 #include "Sound.h"
 #include "system_file.h"
-#include "system_memory.h"
 #include "xmeffects.h"
 
 // Frequency = 8363*2^((6*12*16*4 - Period) / (12*16*4));
@@ -290,7 +289,7 @@ void FMUSIC_XM_Tremolo(FMUSIC_CHANNEL *cptr)
 */
 #if defined(FMUSIC_XM_VOLUMEENVELOPE_ACTIVE) || defined(FMUSIC_XM_PANENVELOPE_ACTIVE)
 
-void FMUSIC_XM_ProcessEnvelope(FMUSIC_CHANNEL *cptr, int *pos, int *tick, unsigned char type, int numpoints, unsigned short *points, unsigned char loopend, unsigned char loopstart, unsigned char sustain, int *value, int *valfrac, signed char *envstopped, int *envdelta, unsigned char control)
+void FMUSIC_XM_ProcessEnvelope(FMUSIC_CHANNEL *cptr, int *pos, int *tick, unsigned char type, int numpoints, unsigned short *points, unsigned char loopend, unsigned char loopstart, unsigned char sustain, int *value, int *valfrac, bool *envstopped, int *envdelta, unsigned char control)
 {
 	// Envelope
 	if (*pos < numpoints)
@@ -2030,7 +2029,7 @@ char FMUSIC_LoadXM(FMUSIC_MODULE *mod, void *fp)
 	unsigned short	filenumpatterns=0;
 	unsigned int	mainHDRsize;
 	signed char		str[256];
-	char			*ComparisonStr = "Extended Module: ";
+	const char		*ComparisonStr = "Extended Module: ";
 
 	//= VERIFY ==================================================================================
 
@@ -2086,7 +2085,7 @@ char FMUSIC_LoadXM(FMUSIC_MODULE *mod, void *fp)
 
 	// alloc pattern array (whatever is bigger.. filenumpatterns or mod->numpatterns)
 	mod->numpatternsmem = (mod->numpatterns > filenumpatterns ? mod->numpatterns : filenumpatterns);
-	mod->pattern = (FMUSIC_PATTERN *)FSOUND_Memory_Calloc(mod->numpatternsmem * sizeof(FMUSIC_PATTERN));	//FIXME:MEMLEAK
+	mod->pattern = new FMUSIC_PATTERN[mod->numpatternsmem]{};	//FIXME:MEMLEAK
 
 	// unpack and read patterns
 	for (int count=0; count < filenumpatterns; count++)
@@ -2104,7 +2103,7 @@ char FMUSIC_LoadXM(FMUSIC_MODULE *mod, void *fp)
 		FSOUND_File_Read(&patternsize, 2, fp);		// packed pattern size
 
 		// allocate memory for pattern buffer
-		pptr->data = (FMUSIC_NOTE *)FSOUND_Memory_Calloc(mod->numchannels * pptr->rows * sizeof(FMUSIC_NOTE));	//FIXME:MEMLEAK
+		pptr->data = new FMUSIC_NOTE[mod->numchannels * pptr->rows]{};	//FIXME:MEMLEAK
 
 		if (patternsize > 0)
 		{
@@ -2157,13 +2156,13 @@ char FMUSIC_LoadXM(FMUSIC_MODULE *mod, void *fp)
 			pptr->rows = 64;
 
 			// allocate memory for pattern buffer
-			pptr->data = (FMUSIC_NOTE *)FSOUND_Memory_Calloc(mod->numchannels * pptr->rows * sizeof(FMUSIC_NOTE));
+			pptr->data = pptr->data = new FMUSIC_NOTE[mod->numchannels * pptr->rows]{};
 		}
 	}
 
 
 	// alloc instrument array
-	mod->instrument = (FMUSIC_INSTRUMENT *)FSOUND_Memory_Calloc((int)(mod->numinsts) * sizeof(FMUSIC_INSTRUMENT));
+	mod->instrument = new FMUSIC_INSTRUMENT[mod->numinsts]{};
 
 	// load instrument information
 	for (int count=0; count<(int)mod->numinsts; count++)
@@ -2236,7 +2235,7 @@ char FMUSIC_LoadXM(FMUSIC_MODULE *mod, void *fp)
 			{
                 unsigned char	dat;
 
-				iptr->sample[count2] = (FSOUND_SAMPLE *)FSOUND_Memory_Calloc(sizeof(FSOUND_SAMPLE));
+				iptr->sample[count2] = new FSOUND_SAMPLE{};
 				FSOUND_SAMPLE* sptr = iptr->sample[count2];
 
 #if 1	// WARNING! DONT CHANGE THE HEADER AROUND BECAUSE OF THIS HACK.
@@ -2297,27 +2296,11 @@ char FMUSIC_LoadXM(FMUSIC_MODULE *mod, void *fp)
 				//= ALLOCATE MEMORY FOR THE SAMPLE BUFFER ==============================================
 
 				{
-					int lenbytes = sptr->length;
-//					if (sptr->bits == 16)
+					if (sptr->length)
                     {
-						lenbytes <<= 1;
+						sptr->buff = new short[sptr->length +8];
                     }
-
-					if (sptr->buff)
-                    {
-						FSOUND_Memory_Free(sptr->buff);
-                    }
-
-					if (lenbytes)
-                    {
-						sptr->buff = (unsigned char *)FSOUND_Memory_Calloc(lenbytes+16);
-                    }
-					else
-                    {
-						sptr->buff = NULL;
-				    }
 				}
-
 			}
 
 			// clear out the rest of the samples
@@ -2336,7 +2319,7 @@ char FMUSIC_LoadXM(FMUSIC_MODULE *mod, void *fp)
 
                 if (sptr->length)
 				{
-                    char* buff = FSOUND_Memory_Calloc((sptr->length * 2)+16);
+                    unsigned char* buff = new unsigned char[samplelenbytes];
 
 					if (mod->samplecallback)
 					{
@@ -2351,26 +2334,25 @@ char FMUSIC_LoadXM(FMUSIC_MODULE *mod, void *fp)
 					if (sptr->bits == 8)
 					{
                         // promote to 16bits
-						signed short* wptr = (signed short*)sptr->buff;
+						short* wptr = sptr->buff;
 
 						for (int count3 = 0; count3 < (int)sptr->length; count3++)
                         {
-							*wptr++ = (signed short)(buff[count3]) << 8;
+							*wptr++ = (short)(buff[count3]) << 8;
                         }
 
 						sptr->bits = 16;
 
-						FSOUND_Memory_Free(buff);
 					}
 					else
 					{
-						FSOUND_Memory_Free(sptr->buff);
-						sptr->buff = buff;
+						memcpy(sptr->buff, buff, samplelenbytes);
 					}
+					delete buff;
 
 					if (!mod->samplecallback)
 					{
-						signed short* wptr = (signed short*)sptr->buff;
+						short* wptr = sptr->buff;
 
                         // DO DELTA CONVERSION
 						int oldval = 0;
@@ -2384,7 +2366,7 @@ char FMUSIC_LoadXM(FMUSIC_MODULE *mod, void *fp)
 					}
 
 					{
-						signed short *buff = (signed short *)sptr->buff;
+						short *buff = sptr->buff;
 
 						// BUGFIX 1.3 - removed click for end of non looping sample (also size optimized a bit)
 						if (sptr->loopmode == FSOUND_LOOP_BIDI)

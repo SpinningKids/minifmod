@@ -29,10 +29,6 @@ typedef struct FMUSIC_MODULE	FMUSIC_MODULE;
 //= FUNCTION PROTOTYPES
 //===============================================================================================
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // ==================================
 // Initialization / Global functions.
 // ==================================
@@ -64,9 +60,5 @@ char    		FMUSIC_StopSong(FMUSIC_MODULE *mod);
 int				FMUSIC_GetOrder(FMUSIC_MODULE *mod);
 int				FMUSIC_GetRow(FMUSIC_MODULE *mod);
 unsigned int	FMUSIC_GetTime(FMUSIC_MODULE *mod);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
