@@ -20,20 +20,20 @@ set(PRIVATE_HEADER_FILES
   ${SRC_DIR}/music_formatxm.h
   ${SRC_DIR}/Sound.h
   ${SRC_DIR}/system_file.h
-  ${SRC_DIR}/system_memory.h
   ${SRC_DIR}/xmeffects.h
 )
 
 set(SRC_FILES
-  ${SRC_DIR}/Fmusic.c
-  ${SRC_DIR}/Fsound.c
-  ${SRC_DIR}/mixer_clipcopy.c
-  ${SRC_DIR}/mixer_fpu_ramp.c
-  ${SRC_DIR}/music_formatxm.c
-  ${SRC_DIR}/system_file.c
+  ${SRC_DIR}/Fmusic.cpp
+  ${SRC_DIR}/Fsound.cpp
+  ${SRC_DIR}/mixer_clipcopy.cpp
+  ${SRC_DIR}/mixer_fpu_ramp.cpp
+  ${SRC_DIR}/music_formatxm.cpp
+  ${SRC_DIR}/system_file.cpp
 )
 
 # Add source to this project's executable.
 add_library(${TARGET_NAME} STATIC ${PUBLIC_HEADER_FILES} ${PRIVATE_HEADER_FILES} ${SRC_FILES})
 target_include_directories(${TARGET_NAME} PUBLIC ${HEADER_DIR})
 target_link_libraries(${TARGET_NAME} PUBLIC winmm.lib)
+set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD 20)

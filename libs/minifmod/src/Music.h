@@ -116,19 +116,19 @@ typedef struct FMUSIC_CHANNEL
 	int				envvolfrac;			// fractional interpolated envelope volume
 	int				envvol;				// final interpolated envelope volume
 	int				envvoldelta;		// delta step between points
-	unsigned char	envvolstopped;		// flag to say whether envelope has finished or not
+	bool			envvolstopped;		// flag to say whether envelope has finished or not
 
 	int				envpantick;			// tick counter for envelope position
 	int				envpanpos;			// envelope position
 	int				envpanfrac;			// fractional interpolated envelope pan
 	int				envpan;				// final interpolated envelope pan
 	int				envpandelta;		// delta step between points
-	unsigned char	envpanstopped;		// flag to say whether envelope has finished or not
+	bool			envpanstopped;		// flag to say whether envelope has finished or not
 
 	int				fadeoutvol;			// volume fade out
 	int				ivibpos;   			// instrument vibrato position
 	int				ivibsweeppos;		// instrument vibrato sweep position
-	unsigned char	keyoff;				// flag whether keyoff has been hit or not)
+	bool			keyoff;				// flag whether keyoff has been hit or not)
 
 	unsigned char	inst;				// last instrument set in channel
 	unsigned char  	realnote;  			// last realnote set in channel

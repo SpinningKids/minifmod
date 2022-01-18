@@ -50,14 +50,12 @@ static const float	mix_1over4gig   = 1.0f / 4294967296.0f;
 ]
 */
 
-void FSOUND_Mixer_FPU_Ramp(void *mixptr, int len)
+void FSOUND_Mixer_FPU_Ramp(float *mixptr, int len)
 {
     // IMPORTANT no local variables on stack.. we are trashing EBP.  static puts values on heap.
 
 	if (len <=0)
 		return;
-
-	float* target = (float*)mixptr;
 
 	//==============================================================================================
 	// LOOP THROUGH CHANNELS
@@ -144,10 +142,10 @@ void FSOUND_Mixer_FPU_Ramp(void *mixptr, int len)
 
             for (unsigned int i = 0; i < mix_count; ++i)
             {
-                float samp1 = ((short*)(cptr->sptr->buff))[cptr->mixpos];
-                float newsamp = (((short*)(cptr->sptr->buff))[cptr->mixpos + 1] - samp1) * cptr->mixposlo * mix_1over4gig + samp1;
-                target[0 + (sample_index + i) * 2] += ramplvol * newsamp;
-                target[1 + (sample_index + i) * 2] += ramprvol * newsamp;
+                float samp1 = cptr->sptr->buff[cptr->mixpos];
+                float newsamp = (cptr->sptr->buff[cptr->mixpos + 1] - samp1) * cptr->mixposlo * mix_1over4gig + samp1;
+                mixptr[0 + (sample_index + i) * 2] += ramplvol * newsamp;
+                mixptr[1 + (sample_index + i) * 2] += ramprvol * newsamp;
                 ramplvol += cptr->ramp_leftspeed;
                 ramprvol += cptr->ramp_rightspeed;
                 cptr->mixpos64 += speed;

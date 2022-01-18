@@ -16,7 +16,6 @@
 #include "mixer_fpu_ramp.h"
 #include "music_formatxm.h"
 #include "system_file.h"
-#include "system_memory.h"
 
 FMUSIC_MODULE *		FMUSIC_PlayingSong = NULL;
 FMUSIC_CHANNEL		FMUSIC_Channel[32];		// channel array for this song
@@ -110,7 +109,7 @@ FMUSIC_MODULE * FMUSIC_LoadSong(char *name, SAMPLELOADCALLBACK sampleloadcallbac
     }
 
 	// create a mod instance
-	FMUSIC_MODULE* mod = FSOUND_Memory_Calloc(sizeof(FMUSIC_MODULE));
+	FMUSIC_MODULE* mod = new FMUSIC_MODULE{};
 	mod->samplecallback = sampleloadcallback;
 
     // try opening all as all formats until correct loader is found
@@ -164,41 +163,31 @@ char FMUSIC_FreeSong(FMUSIC_MODULE *mod)
             FMUSIC_INSTRUMENT	*iptr = &mod->instrument[count];
 			for (int count2 = 0; count2<iptr->numsamples; count2++)
 			{
-				if (iptr->sample[count2])
+				if (FSOUND_SAMPLE* sptr = iptr->sample[count2])
 				{
-					FSOUND_SAMPLE *sptr = iptr->sample[count2];
-					FSOUND_Memory_Free(sptr->buff);
-					FSOUND_Memory_Free(sptr);
+					delete[] sptr->buff;
+					delete sptr;
 				}
 			}
 		}
 	}
 
 	// free instruments
-	if (mod->instrument)
-    {
-		FSOUND_Memory_Free(mod->instrument);
-    }
+	delete[] mod->instrument;
 
 	// free patterns
 	if (mod->pattern)
 	{
         for (int count = 0; count<mod->numpatternsmem; count++)
         {
-			if (mod->pattern[count].data)
-            {
-				FSOUND_Memory_Free(mod->pattern[count].data);
-            }
+			delete[] mod->pattern[count].data;
         }
 
-		if (mod->pattern)
-        {
-			FSOUND_Memory_Free(mod->pattern);
-        }
+		delete[] mod->pattern;
 	}
 
 	// free song
-	FSOUND_Memory_Free(mod);
+	delete mod;
 
 	return TRUE;
 }
@@ -288,7 +277,7 @@ char FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 
 	FMUSIC_PlayingSong = mod;
 
-	FMUSIC_TimeInfo = FSOUND_Memory_Calloc(sizeof(FMUSIC_TIMMEINFO) * totalblocks);
+	FMUSIC_TimeInfo = new FMUSIC_TIMMEINFO[totalblocks]{};
 
 	// ========================================================================================================
 	// PREPARE THE OUTPUT
@@ -318,13 +307,13 @@ char FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 	{
         // CREATE AND START LOOPING WAVEOUT BLOCK
 
-		int length = FSOUND_BufferSize << 2; // 16bits
+		int length = FSOUND_BufferSize * 2; // stereo
 
-		FSOUND_MixBlock.data = FSOUND_Memory_Calloc(length);
+		FSOUND_MixBlock.data = new short[length]; // TODO: Check Leak
 
 		FSOUND_MixBlock.wavehdr.dwFlags			= WHDR_BEGINLOOP | WHDR_ENDLOOP;
 		FSOUND_MixBlock.wavehdr.lpData				= (LPSTR)FSOUND_MixBlock.data;
-		FSOUND_MixBlock.wavehdr.dwBufferLength		= length;
+		FSOUND_MixBlock.wavehdr.dwBufferLength		= length*sizeof(short);
 		FSOUND_MixBlock.wavehdr.dwBytesRecorded	= 0;
 		FSOUND_MixBlock.wavehdr.dwUser				= 0;
 		FSOUND_MixBlock.wavehdr.dwLoops			= -1;
@@ -335,8 +324,8 @@ char FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 	// ALLOCATE MIXBUFFER
 	// ========================================================================================================
 
-	FSOUND_MixBufferMem = (char *)FSOUND_Memory_Calloc((FSOUND_BufferSize << 3) + 15);
-	FSOUND_MixBuffer = FSOUND_MixBufferMem + ((16 - (uintptr_t)FSOUND_MixBufferMem) & 15);
+	FSOUND_MixBuffer = new float[FSOUND_BufferSize*2];
+
 
 	// ========================================================================================================
 	// PREFILL THE MIXER BUFFER
@@ -406,31 +395,31 @@ char FMUSIC_StopSong(FMUSIC_MODULE *mod)
         {
 			Sleep(10);
         }
-		FSOUND_Software_hThread = NULL;
+		FSOUND_Software_hThread = nullptr;
 	}
 
 	// remove the output mixbuffer
-	if (FSOUND_MixBufferMem)
+	if (FSOUND_MixBuffer)
     {
-		FSOUND_Memory_Free(FSOUND_MixBufferMem);
-        FSOUND_MixBufferMem = 0;
+		delete[] FSOUND_MixBuffer;
+        FSOUND_MixBuffer = nullptr;
     }
 
     if (FSOUND_MixBlock.wavehdr.lpData)
     {
     	waveOutUnprepareHeader(FSOUND_WaveOutHandle, &FSOUND_MixBlock.wavehdr, sizeof(WAVEHDR));
 	    FSOUND_MixBlock.wavehdr.dwFlags &= ~WHDR_PREPARED;
-
-        FSOUND_Memory_Free(FSOUND_MixBlock.wavehdr.lpData);
-        FSOUND_MixBlock.wavehdr.lpData = 0;
+		delete[] FSOUND_MixBlock.data;
+		FSOUND_MixBlock.data = nullptr;
+        FSOUND_MixBlock.wavehdr.lpData = nullptr;
     }
 
-	FMUSIC_PlayingSong = NULL;
+	FMUSIC_PlayingSong = nullptr;
 
 	if (FMUSIC_TimeInfo)
     {
-		FSOUND_Memory_Free(FMUSIC_TimeInfo);
-        FMUSIC_TimeInfo = 0;
+		delete[] FMUSIC_TimeInfo;
+        FMUSIC_TimeInfo = nullptr;
     }
 
 	// ========================================================================================================
