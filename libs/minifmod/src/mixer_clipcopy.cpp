@@ -10,6 +10,7 @@
 /* This source must not be redistributed without this notice.                 */
 /******************************************************************************/
 
+#include <algorithm>
 #include "mixer_clipcopy.h"
 
 /*
@@ -37,8 +38,7 @@ void FSOUND_MixerClipCopy_Float32(short* dest, const float* src, int len)
 
 	for (int count = 0; count<len<<1; count++)
 	{
-		int val = (int)*src++;
-		*dest++ = val < -32768 ? -32768 : val > 32767 ? 32767 : val;
+		*dest++ = (short)std::clamp(*src++, -32768.f, 32767.f);
 	}
 
 }

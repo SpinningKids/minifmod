@@ -17,7 +17,7 @@
 #include "music_formatxm.h"
 #include "system_file.h"
 
-FMUSIC_MODULE *		FMUSIC_PlayingSong = NULL;
+FMUSIC_MODULE *		FMUSIC_PlayingSong = nullptr;
 FMUSIC_CHANNEL		FMUSIC_Channel[32];		// channel array for this song
 FMUSIC_TIMMEINFO *	FMUSIC_TimeInfo;
 FSOUND_SAMPLE		FMUSIC_DummySample;
@@ -25,7 +25,7 @@ FSOUND_SAMPLE		FMUSIC_DummySample;
 /* =
 {
 //	0,								// index
-	NULL,							// buff
+	nullptr,						// buff
 
 	0,								// length
 	0,								// loopstart
@@ -94,7 +94,7 @@ void FMUSIC_SetBPM(FMUSIC_MODULE &module, int bpm)
 
 	[RETURN_VALUE]
 	On success, a pointer to a FMUSIC_MODULE handle is returned.
-	On failure, NULL is returned.
+	On failure, nullptr is returned.
 
 	[SEE_ALSO]
 	FMUSIC_FreeSong
@@ -105,7 +105,7 @@ FMUSIC_MODULE * FMUSIC_LoadSong(char *name, SAMPLELOADCALLBACK sampleloadcallbac
     void* fp = FSOUND_File_Open(name);
     if (!fp)
     {
-        return NULL;
+        return nullptr;
     }
 
 	// create a mod instance
@@ -187,7 +187,6 @@ char FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 	// INITIALIZE SOFTWARE MIXER
 	// ========================================================================================================
 
-	FSOUND_OOMixRate    = 1.0f / (float)FSOUND_MixRate;
 	FSOUND_BlockSize    = ((FSOUND_MixRate * FSOUND_LATENCY / 1000) + 3) & 0xFFFFFFFC;	// Number of *samples*
 	FSOUND_BufferSize   = FSOUND_BlockSize * (FSOUND_BufferSizeMs / FSOUND_LATENCY);	// make it perfectly divisible by granularity
 	FSOUND_BufferSize <<= 1;	// double buffer
@@ -208,7 +207,7 @@ char FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 	for (int count = 0; count < 64; count++)
 	{
 		FSOUND_Channel[count].index = count;
-		FSOUND_Channel[count].speedhi = 1;
+		FSOUND_Channel[count].speed64 = 0x0000000100000000;
 	}
 
 	mod->globalvolume       = 64;
@@ -307,7 +306,7 @@ char FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 		// ========================================================================================================
 		FSOUND_Software_Exit = FALSE;
 
-		FSOUND_Software_hThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)FSOUND_Software_DoubleBufferThread, 0,0, &FSOUND_dwThreadId);
+		FSOUND_Software_hThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)FSOUND_Software_DoubleBufferThread, nullptr,0, &FSOUND_dwThreadId);
 
 		SetThreadPriority(FSOUND_Software_hThread, THREAD_PRIORITY_TIME_CRITICAL);	// THREAD_PRIORITY_HIGHEST);
 	}

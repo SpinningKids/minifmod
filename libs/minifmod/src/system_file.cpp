@@ -12,21 +12,12 @@
 
 #include "system_file.h"
 
-#include <stddef.h>
-
-void*			(*FSOUND_File_Open)(char* name) = NULL;
-void			(*FSOUND_File_Close)(void* handle) = NULL;
-int				(*FSOUND_File_Read)(void* buffer, int size, void* handle) = NULL;
-void			(*FSOUND_File_Seek)(void* handle, int pos, int mode) = NULL;
-int				(*FSOUND_File_Tell)(void* handle) = NULL;
-
-
 /*
 [API]
 [
 	[DESCRIPTION]
 	Specify user callbacks for FMOD's internal file manipulation.
-	If ANY of these parameters are NULL, then FMOD will switch back to its own file routines.
+	If ANY of these parameters are nullptr, then FMOD will switch back to its own file routines.
 	You can replace this with memory routines (ie name can be cast to a memory address for example, then open sets up
 	a handle based on this information), or alternate file routines, ie a WAD file reader.
 

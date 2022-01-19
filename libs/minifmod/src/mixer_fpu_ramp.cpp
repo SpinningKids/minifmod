@@ -12,7 +12,7 @@
 
 #include "mixer_fpu_ramp.h"
 
-#include <stdint.h>
+#include <cstdint>
 
 #include "Sound.h"
 #include "Mixer.h"
@@ -60,11 +60,10 @@ void FSOUND_Mixer_FPU_Ramp(float *mixptr, int len)
 	//==============================================================================================
 	// LOOP THROUGH CHANNELS
 	//==============================================================================================
-	for (int count = 0; count<64; count++)
-	{
-		FSOUND_CHANNEL* cptr = &FSOUND_Channel[count];
+	for (auto& channel : FSOUND_Channel)
+    {
         int sample_index = 0;
-		if (!cptr->sptr)
+		if (!channel.sptr)
             continue;
         unsigned int mix_count = len;
 
@@ -84,17 +83,14 @@ void FSOUND_Mixer_FPU_Ramp(float *mixptr, int len)
         do
         {
             unsigned int mix_endflag = FSOUND_OUTPUTBUFF_END;
-            uint64_t samples_to_mix = (cptr->speeddir == FSOUND_MIXDIR_FORWARDS) ?
-                                          (((uint64_t)(cptr->sptr->loopstart + cptr->sptr->looplen)) << 32) - cptr->mixpos64 :
-                                          cptr->mixpos64 - (((uint64_t)cptr->sptr->loopstart) << 32);
-            if (samples_to_mix < 0x100000000000000)
+            uint64_t samples_to_mix = (channel.speeddir == FSOUND_MIXDIR_FORWARDS) ?
+                                          (((uint64_t)(channel.sptr->loopstart + channel.sptr->looplen)) << 32) - channel.mixpos64 :
+                                          channel.mixpos64 - (((uint64_t)channel.sptr->loopstart) << 32);
+            uint64_t samples = (samples_to_mix + channel.speed64 - 1) / channel.speed64; // round up the division
+            if (samples <= (uint64_t)mix_count)
             {
-                unsigned int samples = (samples_to_mix / cptr->speed64) + (((samples_to_mix % cptr->speed64) == 0)?0:1);
-                if (samples <= mix_count)
-                {
-                    mix_count = samples;
-                    mix_endflag = FSOUND_SAMPLEBUFF_END;
-                }
+                mix_count = (uint32_t)samples;
+                mix_endflag = FSOUND_SAMPLEBUFF_END;
             }
             //= VOLUME RAMP SETUP =========================================================
             // Reasons to ramp
@@ -105,29 +101,29 @@ void FSOUND_Mixer_FPU_Ramp(float *mixptr, int len)
             // now if the volume has changed, make end condition equal a volume ramp
             unsigned int mix_count_old = mix_count;
             if (
-                (cptr->ramp_count == 0) ||
-                (cptr->leftvolume != cptr->ramp_lefttarget) ||
-                (cptr->rightvolume != cptr->ramp_righttarget))
+                (channel.ramp_count == 0) ||
+                (channel.leftvolume != channel.ramp_lefttarget) ||
+                (channel.rightvolume != channel.ramp_righttarget))
             {
                 // if it tries to continue an old ramp, but the target has changed,
                 // set up a new ramp
-                cptr->ramp_lefttarget = cptr->leftvolume;
-                int temp1 = cptr->leftvolume - (cptr->ramp_leftvolume >> 8);
-                cptr->ramp_leftspeed = temp1 * mix_1over255 * mix_1overvolumerampsteps;
-                cptr->ramp_righttarget = cptr->rightvolume;
-                int temp2 = cptr->rightvolume - (cptr->ramp_rightvolume >> 8);
-                cptr->ramp_rightspeed = temp2 * mix_1over255 * mix_1overvolumerampsteps;
-                cptr->ramp_count = mix_volumerampsteps;
+                channel.ramp_lefttarget = channel.leftvolume;
+                int temp1 = channel.leftvolume - (channel.ramp_leftvolume >> 8);
+                channel.ramp_leftspeed = temp1 * mix_1over255 * mix_1overvolumerampsteps;
+                channel.ramp_righttarget = channel.rightvolume;
+                int temp2 = channel.rightvolume - (channel.ramp_rightvolume >> 8);
+                channel.ramp_rightspeed = temp2 * mix_1over255 * mix_1overvolumerampsteps;
+                channel.ramp_count = mix_volumerampsteps;
             }
-            if (cptr->ramp_count > 0) {
-                if (mix_count > cptr->ramp_count) {
-                    mix_count = cptr->ramp_count;
+            if (channel.ramp_count > 0) {
+                if (mix_count > channel.ramp_count) {
+                    mix_count = channel.ramp_count;
                 }
             }
 
-            int64_t speed = cptr->speed64;
+            int64_t speed = channel.speed64;
 
-            if (cptr->speeddir != FSOUND_MIXDIR_FORWARDS)
+            if (channel.speeddir != FSOUND_MIXDIR_FORWARDS)
             {
                 speed = -speed;
             }
@@ -135,20 +131,22 @@ void FSOUND_Mixer_FPU_Ramp(float *mixptr, int len)
             //= SET UP VOLUME MULTIPLIERS ==================================================
 
             // left ramp volume
-            float ramplvol = cptr->ramp_leftvolume * mix_1over256over255;
+            float ramplvol = channel.ramp_leftvolume * mix_1over256over255;
 
             // right ramp volume
-            float ramprvol = cptr->ramp_rightvolume * mix_1over256over255;
+            float ramprvol = channel.ramp_rightvolume * mix_1over256over255;
 
             for (unsigned int i = 0; i < mix_count; ++i)
             {
-                float samp1 = cptr->sptr->buff[cptr->mixpos];
-                float newsamp = (cptr->sptr->buff[cptr->mixpos + 1] - samp1) * cptr->mixposlo * mix_1over4gig + samp1;
+                uint32_t mixpos = (channel.mixpos64 >> 32);
+                uint32_t mixposlo = (channel.mixpos64 & 0xffffffff);
+                float samp1 = channel.sptr->buff[mixpos];
+                float newsamp = (channel.sptr->buff[mixpos + 1] - samp1) * mixposlo * mix_1over4gig + samp1;
                 mixptr[0 + (sample_index + i) * 2] += ramplvol * newsamp;
                 mixptr[1 + (sample_index + i) * 2] += ramprvol * newsamp;
-                ramplvol += cptr->ramp_leftspeed;
-                ramprvol += cptr->ramp_rightspeed;
-                cptr->mixpos64 += speed;
+                ramplvol += channel.ramp_leftspeed;
+                ramprvol += channel.ramp_rightspeed;
+                channel.mixpos64 += speed;
             }
 
             sample_index += mix_count;
@@ -157,22 +155,22 @@ void FSOUND_Mixer_FPU_Ramp(float *mixptr, int len)
             //=============================================================================================
             // DID A VOLUME RAMP JUST HAPPEN
             //=============================================================================================
-            if (cptr->ramp_count != 0) {
-                cptr->ramp_leftvolume = (unsigned int)(ramplvol * mix_256m255);
-                cptr->ramp_rightvolume = (unsigned int)(ramprvol * mix_256m255);
-                cptr->ramp_count -= mix_count;
+            if (channel.ramp_count != 0) {
+                channel.ramp_leftvolume = (unsigned int)(ramplvol * mix_256m255);
+                channel.ramp_rightvolume = (unsigned int)(ramprvol * mix_256m255);
+                channel.ramp_count -= mix_count;
 
                 // if rampcount now = 0, a ramp has FINISHED, so finish the rest of the mix
-                if (cptr->ramp_count == 0)
+                if (channel.ramp_count == 0)
                 {
 
                     // clear out the ramp speeds
-                    cptr->ramp_leftspeed = 0;
-                    cptr->ramp_rightspeed = 0;
+                    channel.ramp_leftspeed = 0;
+                    channel.ramp_rightspeed = 0;
 
                     // clamp the 2 volumes together in case the speed wasnt accurate enough!
-                    cptr->ramp_leftvolume = cptr->leftvolume << 8;
-                    cptr->ramp_rightvolume = cptr->rightvolume << 8;
+                    channel.ramp_leftvolume = channel.leftvolume << 8;
+                    channel.ramp_rightvolume = channel.rightvolume << 8;
 
                     // is it 0 because ramp ended only? or both ended together??
                     // if sample ended together with ramp.. problems .. loop isnt handled
@@ -196,39 +194,36 @@ void FSOUND_Mixer_FPU_Ramp(float *mixptr, int len)
             //=============================================================================================
             // SWITCH ON LOOP MODE TYPE
             //=============================================================================================
-            if (cptr->sptr->loopmode & FSOUND_LOOP_NORMAL)
+            if (channel.sptr->loopmode & FSOUND_LOOP_NORMAL)
             {
-                unsigned target = cptr->sptr->loopstart + cptr->sptr->looplen;
+                unsigned target = channel.sptr->loopstart + channel.sptr->looplen;
                 do
                 {
-                    cptr->mixpos -= cptr->sptr->looplen;
-                } while (cptr->mixpos >= target);
-            } else if (cptr->sptr->loopmode & FSOUND_LOOP_BIDI)
+                    channel.mixpos64 -= uint64_t(channel.sptr->looplen) << 32;
+                } while ((channel.mixpos64 >> 32) >= target);
+            } else if (channel.sptr->loopmode & FSOUND_LOOP_BIDI)
             {
                 do {
-                    if (cptr->speeddir != FSOUND_MIXDIR_FORWARDS)
+                    if (channel.speeddir != FSOUND_MIXDIR_FORWARDS)
                     {
                         //BidiBackwards
-                        cptr->mixpos = 2 * cptr->sptr->loopstart - 1 - cptr->mixpos;
-                        cptr->mixposlo = ~cptr->mixposlo;
-                        cptr->speeddir = FSOUND_MIXDIR_FORWARDS;
-                        if (cptr->mixpos < cptr->sptr->loopstart + cptr->sptr->looplen)
+                        channel.mixpos64 = (uint64_t(2 * channel.sptr->loopstart) << 32) - channel.mixpos64 - 1;
+                        channel.speeddir = FSOUND_MIXDIR_FORWARDS;
+                        if ((channel.mixpos64 >> 32) < channel.sptr->loopstart + channel.sptr->looplen)
                         {
                             break;
                         }
 
                     }
                     //BidiForward
-                    cptr->mixpos = 2 * (cptr->sptr->loopstart + cptr->sptr->looplen - 1) - cptr->mixpos + ((cptr->mixposlo == 0)?1:0);
-                    cptr->mixposlo = ~cptr->mixposlo;
-                    cptr->speeddir = FSOUND_MIXDIR_BACKWARDS;
+                    channel.mixpos64 = (uint64_t(2 * (channel.sptr->loopstart + channel.sptr->looplen)) << 32) - channel.mixpos64 - 1;
+                    channel.speeddir = FSOUND_MIXDIR_BACKWARDS;
 
-                } while (cptr->mixpos < cptr->sptr->loopstart);
+                } while ((channel.mixpos64 >> 32) < channel.sptr->loopstart);
             } else
             {
-                cptr->mixpos = 0;
-                cptr->mixposlo = 0;
-                cptr->sptr = 0;
+                channel.mixpos64 = 0;
+                channel.sptr = nullptr;
                 break;
             }
             mix_count = len - sample_index;
