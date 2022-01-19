@@ -5,6 +5,10 @@ cmake_minimum_required (VERSION 3.8)
 
 project ("minifmod")
 
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+	add_definitions("/Os")
+endif()
+
 # Include sub-projects.
 add_subdirectory ("libs")
 add_subdirectory ("apps")
