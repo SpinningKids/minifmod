@@ -18,6 +18,7 @@ set(PRIVATE_HEADER_FILES
   ${SRC_DIR}/mixer_fpu_ramp.h
   ${SRC_DIR}/Music.h
   ${SRC_DIR}/music_formatxm.h
+  ${SRC_DIR}/simple_array.h
   ${SRC_DIR}/Sound.h
   ${SRC_DIR}/system_file.h
   ${SRC_DIR}/xmeffects.h

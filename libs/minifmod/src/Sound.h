@@ -52,7 +52,7 @@
 // ==============================================================================================
 
 // Sample type - contains info on sample
-typedef struct FSOUND_SAMPLE
+struct FSOUND_SAMPLE final
 {
 	short		 	*buff;			// pointer to sound data
 
@@ -80,7 +80,12 @@ typedef struct FSOUND_SAMPLE
 	unsigned int 	susloopend;    	// sample loop length
 	unsigned char 	vibspeed;		// vibrato speed 0-64
 	unsigned char	vibdepth;		// vibrato depth 0-64
-} FSOUND_SAMPLE;
+
+	~FSOUND_SAMPLE()
+    {
+		delete[] buff;
+	}
+};
 
 
 // Channel type - contains information on a mixing channel

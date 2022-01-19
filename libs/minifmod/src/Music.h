@@ -13,8 +13,11 @@
 #ifndef _MUSIC_H
 #define _MUSIC_H
 
+#include <array>
+
 #include <minifmod/minifmod.h>
 #include "Sound.h"
+#include "simple_array.h"
 
 #define FMUSIC_MAXORDERS					256
 
@@ -46,11 +49,16 @@ typedef struct
 } FMUSIC_NOTE;
 
 // pattern data type
-typedef struct
+struct FMUSIC_PATTERN
 {
 	int		rows;
 	FMUSIC_NOTE	*data;
-} FMUSIC_PATTERN;
+
+	FMUSIC_PATTERN() : rows{0}, data{nullptr} {}
+
+	FMUSIC_PATTERN(FMUSIC_PATTERN&&) noexcept;
+	~FMUSIC_PATTERN();
+};
 
 #pragma pack(1)
 
@@ -64,14 +72,14 @@ typedef struct
 #pragma pack()
 
 // Multi sample extended instrument
-typedef struct FMUSIC_INSTRUMENT
+struct FMUSIC_INSTRUMENT final
 {
-	int				numsamples;			// number of samples in this instrument
-	FSOUND_SAMPLE	*sample[16];		// 16 samples per instrument
-	unsigned char	keymap[96];			// sample keymap assignments
+	int				numsamples;					// number of samples in this instrument
+	std::array<FSOUND_SAMPLE*, 16>	sample;		// 16 samples per instrument
+	std::array<unsigned char, 96>	keymap;		// sample keymap assignments
 
-	unsigned short	VOLPoints[24];		// Volume envelope points (80 bytes - enough for 25 3 byte IT envelopes)
-	unsigned short	PANPoints[24];		// Panning envelope points
+	std::array<unsigned short, 24>	VOLPoints;	// Volume envelope points (80 bytes - enough for 25 3 byte IT envelopes)
+	std::array<unsigned short, 24>	PANPoints;	// Panning envelope points
 
 	// ====================================================================================
 	// 16 bytes read here in the loader for size, dont alter order or insert!!!
@@ -91,7 +99,7 @@ typedef struct FMUSIC_INSTRUMENT
 	unsigned char	VIBrate;			// rate of vibrato
 	unsigned short	VOLfade;			// fade out value
 	// ====================================================================================
-} FMUSIC_INSTRUMENT;
+};
 
 
 
@@ -172,10 +180,10 @@ typedef struct FMUSIC_CHANNEL
 
 
 // Song type - contains info on song
-typedef struct FMUSIC_MODULE
+struct FMUSIC_MODULE final
 {
-	FMUSIC_PATTERN	*pattern;			// patterns array for this song
-	FMUSIC_INSTRUMENT *instrument;		// instrument array for this song (not used in MOD/S3M)
+	simple_array<FMUSIC_PATTERN>	pattern;	// patterns array for this song
+	simple_array<FMUSIC_INSTRUMENT>	instrument;	// instrument array for this song (not used in MOD/S3M)
 	int				mixer_samplesleft;
 	int				mixer_samplespertick;
 
@@ -208,10 +216,7 @@ typedef struct FMUSIC_MODULE
 	int				nextrow;			// current row in pattern
 	int				nextorder;			// current song order position
 	int				time_ms;			// time passed in seconds since song started
-
-	SAMPLELOADCALLBACK	samplecallback;
-
-} FMUSIC_MODULE;
+};
 
 
 //= VARIABLE EXTERNS ========================================================================
@@ -237,6 +242,6 @@ extern FMUSIC_TIMMEINFO *		FMUSIC_TimeInfo;
 #define FMUSIC_PERIOD2HZ(_per) (14317056L / (_per))
 
 // private (internal functions)
-void	FMUSIC_SetBPM(FMUSIC_MODULE *mod, int bpm);
+void	FMUSIC_SetBPM(FMUSIC_MODULE &mod, int bpm);
 
 #endif
