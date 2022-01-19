@@ -12,6 +12,7 @@
 
 #include "music_formatxm.h"
 
+#include <cassert>
 #include <string.h>
 #include <math.h>
 
@@ -534,7 +535,7 @@ void FMUSIC_XM_Tremor(FMUSIC_CHANNEL *cptr)
 	[SEE_ALSO]
 ]
 */
-void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL *cptr, FSOUND_SAMPLE *sptr, FMUSIC_MODULE *mod)
+void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL *cptr, FSOUND_SAMPLE *sptr, FMUSIC_MODULE &mod)
 {
 	FSOUND_CHANNEL *ccptr = cptr->cptr;
 
@@ -595,7 +596,7 @@ void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL *cptr, FSOUND_SAMPLE *sptr, FMUSIC_MOD
         float finalvol = (float)cptr->envvol;				//  6 bits (   64)
 		finalvol *= (cptr->volume+cptr->voldelta);	//  6 bits (   64)
 		finalvol *= cptr->fadeoutvol;				// 16 bits (65536)
-		finalvol *= mod->globalvolume;				//  6 bits (   64)
+		finalvol *= mod.globalvolume;				//  6 bits (   64)
 														// ==============
 														// 42 bits
 
@@ -632,7 +633,7 @@ void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL *cptr, FSOUND_SAMPLE *sptr, FMUSIC_MOD
 	{
 		int freq;
 
-		if (mod->flags & FMUSIC_XMFLAGS_LINEARFREQUENCY)
+		if (mod.flags & FMUSIC_XMFLAGS_LINEARFREQUENCY)
 		{
 		    freq = FMUSIC_XMLINEARPERIOD2HZ(cptr->freq+cptr->freqdelta);
 		}
@@ -713,22 +714,22 @@ void FMUSIC_XM_Resetcptr(FMUSIC_CHANNEL *cptr, FSOUND_SAMPLE	*sptr)
 	[SEE_ALSO]
 ]
 */
-void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
+void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
 {
     signed char	jumpflag=FALSE;
 
-    mod->nextorder = -1;
-	mod->nextrow = -1;
+    mod.nextorder = -1;
+	mod.nextrow = -1;
 
 	// Point our note pointer to the correct pattern buffer, and to the
 	// correct offset in this buffer indicated by row and number of channels
-	FMUSIC_NOTE* current = mod->pattern[mod->orderlist[mod->order]].data + (mod->row * mod->numchannels);
+	FMUSIC_NOTE* current = mod.pattern[mod.orderlist[mod.order]].data + (mod.row * mod.numchannels);
 
 	if (!current)
 		return;
 
 	// Loop through each channel in the row until we have finished
-	for (int count = 0; count<mod->numchannels; count++,current++)
+	for (int count = 0; count<mod.numchannels; count++,current++)
 	{
         FMUSIC_INSTRUMENT		*iptr;
 		FSOUND_SAMPLE			*sptr;
@@ -754,7 +755,7 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
 		if (current->note && current->note != FMUSIC_KEYOFF && !porta) //  bugfix 3.20 (&& !porta)
 			cptr->note = current->note-1;						// remember the note
 
-		if (cptr->inst >= (int)mod->numinsts)
+		if (cptr->inst >= (int)mod.numinsts)
 		{
 			iptr = &FMUSIC_DummyInstrument;
 			sptr = &FMUSIC_DummySample;
@@ -763,7 +764,7 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
 		else
 		{
 			// set up some instrument and sample pointers
-			iptr = &mod->instrument[cptr->inst];
+			iptr = &mod.instrument[cptr->inst];
 			if (iptr->keymap[cptr->note] >= 16)
             {
 				sptr = &FMUSIC_DummySample;
@@ -800,7 +801,7 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
 			cptr->realnote = current->note + sptr->relative - 1;
 
 			// get period according to realnote and finetune
-			if (mod->flags & FMUSIC_XMFLAGS_LINEARFREQUENCY)
+			if (mod.flags & FMUSIC_XMFLAGS_LINEARFREQUENCY)
 			{
 				cptr->period = (10*12*16*4) - (cptr->realnote*16*4) - (sptr->finetune / 2);
 			}
@@ -1009,11 +1010,11 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
 #ifdef FMUSIC_XM_PATTERNJUMP_ACTIVE
 			case FMUSIC_XM_PATTERNJUMP : // --- 00 B00 : --- 00 D63 , should put us at ord=0, row=63
 			{
-				mod->nextorder = current->eparam;
-				mod->nextrow = 0;
-				if (mod->nextorder >= (int)mod->numorders)
+				mod.nextorder = current->eparam;
+				mod.nextrow = 0;
+				if (mod.nextorder >= (int)mod.numorders)
                 {
-					mod->nextorder=0;
+					mod.nextorder=0;
                 }
 				jumpflag = 1;
 				break;
@@ -1031,18 +1032,18 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
 			case FMUSIC_XM_PATTERNBREAK :
 			{
                 signed char breakflag=FALSE;
-                mod->nextrow = (paramx*10) + paramy;
-				if (mod->nextrow > 63)
+                mod.nextrow = (paramx*10) + paramy;
+				if (mod.nextrow > 63)
                 {
-					mod->nextrow = 0;
+					mod.nextrow = 0;
                 }
 				if (!breakflag && !jumpflag)
                 {
-					mod->nextorder = mod->order+1;
+					mod.nextorder = mod.order+1;
                 }
-				if (mod->nextorder >= (int)mod->numorders)
+				if (mod.nextorder >= (int)mod.numorders)
                 {
-					mod->nextorder=0;
+					mod.nextorder=0;
                 }
 				break;
 			}
@@ -1102,7 +1103,7 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
 					{
 						if (paramy == 0)
                         {
-							cptr->patlooprow = mod->row;
+							cptr->patlooprow = mod.row;
                         }
 						else
 						{
@@ -1116,7 +1117,7 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
                             }
 							if (cptr->patloopno)
                             {
-								mod->nextrow = cptr->patlooprow;
+								mod.nextrow = cptr->patlooprow;
                             }
 						}
 						break;
@@ -1189,8 +1190,8 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
 #ifdef FMUSIC_XM_PATTERNDELAY_ACTIVE
 					case FMUSIC_XM_PATTERNDELAY :
 					{
-						mod->patterndelay = paramy;
-						mod->patterndelay *= mod->speed;
+						mod.patterndelay = paramy;
+						mod.patterndelay *= mod.speed;
 						break;
 					}
 #endif
@@ -1202,7 +1203,7 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
 			{
 				if (current->eparam < 0x20)
                 {
-					mod->speed = current->eparam;
+					mod.speed = current->eparam;
                 }
 				else
                 {
@@ -1214,10 +1215,10 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
 #ifdef FMUSIC_XM_SETGLOBALVOLUME_ACTIVE
 			case FMUSIC_XM_SETGLOBALVOLUME :
 			{
-				mod->globalvolume = current->eparam;
-				if (mod->globalvolume > 64)
+				mod.globalvolume = current->eparam;
+				if (mod.globalvolume > 64)
                 {
-					mod->globalvolume=64;
+					mod.globalvolume=64;
                 }
 				cptr->notectrl |= FMUSIC_VOLUME;
 				break;
@@ -1228,7 +1229,7 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
 			{
 				if (current->eparam)
                 {
-					mod->globalvsl = current->eparam;
+					mod.globalvsl = current->eparam;
                 }
 				break;
 			}
@@ -1364,16 +1365,16 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE *mod)
 	[SEE_ALSO]
 ]
 */
-void FMUSIC_UpdateXMEffects(FMUSIC_MODULE *mod)
+void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod)
 {
-    FMUSIC_NOTE* current = mod->pattern[mod->orderlist[mod->order]].data + (mod->row * mod->numchannels);
+    FMUSIC_NOTE* current = mod.pattern[mod.orderlist[mod.order]].data + (mod.row * mod.numchannels);
 
 	if (!current)
     {
 		return;
     }
 
-	for (int count = 0; count<mod->numchannels; count++,current++)
+	for (int count = 0; count<mod.numchannels; count++,current++)
 	{
         FMUSIC_INSTRUMENT		*iptr;
 		FSOUND_SAMPLE			*sptr;
@@ -1387,7 +1388,7 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE *mod)
 //			cptr = &FMUSIC_DummyVirtualChannel; // no channels allocated yet
 //			**** FIXME!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
 
-		if (cptr->inst >= (int)mod->numinsts)
+		if (cptr->inst >= (int)mod.numinsts)
 		{
 			iptr = &FMUSIC_DummyInstrument;
 			sptr = &FMUSIC_DummySample;
@@ -1395,7 +1396,7 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE *mod)
 		}
 		else
 		{
-			iptr = &mod->instrument[cptr->inst];
+			iptr = &mod.instrument[cptr->inst];
 			if (iptr->keymap[cptr->note] >= 16)
             {
 				sptr = &FMUSIC_DummySample;
@@ -1521,11 +1522,11 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE *mod)
 			{
 				if (current->eparam > 0)
 				{
-					switch (mod->tick % 3)
+					switch (mod.tick % 3)
 					{
 						case 1:
 						    {
-						        if (mod->flags & FMUSIC_XMFLAGS_LINEARFREQUENCY)
+						        if (mod.flags & FMUSIC_XMFLAGS_LINEARFREQUENCY)
 						            cptr->freqdelta = paramx << 6;
 #ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
 						        else
@@ -1536,7 +1537,7 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE *mod)
 						    }
 						case 2:
 						    {
-						        if (mod->flags & FMUSIC_XMFLAGS_LINEARFREQUENCY)
+						        if (mod.flags & FMUSIC_XMFLAGS_LINEARFREQUENCY)
 						            cptr->freqdelta = paramy << 6;
 #ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
 						        else
@@ -1708,7 +1709,7 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE *mod)
 #ifdef FMUSIC_XM_NOTECUT_ACTIVE
 					case FMUSIC_XM_NOTECUT:
 					{
-						if (mod->tick==paramy)
+						if (mod.tick==paramy)
 						{
 							cptr->volume = 0;
 							cptr->notectrl |= FMUSIC_VOLUME;
@@ -1723,7 +1724,7 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE *mod)
                         {
 							break; // divide by 0 bugfix
                         }
-						if (!(mod->tick % paramy))
+						if (!(mod.tick % paramy))
 						{
 							cptr->notectrl |= FMUSIC_TRIGGER;
 							cptr->notectrl |= FMUSIC_VOLUME;
@@ -1735,7 +1736,7 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE *mod)
 #ifdef FMUSIC_XM_NOTEDELAY_ACTIVE
 					case FMUSIC_XM_NOTEDELAY :
 					{
-						if (mod->tick == paramy)
+						if (mod.tick == paramy)
 						{
 							//= PROCESS INSTRUMENT NUMBER ==================================================================
 							FMUSIC_XM_Resetcptr(cptr,sptr);
@@ -1773,7 +1774,7 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE *mod)
                     break; // divide by 0 bugfix
                 }
 
-				if (!(mod->tick % cptr->retrigy))
+				if (!(mod.tick % cptr->retrigy))
 				{
 					if (cptr->retrigx)
 					{
@@ -1875,25 +1876,25 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE *mod)
 #ifdef FMUSIC_XM_GLOBALVOLSLIDE_ACTIVE
 			case FMUSIC_XM_GLOBALVOLSLIDE :
 			{
-				paramx = mod->globalvsl >> 4;    // grab the effect parameter x
-				paramy = mod->globalvsl & 0xF;   // grab the effect parameter y
+				paramx = mod.globalvsl >> 4;    // grab the effect parameter x
+				paramy = mod.globalvsl & 0xF;   // grab the effect parameter y
 
 				// slide up takes precedence over down
 				if (paramx)
 				{
-					mod->globalvolume += paramx;
-					if (mod->globalvolume > 64)
+					mod.globalvolume += paramx;
+					if (mod.globalvolume > 64)
                     {
-						mod->globalvolume = 64;
+						mod.globalvolume = 64;
 				    }
 					cptr->notectrl |= FMUSIC_VOLUME;
 				}
 				else if (paramy)
 				{
-					mod->globalvolume -= paramy;
-					if (mod->globalvolume < 0)
+					mod.globalvolume -= paramy;
+					if (mod.globalvolume < 0)
                     {
-						mod->globalvolume = 0;
+						mod.globalvolume = 0;
 				    }
 					cptr->notectrl |= FMUSIC_VOLUME;
 				}
@@ -1964,34 +1965,34 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE *mod)
 	[SEE_ALSO]
 ]
 */
-void FMUSIC_UpdateXM(FMUSIC_MODULE *mod)
+void FMUSIC_UpdateXM(FMUSIC_MODULE &mod)
 {
-	if (mod->tick == 0)									// new note
+	if (mod.tick == 0)									// new note
 	{
 		// process any rows commands to set the next order/row
-		if (mod->nextorder >= 0)
+		if (mod.nextorder >= 0)
         {
-			mod->order = mod->nextorder;
+			mod.order = mod.nextorder;
         }
-		if (mod->nextrow >= 0)
+		if (mod.nextrow >= 0)
         {
-			mod->row = mod->nextrow;
+			mod.row = mod.nextrow;
         }
 
 		FMUSIC_UpdateXMNote(mod);					// Update and play the note
 
 		// if there were no row commands
-		if (mod->nextrow == -1)
+		if (mod.nextrow == -1)
 		{
-			mod->nextrow = mod->row+1;
-			if (mod->nextrow >= mod->pattern[mod->orderlist[mod->order]].rows)	// if end of pattern
+			mod.nextrow = mod.row+1;
+			if (mod.nextrow >= mod.pattern[mod.orderlist[mod.order]].rows)	// if end of pattern
 			{
-				mod->nextorder = mod->order+1;			// so increment the order
-				if (mod->nextorder >= (int)mod->numorders)
+				mod.nextorder = mod.order+1;			// so increment the order
+				if (mod.nextorder >= (int)mod.numorders)
                 {
-					mod->nextorder = (int)mod->restart;
+					mod.nextorder = (int)mod.restart;
                 }
-				mod->nextrow = 0;						// start at top of pattn
+				mod.nextrow = 0;						// start at top of pattn
 			}
 		}
 	}
@@ -2001,11 +2002,11 @@ void FMUSIC_UpdateXM(FMUSIC_MODULE *mod)
     }
 
 
-	mod->tick++;
-	if (mod->tick >= mod->speed + mod->patterndelay)
+	mod.tick++;
+	if (mod.tick >= mod.speed + mod.patterndelay)
 	{
-		mod->patterndelay = 0;
-		mod->tick = 0;
+		mod.patterndelay = 0;
+		mod.tick = 0;
 	}
 }
 
@@ -2024,68 +2025,51 @@ void FMUSIC_UpdateXM(FMUSIC_MODULE *mod)
 	[SEE_ALSO]
 ]
 */
-char FMUSIC_LoadXM(FMUSIC_MODULE *mod, void *fp)
+FMUSIC_MODULE FMUSIC_LoadXM(void* fp, SAMPLELOADCALLBACK samplecallback)
 {
+	FMUSIC_MODULE   mod{};
 	unsigned short	filenumpatterns=0;
 	unsigned int	mainHDRsize;
-	signed char		str[256];
-	const char		*ComparisonStr = "Extended Module: ";
-
-	//= VERIFY ==================================================================================
-
-	FSOUND_File_Seek(fp, 0, SEEK_SET);
-
-	FSOUND_File_Read(str, 17, fp);
-
-	for (int count=0; count < 17; count++)
-    {
-		if (str[count] != ComparisonStr[count])
-        {
-			return FALSE;
-        }
-    }
-
-//	FSOUND_File_Seek(fp, 21, SEEK_CUR);      		// read in module name.
 
 	// Skip tracker name and version number
 	FSOUND_File_Seek(fp, 60, SEEK_SET);
 	FSOUND_File_Read(&mainHDRsize, 4, fp);
 
 #if 1	// WARNING! DONT CHANGE THE HEADER AROUND BECAUSE OF THIS HACK.
-	FSOUND_File_Read(&mod->numorders, 6, fp);
+	FSOUND_File_Read(&mod.numorders, 6, fp);
 #else
-	FSOUND_File_Read(&mod->numorders, 2, fp);
-	FSOUND_File_Read(&mod->restart, 2, fp);
-	FSOUND_File_Read(&mod->numchannels, 2, fp);
+	FSOUND_File_Read(&mod.numorders, 2, fp);
+	FSOUND_File_Read(&mod.restart, 2, fp);
+	FSOUND_File_Read(&mod.numchannels, 2, fp);
 #endif
 
 	FSOUND_File_Read(&filenumpatterns, 2, fp);
 
 #if 1	// WARNING! DONT CHANGE THE HEADER AROUND BECAUSE OF THIS HACK.
-	FSOUND_File_Read(&mod->numinsts, 256+8, fp);
+	FSOUND_File_Read(&mod.numinsts, 256+8, fp);
 #else
-	FSOUND_File_Read(&mod->numinsts, 2, fp);
-	FSOUND_File_Read(&mod->flags, 2, fp);
-	FSOUND_File_Read(&mod->defaultspeed, 2, fp);
-	FSOUND_File_Read(&mod->defaultbpm, 2, fp);
-	FSOUND_File_Read(&mod->orderlist, 256, fp);
+	FSOUND_File_Read(&mod.numinsts, 2, fp);
+	FSOUND_File_Read(&mod.flags, 2, fp);
+	FSOUND_File_Read(&mod.defaultspeed, 2, fp);
+	FSOUND_File_Read(&mod.defaultbpm, 2, fp);
+	FSOUND_File_Read(&mod.orderlist, 256, fp);
 #endif
 
 	// seek to patterndata
 	FSOUND_File_Seek(fp, 60L+mainHDRsize, SEEK_SET);
 
-	mod->numpatterns = 0;
-	for (int count = 0; count < (int)mod->numorders; count++)
+	mod.numpatterns = 0;
+	for (int count = 0; count < (int)mod.numorders; count++)
 	{
-		if (mod->orderlist[count] >= mod->numpatterns)
+		if (mod.orderlist[count] >= mod.numpatterns)
 		{
-			mod->numpatterns = mod->orderlist[count] + 1;
+			mod.numpatterns = mod.orderlist[count] + 1;
 		}
 	}
 
-	// alloc pattern array (whatever is bigger.. filenumpatterns or mod->numpatterns)
-	mod->numpatternsmem = (mod->numpatterns > filenumpatterns ? mod->numpatterns : filenumpatterns);
-	mod->pattern = new FMUSIC_PATTERN[mod->numpatternsmem]{};	//FIXME:MEMLEAK
+	// alloc pattern array (whatever is bigger.. filenumpatterns or mod.numpatterns)
+	mod.numpatternsmem = (mod.numpatterns > filenumpatterns ? mod.numpatterns : filenumpatterns);
+	mod.pattern.resize(mod.numpatternsmem);
 
 	// unpack and read patterns
 	for (int count=0; count < filenumpatterns; count++)
@@ -2094,7 +2078,7 @@ char FMUSIC_LoadXM(FMUSIC_MODULE *mod, void *fp)
 		unsigned int	patternHDRsize;
 		unsigned char tempchar = 0;
 
-		FMUSIC_PATTERN* pptr = &mod->pattern[count];
+		FMUSIC_PATTERN* pptr = &mod.pattern[count];
 
 		FSOUND_File_Read(&patternHDRsize, 4, fp);
 		FSOUND_File_Read(&tempchar, 1, fp);
@@ -2103,13 +2087,13 @@ char FMUSIC_LoadXM(FMUSIC_MODULE *mod, void *fp)
 		FSOUND_File_Read(&patternsize, 2, fp);		// packed pattern size
 
 		// allocate memory for pattern buffer
-		pptr->data = new FMUSIC_NOTE[mod->numchannels * pptr->rows]{};	//FIXME:MEMLEAK
+		pptr->data = new FMUSIC_NOTE[mod.numchannels * pptr->rows]{};	//FIXME:MEMLEAK
 
 		if (patternsize > 0)
 		{
             FMUSIC_NOTE* nptr = pptr->data;
 
-			for (int count2 = 0; count2< (pptr->rows*mod->numchannels); count2++)
+			for (int count2 = 0; count2< (pptr->rows*mod.numchannels); count2++)
 			{
 				unsigned char dat;
 
@@ -2148,30 +2132,30 @@ char FMUSIC_LoadXM(FMUSIC_MODULE *mod, void *fp)
 	}
 
 	// allocate and clean out any extra patterns
-	if (mod->numpatterns > filenumpatterns)
+	if (mod.numpatterns > filenumpatterns)
 	{
-		for (int count=filenumpatterns; count < mod->numpatterns; count++)
+		for (int count=filenumpatterns; count < mod.numpatterns; count++)
 		{
-            FMUSIC_PATTERN* pptr = &mod->pattern[count];
+            FMUSIC_PATTERN* pptr = &mod.pattern[count];
 			pptr->rows = 64;
 
 			// allocate memory for pattern buffer
-			pptr->data = pptr->data = new FMUSIC_NOTE[mod->numchannels * pptr->rows]{};
+			pptr->data = pptr->data = new FMUSIC_NOTE[mod.numchannels * pptr->rows]{};
 		}
 	}
 
 
 	// alloc instrument array
-	mod->instrument = new FMUSIC_INSTRUMENT[mod->numinsts]{};
+	mod.instrument.resize(mod.numinsts);
 
 	// load instrument information
-	for (int count=0; count<(int)mod->numinsts; count++)
+	for (size_t count = 0; count < mod.instrument.size(); ++count)
 	{
         unsigned int		instHDRsize;
 		unsigned short		numsamples;
 
         // point a pointer to that particular instrument
-		FMUSIC_INSTRUMENT* iptr = &mod->instrument[count];
+		FMUSIC_INSTRUMENT* iptr = &mod.instrument[count];
 
 		int firstsampleoffset = FSOUND_File_Tell(fp);
 		FSOUND_File_Read(&instHDRsize, 4, fp);				// instrument size
@@ -2180,10 +2164,7 @@ char FMUSIC_LoadXM(FMUSIC_MODULE *mod, void *fp)
 		FSOUND_File_Seek(fp, 23, SEEK_CUR); 				// instrument name
 		FSOUND_File_Read(&numsamples, 2, fp);				// number of samples in this instrument
 
-		if (numsamples > 16)
-        {
-			return FALSE;
-        }
+		assert(numsamples <= 16);
 
 		iptr->numsamples = numsamples;
 
@@ -2194,9 +2175,9 @@ char FMUSIC_LoadXM(FMUSIC_MODULE *mod, void *fp)
 			unsigned char tempchar = 0;
 
 			FSOUND_File_Read(&sampHDRsize, 4, fp);			// sampleheader size
-			FSOUND_File_Read(iptr->keymap, 96, fp);			// sample numbers
-			FSOUND_File_Read(iptr->VOLPoints, 48, fp);		// Volume Envelope (24 words)
-			FSOUND_File_Read(iptr->PANPoints, 48, fp);		// Panning Envelope (24 words)
+			FSOUND_File_Read(iptr->keymap.data(), 96, fp);			// sample numbers
+			FSOUND_File_Read(iptr->VOLPoints.data(), 48, fp);		// Volume Envelope (24 words)
+			FSOUND_File_Read(iptr->PANPoints.data(), 48, fp);		// Panning Envelope (24 words)
 
 #if 1	// WARNING! DONT CHANGE THE HEADER AROUND BECAUSE OF THIS HACK.
 			FSOUND_File_Read(&iptr->VOLnumpoints, 16, fp);
@@ -2321,9 +2302,9 @@ char FMUSIC_LoadXM(FMUSIC_MODULE *mod, void *fp)
 				{
                     unsigned char* buff = new unsigned char[samplelenbytes];
 
-					if (mod->samplecallback)
+					if (samplecallback)
 					{
-						mod->samplecallback(buff, samplelenbytes, sptr->bits, count, count2);
+						samplecallback(buff, samplelenbytes, sptr->bits, count, count2);
 						FSOUND_File_Seek(fp, samplelenbytes, SEEK_CUR);
 					}
 					else
@@ -2348,9 +2329,9 @@ char FMUSIC_LoadXM(FMUSIC_MODULE *mod, void *fp)
 					{
 						memcpy(sptr->buff, buff, samplelenbytes);
 					}
-					delete buff;
+					delete[] buff;
 
-					if (!mod->samplecallback)
+					if (!samplecallback)
 					{
 						short* wptr = sptr->buff;
 
@@ -2384,13 +2365,13 @@ char FMUSIC_LoadXM(FMUSIC_MODULE *mod, void *fp)
 		else
 		{
             // clear out the rest of the samples
-			for (unsigned int count2 = 0; count2<16; count2++)
+			for (auto& count2 : iptr->sample)
             {
-				iptr->sample[count2] = &FMUSIC_DummySample;
+                count2 = &FMUSIC_DummySample;
             }
 
 			FSOUND_File_Seek(fp, firstsampleoffset, SEEK_SET);
 		}
 	}
-    return TRUE;
+	return mod;
 }

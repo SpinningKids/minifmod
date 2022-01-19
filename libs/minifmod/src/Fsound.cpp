@@ -60,7 +60,7 @@ void FSOUND_Software_Fill()
 		{
 			if (!MixedLeft)
 			{
-				FMUSIC_UpdateXM(FMUSIC_PlayingSong);	// update new mod tick
+				FMUSIC_UpdateXM(*FMUSIC_PlayingSong);	// update new mod tick
 				SamplesToMix = FMUSIC_PlayingSong->mixer_samplespertick;
 				MixedLeft = SamplesToMix;
 			}

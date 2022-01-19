@@ -112,7 +112,7 @@ typedef struct
 } FMUSIC_XM_INSTSAMPLEHEADER;
 
 
-char FMUSIC_LoadXM(FMUSIC_MODULE *mod, void *fp);
-void FMUSIC_UpdateXM(FMUSIC_MODULE* mod);
+FMUSIC_MODULE FMUSIC_LoadXM(void *fp, SAMPLELOADCALLBACK sampleloadcallback);
+void FMUSIC_UpdateXM(FMUSIC_MODULE& mod);
 
 #endif

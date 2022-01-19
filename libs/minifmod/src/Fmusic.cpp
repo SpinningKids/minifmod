@@ -73,10 +73,10 @@ FMUSIC_INSTRUMENT		FMUSIC_DummyInstrument;
 ]
 */
 
-void FMUSIC_SetBPM(FMUSIC_MODULE *module, int bpm)
+void FMUSIC_SetBPM(FMUSIC_MODULE &module, int bpm)
 {
 	// number of samples
-	module->mixer_samplespertick = FSOUND_MixRate * 5 / (bpm * 2);
+	module.mixer_samplespertick = FSOUND_MixRate * 5 / (bpm * 2);
 }
 
 
@@ -109,19 +109,9 @@ FMUSIC_MODULE * FMUSIC_LoadSong(char *name, SAMPLELOADCALLBACK sampleloadcallbac
     }
 
 	// create a mod instance
-	FMUSIC_MODULE* mod = new FMUSIC_MODULE{};
-	mod->samplecallback = sampleloadcallback;
-
-    // try opening all as all formats until correct loader is found
-	char retcode = FMUSIC_LoadXM(mod, fp);
+	FMUSIC_MODULE* mod = new FMUSIC_MODULE{ FMUSIC_LoadXM(fp, sampleloadcallback) };
 
     FSOUND_File_Close(fp);
-
-    if (!retcode)
-    {
-        FMUSIC_FreeSong(mod);
-        return NULL;
-    }
 
     return mod;
 }
@@ -155,43 +145,10 @@ char FMUSIC_FreeSong(FMUSIC_MODULE *mod)
 
 	FMUSIC_StopSong(mod);
 
-	// free samples
-	if (mod->instrument)
-	{
-        for (int count = 0; count<(int)mod->numinsts; count++)
-		{
-            FMUSIC_INSTRUMENT	*iptr = &mod->instrument[count];
-			for (int count2 = 0; count2<iptr->numsamples; count2++)
-			{
-				if (FSOUND_SAMPLE* sptr = iptr->sample[count2])
-				{
-					delete[] sptr->buff;
-					delete sptr;
-				}
-			}
-		}
-	}
-
-	// free instruments
-	delete[] mod->instrument;
-
-	// free patterns
-	if (mod->pattern)
-	{
-        for (int count = 0; count<mod->numpatternsmem; count++)
-        {
-			delete[] mod->pattern[count].data;
-        }
-
-		delete[] mod->pattern;
-	}
-
-	// free song
 	delete mod;
 
 	return TRUE;
 }
-
 
 /*
 [API]
@@ -265,7 +222,7 @@ char FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 	mod->patterndelay       = 0;
 	mod->time_ms            = 0;
 
-	FMUSIC_SetBPM(mod, mod->defaultbpm);
+	FMUSIC_SetBPM(*mod, mod->defaultbpm);
 
 	memset(FMUSIC_Channel, 0, mod->numchannels * sizeof(FMUSIC_CHANNEL));
 //	memset(FSOUND_Channel, 0, 64 * sizeof(FSOUND_CHANNEL));
@@ -527,3 +484,13 @@ unsigned int FMUSIC_GetTime(FMUSIC_MODULE *mod)
 
 	return FMUSIC_TimeInfo[FSOUND_Software_RealBlock].ms;
 }
+
+FMUSIC_PATTERN::~FMUSIC_PATTERN()
+{
+	delete[] data;
+}
+
+FMUSIC_PATTERN::FMUSIC_PATTERN(FMUSIC_PATTERN&& other) noexcept :
+    rows{ std::exchange(other.rows, 0) },
+    data{ std::exchange(other.data, nullptr) }
+{}

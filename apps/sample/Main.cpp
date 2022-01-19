@@ -180,8 +180,6 @@ void songcallback(FMUSIC_MODULE *mod, unsigned char param)
 int main(int argc, char *argv[])
 {
 #ifdef USEFMOD
-	FMUSIC_MODULE *mod;
-
 #ifndef USEMEMLOAD
 	FSOUND_File_SetCallbacks(fileopen, fileclose, fileread, fileseek, filetell);
 #else
@@ -205,7 +203,7 @@ int main(int argc, char *argv[])
 	// ==========================================================================================
 	// LOAD SONG
 	// ==========================================================================================
-	mod = FMUSIC_LoadSong(argv[1], NULL); //sampleloadcallback);
+	FMUSIC_MODULE* mod = FMUSIC_LoadSong(argv[1], NULL); //sampleloadcallback);
 	if (!mod)
 	{
 		printf("Error loading song\n");
