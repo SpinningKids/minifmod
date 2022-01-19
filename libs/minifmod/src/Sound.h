@@ -13,8 +13,10 @@
 #ifndef _SOUND_H_
 #define _SOUND_H_
 
+#include <cstdint>
+
+#define NOMINMAX
 #include <Windows.h>
-#include <stdint.h>
 
 //= DEFINITIONS ===============================================================================
 
@@ -103,20 +105,8 @@ typedef struct
 	// software mixer stuff
 	unsigned int	leftvolume;     // mixing information. adjusted volume for left channel (panning involved)
 	unsigned int	rightvolume;    // mixing information. adjusted volume for right channel (panning involved)
-	union {
-		uint64_t mixpos64;
-		struct {
-			unsigned int	mixposlo;		// mixing information. low part of 32:32 fractional position in sample
-    	    unsigned int	mixpos;			// mixing information. high part of 32:32 fractional position in sample
-		};
-	};
-	union {
-		uint64_t speed64;
-		struct {
-			unsigned int	speedlo;		// mixing information. playback rate - low part fractional
-			unsigned int	speedhi;		// mixing information. playback rate - high part fractional
-		};
-	};
+	uint64_t		mixpos64;		// mixing information. 32:32 fractional position in sample
+	uint64_t		speed64;		// mixing information. playback rate - 32:32
 	unsigned int	speeddir;		// mixing information. playback direction - forwards or backwards
 
 	// software mixer volume ramping stuff
@@ -149,19 +139,18 @@ inline FSOUND_SoundBlock	FSOUND_MixBlock;
 
 // mixing info
 inline float*				FSOUND_MixBuffer;			// mix output buffer (stereo 32bit float)
-inline float				FSOUND_OOMixRate;			// mixing rate in hz.
 inline int					FSOUND_BufferSize;			// size of 1 'latency' ms buffer in bytes
 inline int					FSOUND_BlockSize;			// LATENCY ms worth of samples
 
 // thread control variables
-inline volatile bool		FSOUND_Software_Exit			= false;		// mixing thread termination flag
-inline volatile bool		FSOUND_Software_UpdateMutex		= false;
-inline volatile bool		FSOUND_Software_ThreadFinished	= true;
-inline volatile HANDLE		FSOUND_Software_hThread			= NULL;
-inline volatile int			FSOUND_Software_FillBlock		= 0;
-inline volatile int			FSOUND_Software_RealBlock;
+inline bool					FSOUND_Software_Exit			= false;		// mixing thread termination flag
+inline bool					FSOUND_Software_UpdateMutex		= false;
+inline bool					FSOUND_Software_ThreadFinished	= true;
+inline HANDLE				FSOUND_Software_hThread			= NULL;
+inline int					FSOUND_Software_FillBlock		= 0;
+inline int					FSOUND_Software_RealBlock;
 
-DWORD				FSOUND_Software_DoubleBufferThread(LPDWORD lpdwParam);
-void				FSOUND_Software_Fill();
+DWORD						FSOUND_Software_DoubleBufferThread(LPDWORD lpdwParam);
+void						FSOUND_Software_Fill();
 
 #endif

@@ -10,8 +10,11 @@
 /* This source must not be redistributed without this notice.                 */
 /******************************************************************************/
 
+#include <algorithm>
+
 #include "Sound.h"
 
+#define NOMINMAX
 #include <Windows.h>
 
 #include "mixer_clipcopy.h"
@@ -51,7 +54,6 @@ void FSOUND_Software_Fill()
 	{
 		int MixedSoFar = 0;
 		int MixedLeft = FMUSIC_PlayingSong->mixer_samplesleft;
-		int SamplesToMix;
 
         // keep resetting the mix pointer to the beginning of this portion of the ring buffer
 		float* MixPtr = mixbuffer;
@@ -61,27 +63,20 @@ void FSOUND_Software_Fill()
 			if (!MixedLeft)
 			{
 				FMUSIC_UpdateXM(*FMUSIC_PlayingSong);	// update new mod tick
-				SamplesToMix = FMUSIC_PlayingSong->mixer_samplespertick;
-				MixedLeft = SamplesToMix;
+				MixedLeft = FMUSIC_PlayingSong->mixer_samplespertick;
 			}
-			else
-            {
-                SamplesToMix = MixedLeft;
-            }
 
-			if (MixedSoFar + SamplesToMix > FSOUND_BlockSize)
-            {
-				SamplesToMix = FSOUND_BlockSize - MixedSoFar;
-            }
+            const int SamplesToMix = std::min(MixedLeft, FSOUND_BlockSize - MixedSoFar);
 
 			FSOUND_Mixer_FPU_Ramp(MixPtr, SamplesToMix);
 
 			MixedSoFar	+= SamplesToMix;
-			MixPtr		+= (SamplesToMix*2);
+			MixPtr		+= SamplesToMix*2;
 			MixedLeft	-= SamplesToMix;
 
-			FMUSIC_PlayingSong->time_ms += (int)(((float)SamplesToMix * FSOUND_OOMixRate) * 1000);
 		}
+
+        FMUSIC_PlayingSong->time_ms += MixedSoFar * 1000 / FSOUND_MixRate; // This is (and was before) approximated down by as much as 1ms per block
 
 		FMUSIC_TimeInfo[FSOUND_Software_FillBlock].ms    = FMUSIC_PlayingSong->time_ms;
 		FMUSIC_TimeInfo[FSOUND_Software_FillBlock].row   = FMUSIC_PlayingSong->row;
@@ -96,7 +91,7 @@ void FSOUND_Software_Fill()
 	// ====================================================================================
     FSOUND_MixerClipCopy_Float32(FSOUND_MixBlock.data + (mixpos << 1), mixbuffer, FSOUND_BlockSize);
 
-	FSOUND_Software_FillBlock++;
+	++FSOUND_Software_FillBlock;
 
 	if (FSOUND_Software_FillBlock >= totalblocks)
     {
@@ -138,7 +133,7 @@ DWORD FSOUND_Software_DoubleBufferThread(LPDWORD lpdwParam)
 
 			FSOUND_Software_Fill();
 
-			FSOUND_Software_RealBlock++;
+			++FSOUND_Software_RealBlock;
 			if (FSOUND_Software_RealBlock >= totalblocks)
             {
 				FSOUND_Software_RealBlock = 0;

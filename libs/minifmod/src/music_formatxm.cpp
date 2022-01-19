@@ -13,8 +13,8 @@
 #include "music_formatxm.h"
 
 #include <cassert>
-#include <string.h>
-#include <math.h>
+#include <cstring>
+#include <cmath>
 
 #include <minifmod/minifmod.h>
 #include "Mixer.h"
@@ -554,7 +554,7 @@ void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL *cptr, FSOUND_SAMPLE *sptr, FMUSIC_MOD
 		ccptr = &FSOUND_Channel[channel];
 
         // this swaps between channels to avoid sounds cutting each other off and causing a click
-        if (ccptr->sptr != NULL)
+        if (ccptr->sptr != nullptr)
         {
 			channel ^= 32;
 
@@ -580,8 +580,7 @@ void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL *cptr, FSOUND_SAMPLE *sptr, FMUSIC_MOD
 		    ccptr->sampleoffset = 0;
 		}
 
-		ccptr->mixpos    = ccptr->sampleoffset;
-		ccptr->mixposlo  = 0;
+		ccptr->mixpos64  = uint64_t(ccptr->sampleoffset) << 32;
 		ccptr->speeddir  = FSOUND_MIXDIR_FORWARDS;
 		ccptr->sampleoffset = 0;	// reset it (in case other samples come in and get corrupted etc)
 
@@ -645,16 +644,14 @@ void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL *cptr, FSOUND_SAMPLE *sptr, FMUSIC_MOD
 		if (freq < 100)
 			freq = 100;
 
-		ccptr->speedhi = freq / FSOUND_MixRate;
-		ccptr->speedlo = (ccptr->speedhi + (((uint64_t)(freq % FSOUND_MixRate)) << 32)) / FSOUND_MixRate;
+    	ccptr->speed64 = (uint64_t(freq) << 32) / FSOUND_MixRate;
 	}
 	if (cptr->notectrl & FMUSIC_STOP)
 	{
 //		FSOUND_StopSound(channel);
 
-		ccptr->mixposlo = 0;
-		ccptr->mixpos = 0;
-//		ccptr->sptr = NULL;
+		ccptr->mixpos64 = 0;
+//		ccptr->sptr = nullptr;
 		ccptr->sampleoffset = 0;	// if this channel gets stolen it will be safe
 	}
 }
@@ -759,7 +756,7 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
 		{
 			iptr = &FMUSIC_DummyInstrument;
 			sptr = &FMUSIC_DummySample;
-			sptr->buff = NULL;
+			sptr->buff = nullptr;
 		}
 		else
 		{
@@ -1392,7 +1389,7 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod)
 		{
 			iptr = &FMUSIC_DummyInstrument;
 			sptr = &FMUSIC_DummySample;
-			sptr->buff = NULL;
+			sptr->buff = nullptr;
 		}
 		else
 		{

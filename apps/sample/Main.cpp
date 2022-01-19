@@ -8,18 +8,19 @@
 //
 //===============================================================================================
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <conio.h>
 
 #define USEMEMLOAD
 //#define USEMEMLOADRESOURCE
 
 #ifdef USEMEMLOAD
-#include <string.h>
+#include <cstring>
 #endif
 
 #ifdef USEMEMLOADRESOURCE
+#define NOMINMAX
 #include <Windows.h>
 #endif
 
@@ -203,7 +204,7 @@ int main(int argc, char *argv[])
 	// ==========================================================================================
 	// LOAD SONG
 	// ==========================================================================================
-	FMUSIC_MODULE* mod = FMUSIC_LoadSong(argv[1], NULL); //sampleloadcallback);
+	FMUSIC_MODULE* mod = FMUSIC_LoadSong(argv[1], nullptr); //sampleloadcallback);
 	if (!mod)
 	{
 		printf("Error loading song\n");

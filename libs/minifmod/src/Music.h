@@ -220,22 +220,12 @@ struct FMUSIC_MODULE final
 
 
 //= VARIABLE EXTERNS ========================================================================
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
 extern FMUSIC_MODULE *			FMUSIC_PlayingSong;
 extern FSOUND_SAMPLE			FMUSIC_DummySample;
 extern FSOUND_CHANNEL			FMUSIC_DummyChannel;
 extern FMUSIC_INSTRUMENT		FMUSIC_DummyInstrument;
 extern FMUSIC_CHANNEL			FMUSIC_Channel[];		// channel array for this song
 extern FMUSIC_TIMMEINFO *		FMUSIC_TimeInfo;
-
-#ifdef __cplusplus
-}
-#endif
-
 
 //= FUNCTION DECLARATIONS ====================================================================
 
