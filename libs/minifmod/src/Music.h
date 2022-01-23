@@ -14,15 +14,16 @@
 #define _MUSIC_H
 
 #include <array>
+#include <cassert>
+#include <cstdint>
 
 #include <minifmod/minifmod.h>
 #include "Sound.h"
-#include "simple_array.h"
 
 #define FMUSIC_MAXORDERS					256
 
 #define FMUSIC_KEYCUT						254
-#define FMUSIC_KEYOFF						255
+#define FMUSIC_KEYOFF						97
 
 #define FMUSIC_FREQ							1
 #define FMUSIC_VOLUME						2
@@ -49,18 +50,34 @@ typedef struct
 } FMUSIC_NOTE;
 
 // pattern data type
-struct FMUSIC_PATTERN
+class FMUSIC_PATTERN
 {
-	int		rows;
-	FMUSIC_NOTE	*data;
+	int		rows_;
+	std::array<std::array<FMUSIC_NOTE, 32>, 256> data_;
+public:
+	FMUSIC_PATTERN() : rows_{ 64 }, data_{} {}
 
-	FMUSIC_PATTERN() : rows{0}, data{nullptr} {}
+    [[nodiscard]] int rows() const { return rows_; }
+	void set_rows(int rows)
+	{
+		assert(rows <= 256);
+	    rows_ = rows;
+	}
 
-	FMUSIC_PATTERN(FMUSIC_PATTERN&&) noexcept;
-	~FMUSIC_PATTERN();
+	[[nodiscard]] const std::array<FMUSIC_NOTE, 32>& row(int row) const
+	{
+		assert(row < rows_);
+		return data_[row];
+	}
+
+    [[nodiscard]] std::array<FMUSIC_NOTE, 32>& row(int row)
+	{
+		assert(row < rows_);
+		return data_[row];
+	}
 };
 
-#pragma pack(1)
+#pragma pack(push, 1)
 
 typedef struct
 {
@@ -69,36 +86,49 @@ typedef struct
 	unsigned int  ms;
 } FMUSIC_TIMMEINFO;
 
-#pragma pack()
+struct FMUSIC_XM_INSTSAMPHEADER {
+	uint32_t	headerSize;             // sample header size
+	uint8_t		noteSmpNums[96];        // sample numbers for notes
+	uint16_t	volEnvelope[24];        // volume envelope points
+	uint16_t	panEnvelope[24];        // panning envelope points
+	uint8_t		numVolPoints;           // number of volume envelope points
+	uint8_t		numPanPoints;           // number of panning env. points
+	uint8_t		volSustain;             // volume sustain point
+	uint8_t		volLoopStart;           // volume loop start point
+	uint8_t		volLoopEnd;             // volume loop end point
+	uint8_t		panSustain;             // panning sustain point
+	uint8_t		panLoopStart;           // panning loop start point
+	uint8_t		panLoopEnd;             // panning loop end point
+	uint8_t		volEnvFlags;            // volume envelope flags
+	uint8_t		panEnvFlags;            // panning envelope flags
+	uint8_t		vibType;                // vibrato type
+	uint8_t		vibSweep;               // vibrato sweep
+	uint8_t		vibDepth;               // vibrato depth
+	uint8_t		vibRate;                // vibrato rate
+	uint16_t	volFadeout;             // volume fadeout
+	uint16_t	reserved;
+};
+
+static_assert(sizeof(FMUSIC_XM_INSTSAMPHEADER) == 243 - 29);
+
+struct FMUSIC_XM_INSTHEADER
+{
+	uint32_t	instSize;               // instrument size
+	char		instName[22];           // instrument filename
+	uint8_t		instType;               // instrument type (now 0)
+	uint16_t	numSamples;             // number of samples in instrument
+};
+
+static_assert(sizeof(FMUSIC_XM_INSTHEADER) == 29);
+
+#pragma pack(pop)
 
 // Multi sample extended instrument
 struct FMUSIC_INSTRUMENT final
 {
-	int				numsamples;					// number of samples in this instrument
-	std::array<FSOUND_SAMPLE*, 16>	sample;		// 16 samples per instrument
-	std::array<unsigned char, 96>	keymap;		// sample keymap assignments
-
-	std::array<unsigned short, 24>	VOLPoints;	// Volume envelope points (80 bytes - enough for 25 3 byte IT envelopes)
-	std::array<unsigned short, 24>	PANPoints;	// Panning envelope points
-
-	// ====================================================================================
-	// 16 bytes read here in the loader for size, dont alter order or insert!!!
-	unsigned char	VOLnumpoints;		// Number of volume envelope points
-	unsigned char	PANnumpoints;		// Number of panning envelope points
-	unsigned char	VOLsustain;			// Volume sustain point
-	unsigned char	VOLLoopStart;		// Volume envelope loop start
-	unsigned char	VOLLoopEnd;			// Volume envelope loop end
-	unsigned char	PANsustain;			// Panning sustain point
-	unsigned char	PANLoopStart;		// Panning envelope loop start
-	unsigned char	PANLoopEnd;			// Panning envelope loop end
-	unsigned char	VOLtype;			// Type of envelope,bit 0:On 1:Sustain 2:Loop
-	unsigned char	PANtype;			// Type of envelope,bit 0:On 1:Sustain 2:Loop
-	unsigned char	VIBtype;			// Instrument Vibrato type
-	unsigned char	VIBsweep;			// Time it takes for vibrato to fully kick in
-	unsigned char	VIBdepth;			// depth of vibrato
-	unsigned char	VIBrate;			// rate of vibrato
-	unsigned short	VOLfade;			// fade out value
-	// ====================================================================================
+	FMUSIC_XM_INSTHEADER		header;
+	FMUSIC_XM_INSTSAMPHEADER	sample_header;
+	std::array<FSOUND_SAMPLE, 16>	sample;		// 16 samples per instrument
 };
 
 
@@ -178,33 +208,39 @@ typedef struct FMUSIC_CHANNEL
 	unsigned char	fineportadown;		// parameter for fine porta slide down
 } FMUSIC_CHANNEL;
 
+#pragma pack(push, 1)
+
+struct FMUSIC_XM_HEADER
+{
+	char		header[17];
+	char		module_name[20];
+	char		id; // 0x01a
+	char		tracker_name[20];
+	uint16_t	tracker_version;
+	uint32_t	header_size;
+	uint16_t	song_length;
+	uint16_t	restart_position;
+	uint16_t	channels_count;
+	uint16_t	patterns_count; // < 256
+	uint16_t	instruments_count; // < 128
+	uint16_t	flags; // 	0 - Linear frequency table / Amiga freq.table
+	uint16_t	default_tempo;
+	uint16_t	default_bpm;
+	uint8_t		pattern_order[256];
+};
+
+static_assert(sizeof(FMUSIC_XM_HEADER) == 60 + 20 + 256); // xm header is 336 bytes long
+
+#pragma pack(pop)
 
 // Song type - contains info on song
 struct FMUSIC_MODULE final
 {
-	simple_array<FMUSIC_PATTERN>	pattern;	// patterns array for this song
-	simple_array<FMUSIC_INSTRUMENT>	instrument;	// instrument array for this song (not used in MOD/S3M)
+	FMUSIC_XM_HEADER				header;
+	std::array<FMUSIC_PATTERN, 256>	pattern;	// patterns array for this song
+	std::array<FMUSIC_INSTRUMENT, 128>	instrument;	// instrument array for this song (not used in MOD/S3M)
 	int				mixer_samplesleft;
 	int				mixer_samplespertick;
-
-	// ====================================================================================
-	// 6 bytes read here in the loader for size, dont alter order or insert!!!
-	short			numorders;			// number of orders (song length)
-	short			restart;			// restart position
-	short			numchannels;		// number of channels
-	// ====================================================================================
-
-	int				numpatterns;		// number of physical patterns
-	int				numpatternsmem;		// number of allocated patterns
-
-	// ====================================================================================
-	// 256+8 6 bytes read here in the loader for size, dont alter order or insert!!!
-	short			numinsts;			// number of instruments
-	unsigned short	flags;				// flags such as linear frequency, format specific quirks etc
-	short			defaultspeed;
-	short			defaultbpm;
-	unsigned char	orderlist[FMUSIC_MAXORDERS];	// pattern playing order list
-	// ====================================================================================
 
 	int				globalvolume;		// global mod volume
 	unsigned char	globalvsl;			// global mod volume

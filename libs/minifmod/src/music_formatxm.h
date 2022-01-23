@@ -15,6 +15,8 @@
 
 #include "Music.h"
 
+#include <memory>
+
 enum FMUSIC_XMCOMMANDS
 {
 	FMUSIC_XM_ARPEGGIO,
@@ -78,41 +80,7 @@ enum FMUSIC_XMCOMMANDSSPECIAL
 
 #define FMUSIC_XMFLAGS_LINEARFREQUENCY		1
 
-typedef struct
-{
-    unsigned long	instSize;               // instrument size
-    signed char		instName[22];           // instrument filename
-    unsigned char	instType;               // instrument type (now 0)
-    unsigned short  numSamples;             // number of samples in instrument
-} FMUSIC_XM_INSTHEADER;
-
-typedef struct
-{
-    unsigned long	headerSize;             // sample header size
-    unsigned char	noteSmpNums[96];        // sample numbers for notes
-    unsigned short  volEnvelope[2*12];      // volume envelope points
-    unsigned short  panEnvelope[2*12];      // panning envelope points
-    unsigned char   numVolPoints;           // number of volume envelope points
-    unsigned char   numPanPoints;           // number of panning env. points
-    unsigned char   volSustain;             // volume sustain point
-    unsigned char   volLoopStart;           // volume loop start point
-    unsigned char   volLoopEnd;             // volume loop end point
-    unsigned char   panSustain;             // panning sustain point
-    unsigned char   panLoopStart;           // panning loop start point
-    unsigned char   panLoopEnd;             // panning loop end point
-    unsigned char   volEnvFlags;            // volume envelope flags
-    unsigned char   panEnvFlags;            // panning envelope flags
-
-    unsigned char   vibType;                // vibrato type
-    unsigned char   vibSweep;               // vibrato sweep
-    unsigned char   vibDepth;               // vibrato depth
-    unsigned char   vibRate;                // vibrato rate
-    unsigned short  volFadeout;             // volume fadeout
-    unsigned short  reserved;
-} FMUSIC_XM_INSTSAMPLEHEADER;
-
-
-FMUSIC_MODULE FMUSIC_LoadXM(void *fp, SAMPLELOADCALLBACK sampleloadcallback);
+std::unique_ptr<FMUSIC_MODULE> FMUSIC_LoadXM(void *fp, SAMPLELOADCALLBACK sampleloadcallback);
 void FMUSIC_UpdateXM(FMUSIC_MODULE& mod);
 
 #endif

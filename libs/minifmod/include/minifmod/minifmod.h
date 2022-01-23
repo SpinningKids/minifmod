@@ -36,7 +36,7 @@ typedef void (*SAMPLELOADCALLBACK)(void *buff, int lenbytes, int numbits, int in
 typedef void (*FMUSIC_CALLBACK)(FMUSIC_MODULE *mod, unsigned char param);
 
 // this must be called before FSOUND_Init!
-void FSOUND_File_SetCallbacks(void*         (*OpenCallback)(char *name),
+void FSOUND_File_SetCallbacks(void*         (*OpenCallback)(const char *name),
                               void			(*CloseCallback)(void* handle),
                               int			(*ReadCallback)(void *buffer, int size, void* handle),
                               void			(*SeekCallback)(void* handle, int pos, int mode),
@@ -49,16 +49,16 @@ void FSOUND_File_SetCallbacks(void*         (*OpenCallback)(char *name),
 // Song management / playback functions.
 // =====================================
 
-FMUSIC_MODULE * FMUSIC_LoadSong(char *data, SAMPLELOADCALLBACK sampleloadcallback);
+FMUSIC_MODULE * FMUSIC_LoadSong(const char *data, SAMPLELOADCALLBACK sampleloadcallback);
 char    		FMUSIC_FreeSong(FMUSIC_MODULE *mod);
 char    		FMUSIC_PlaySong(FMUSIC_MODULE *mod);
-char    		FMUSIC_StopSong(FMUSIC_MODULE *mod);
+char    		FMUSIC_StopSong();
 
 // Runtime song information.
 // =========================
 
-int				FMUSIC_GetOrder(FMUSIC_MODULE *mod);
-int				FMUSIC_GetRow(FMUSIC_MODULE *mod);
-unsigned int	FMUSIC_GetTime(FMUSIC_MODULE *mod);
+int				FMUSIC_GetOrder();
+int				FMUSIC_GetRow();
+unsigned int	FMUSIC_GetTime();
 
 #endif
