@@ -100,7 +100,7 @@ void FMUSIC_SetBPM(FMUSIC_MODULE &module, int bpm)
 	FMUSIC_FreeSong
 ]
 */
-FMUSIC_MODULE * FMUSIC_LoadSong(char *name, SAMPLELOADCALLBACK sampleloadcallback)
+FMUSIC_MODULE * FMUSIC_LoadSong(const char *name, SAMPLELOADCALLBACK sampleloadcallback)
 {
     void* fp = FSOUND_File_Open(name);
     if (!fp)
@@ -109,11 +109,11 @@ FMUSIC_MODULE * FMUSIC_LoadSong(char *name, SAMPLELOADCALLBACK sampleloadcallbac
     }
 
 	// create a mod instance
-	FMUSIC_MODULE* mod = new FMUSIC_MODULE{ FMUSIC_LoadXM(fp, sampleloadcallback) };
+	std::unique_ptr<FMUSIC_MODULE> mod = FMUSIC_LoadXM(fp, sampleloadcallback);
 
     FSOUND_File_Close(fp);
 
-    return mod;
+	return mod.release();
 }
 
 
@@ -143,7 +143,7 @@ char FMUSIC_FreeSong(FMUSIC_MODULE *mod)
 
 	BLOCK_ON_SOFTWAREUPDATE();
 
-	FMUSIC_StopSong(mod);
+	FMUSIC_StopSong();
 
 	delete mod;
 
@@ -176,7 +176,7 @@ char FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 		return FALSE;
     }
 
-	FMUSIC_StopSong(mod);
+	FMUSIC_StopSong();
 
 	if (!FSOUND_File_Open || !FSOUND_File_Close || !FSOUND_File_Read || !FSOUND_File_Seek || !FSOUND_File_Tell)
     {
@@ -211,7 +211,7 @@ char FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 	}
 
 	mod->globalvolume       = 64;
- 	mod->speed              = (int)mod->defaultspeed;
+ 	mod->speed              = (int)mod->header.default_tempo;
 	mod->row                = 0;
 	mod->order              = 0;
 	mod->nextorder          = -1;
@@ -221,12 +221,12 @@ char FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 	mod->patterndelay       = 0;
 	mod->time_ms            = 0;
 
-	FMUSIC_SetBPM(*mod, mod->defaultbpm);
+	FMUSIC_SetBPM(*mod, mod->header.default_bpm);
 
-	memset(FMUSIC_Channel, 0, mod->numchannels * sizeof(FMUSIC_CHANNEL));
+	memset(FMUSIC_Channel, 0, mod->header.channels_count * sizeof(FMUSIC_CHANNEL));
 //	memset(FSOUND_Channel, 0, 64 * sizeof(FSOUND_CHANNEL));
 
-	for (int count=0; count < mod->numchannels; count++)
+	for (int count=0; count < mod->header.channels_count; count++)
 	{
 		FMUSIC_Channel[count].cptr = &FSOUND_Channel[count];
 	}
@@ -332,13 +332,8 @@ char FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 	FMUSIC_PlaySong
 ]
 */
-char FMUSIC_StopSong(FMUSIC_MODULE *mod)
+char FMUSIC_StopSong()
 {
-	if (!mod)
-    {
-		return FALSE;
-    }
-
 	// Kill the thread
 	FSOUND_Software_Exit = TRUE;
 
@@ -412,12 +407,12 @@ char FMUSIC_StopSong(FMUSIC_MODULE *mod)
 	FMUSIC_GetPattern
 ]
 */
-int FMUSIC_GetOrder(FMUSIC_MODULE *mod)
+int FMUSIC_GetOrder()
 {
-	if (!mod || !FMUSIC_TimeInfo)
-    {
+	if (!FMUSIC_TimeInfo)
+	{
 		return 0;
-    }
+	}
 
 	return FMUSIC_TimeInfo[FSOUND_Software_RealBlock].order;
 }
@@ -441,9 +436,9 @@ int FMUSIC_GetOrder(FMUSIC_MODULE *mod)
 	[SEE_ALSO]
 ]
 */
-int FMUSIC_GetRow(FMUSIC_MODULE *mod)
+int FMUSIC_GetRow()
 {
-	if (!mod || !FMUSIC_TimeInfo)
+	if (!FMUSIC_TimeInfo)
     {
 		return 0;
     }
@@ -474,22 +469,12 @@ int FMUSIC_GetRow(FMUSIC_MODULE *mod)
 	[SEE_ALSO]
 ]
 */
-unsigned int FMUSIC_GetTime(FMUSIC_MODULE *mod)
+unsigned int FMUSIC_GetTime()
 {
-	if (!mod || !FMUSIC_TimeInfo)
+	if (!FMUSIC_TimeInfo)
     {
 		return 0;
     }
 
 	return FMUSIC_TimeInfo[FSOUND_Software_RealBlock].ms;
 }
-
-FMUSIC_PATTERN::~FMUSIC_PATTERN()
-{
-	delete[] data;
-}
-
-FMUSIC_PATTERN::FMUSIC_PATTERN(FMUSIC_PATTERN&& other) noexcept :
-    rows{ std::exchange(other.rows, 0) },
-    data{ std::exchange(other.data, nullptr) }
-{}

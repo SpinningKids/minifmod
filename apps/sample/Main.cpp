@@ -41,7 +41,7 @@ void sampleloadcallback(void *buff, int lenbytes, int numbits, int instno, int s
 
 #ifndef USEMEMLOAD
 
-void* fileopen(char *name)
+void* fileopen(const char *name)
 {
 	return fopen(name, "rb");
 }
@@ -76,7 +76,7 @@ typedef struct
 } MEMFILE;
 
 
-void* memopen(char *name)
+void* memopen(const char *name)
 {
     MEMFILE* memfile = (MEMFILE*)calloc(sizeof(MEMFILE), 1);
 
@@ -235,9 +235,9 @@ int main(int argc, char *argv[])
 			}
 
 #ifdef USEFMOD
-			ord = FMUSIC_GetOrder(mod);
-			row = FMUSIC_GetRow(mod);
-			mytime = (float)FMUSIC_GetTime(mod) / 1000.0f;
+			ord = FMUSIC_GetOrder();
+			row = FMUSIC_GetRow();
+			mytime = (float)FMUSIC_GetTime() / 1000.0f;
 #endif
 
 			printf("ord %2d row %2d seconds %5.02f %s      \r", ord, row, mytime, (row % 8 ? "    " : "TICK"));

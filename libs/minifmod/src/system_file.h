@@ -13,7 +13,7 @@
 #ifndef _SYSTEM_FILE_H_
 #define _SYSTEM_FILE_H_
 
-inline void*    (*FSOUND_File_Open)(char *name);
+inline void*    (*FSOUND_File_Open)(const char *name);
 inline void	    (*FSOUND_File_Close)(void* handle);
 inline int	    (*FSOUND_File_Read)(void *buffer, int size, void* handle);
 inline void	    (*FSOUND_File_Seek)(void* handle, int pos, int mode);
