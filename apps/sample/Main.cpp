@@ -24,20 +24,13 @@
 #include <Windows.h>
 #endif
 
-
-#define USEFMOD TRUE
-
-#ifdef USEFMOD
-	#include <minifmod/minifmod.h>
-#endif
+#include <minifmod/minifmod.h>
 
 // this is if you want to replace the samples with your own (in case you have compressed them)
 void sampleloadcallback(void *buff, int lenbytes, int numbits, int instno, int sampno)
 {
 	printf("pointer = %p length = %d bits = %d instrument %d sample %d\n", buff, lenbytes, numbits, instno, sampno);
 }
-
-
 
 #ifndef USEMEMLOAD
 
@@ -74,7 +67,6 @@ typedef struct
 	int pos;
 	void *data;
 } MEMFILE;
-
 
 void* memopen(const char *name)
 {
@@ -180,12 +172,10 @@ void songcallback(FMUSIC_MODULE *mod, unsigned char param)
 */
 int main(int argc, char *argv[])
 {
-#ifdef USEFMOD
 #ifndef USEMEMLOAD
 	FSOUND_File_SetCallbacks(fileopen, fileclose, fileread, fileseek, filetell);
 #else
 	FSOUND_File_SetCallbacks(memopen, memclose, memread, memseek, memtell);
-#endif
 #endif
 
 	if (argc < 2)
@@ -197,9 +187,6 @@ int main(int argc, char *argv[])
 		printf("Syntax: simplest infile.xm\n\n");
 		return 0;
 	}
-
-
-#ifdef USEFMOD
 
 	// ==========================================================================================
 	// LOAD SONG
@@ -217,8 +204,6 @@ int main(int argc, char *argv[])
 
     FMUSIC_PlaySong(mod);
 
-#endif
-
 	printf("Press any key to quit\n");
 	printf("=========================================================================\n");
 	printf("Playing song...\n");
@@ -234,21 +219,16 @@ int main(int argc, char *argv[])
 				key = getch();
 			}
 
-#ifdef USEFMOD
 			ord = FMUSIC_GetOrder();
 			row = FMUSIC_GetRow();
 			mytime = (float)FMUSIC_GetTime() / 1000.0f;
-#endif
 
 			printf("ord %2d row %2d seconds %5.02f %s      \r", ord, row, mytime, (row % 8 ? "    " : "TICK"));
 
 		} while (key != 27);
 	}
 
-
 	printf("\n");
 
-#ifdef USEFMOD
 	FMUSIC_FreeSong(mod);
-#endif
 }

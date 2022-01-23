@@ -24,59 +24,43 @@
 
 #define BLOCK_ON_SOFTWAREUPDATE() while(FSOUND_Software_UpdateMutex);
 
-/*
-[DEFINE_START]
-[
- 	[NAME]
-	FSOUND_MODES
-
-	[DESCRIPTION]
-	Sample description bitfields, OR them together for loading and describing samples.
-]
-*/
-#define FSOUND_NORMAL		0x0			// Default sample type.  Loop off, 8bit mono, signed, not hardware accelerated.
-#define FSOUND_LOOP_OFF		0x01		// For non looping samples.
-#define FSOUND_LOOP_NORMAL	0x02		// For forward looping samples.
-#define FSOUND_LOOP_BIDI	0x04		// For bidirectional looping samples.  (no effect if in hardware).
-#define FSOUND_8BITS		0x08		// For 8 bit samples.
-#define FSOUND_16BITS		0x10		// For 16 bit samples.
-#define FSOUND_MONO			0x20		// For mono samples.
-#define FSOUND_STEREO		0x40		// For stereo samples.
-#define FSOUND_UNSIGNED		0x80		// For source data containing unsigned samples.
-#define FSOUND_SIGNED		0x100		// For source data containing signed data.
-#define FSOUND_DELTA		0x200		// For source data stored as delta values.
-#define FSOUND_IT214		0x400		// For source data stored using IT214 compression.
-#define FSOUND_IT215		0x800		// For source data stored using IT215 compression.
-// [DEFINE_END]
+#define FSOUND_XM_LOOP_OFF 0
+#define FSOUND_XM_LOOP_NORMAL	1		// For forward looping samples.
+#define FSOUND_XM_LOOP_BIDI	2		// For bidirectional looping samples.  (no effect if in hardware).
 
 // ==============================================================================================
 // STRUCTURE DEFINITIONS
 // ==============================================================================================
 
+#pragma pack(push, 1)
+
+struct FSOUND_XM_SAMPLE
+{
+	uint32_t	length;
+	uint32_t	loop_start;
+	uint32_t	loop_length;
+	uint8_t		default_volume;
+	int8_t		finetune;
+	uint8_t		loop_mode : 2;
+	uint8_t		skip_bits_1 : 2;
+	uint8_t		bits16 : 1;
+	uint8_t		default_panning;
+	int8_t		relative_note;
+	uint8_t		reserved;
+	char		sample_name[22];
+};
+
+#pragma pack(pop)
+
 // Sample type - contains info on sample
 struct FSOUND_SAMPLE final
 {
-	short		 	*buff;			// pointer to sound data
+	int16_t		 	*buff;			// pointer to sound data
 
-	// ====================================================================================
-	// BUGFIX 1.5 (finetune was in wrong place)
-	// DONT CHANGE THE ORDER OF THESE NEXT MEMBERS AS THEY ARE ALL LOADED IN A SINGLE READ
-	unsigned int 	length;       	// sample length (samples)
-	unsigned int 	loopstart;    	// sample loop start (samples)
-	unsigned int 	looplen;      	// sample loop length (samples)
-	unsigned char	defvol;    		// sample default volume
-	signed char		finetune;		// finetune value from -128 to 127
-	// ====================================================================================
-
-	int 			deffreq;     	// sample default speed in hz
-	int				defpan;       	// sample default pan
-
-	unsigned char	bits;			// bits per sample
-	unsigned char	loopmode;      	// loop type
+	FSOUND_XM_SAMPLE header;
 
 	// music stuff
 	unsigned char 	globalvol;    	// sample global volume (scalar)
-	signed char		relative;	  	// relative note
 	int				middlec;      	// finetuning adjustment to make for music samples.. relative to 8363hz
 	unsigned int 	susloopbegin;  	// sample loop start
 	unsigned int 	susloopend;    	// sample loop length
