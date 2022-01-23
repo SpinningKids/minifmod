@@ -135,11 +135,11 @@ FMUSIC_MODULE * FMUSIC_LoadSong(const char *name, SAMPLELOADCALLBACK sampleloadc
 	FMUSIC_LoadSong
 ]
 */
-char FMUSIC_FreeSong(FMUSIC_MODULE *mod)
+bool FMUSIC_FreeSong(FMUSIC_MODULE *mod)
 {
 
 	if (!mod)
-		return FALSE;
+		return false;
 
 	BLOCK_ON_SOFTWAREUPDATE();
 
@@ -147,7 +147,7 @@ char FMUSIC_FreeSong(FMUSIC_MODULE *mod)
 
 	delete mod;
 
-	return TRUE;
+	return true;
 }
 
 /*
@@ -160,8 +160,8 @@ char FMUSIC_FreeSong(FMUSIC_MODULE *mod)
 	'mod'		Pointer to the song to be played.
 
 	[RETURN_VALUE]
-	TRUE		song succeeded playing
-	FALSE		song failed playing
+	true		song succeeded playing
+	false		song failed playing
 
 	[REMARKS]
 
@@ -169,18 +169,18 @@ char FMUSIC_FreeSong(FMUSIC_MODULE *mod)
 	FMUSIC_StopSong
 ]
 */
-char FMUSIC_PlaySong(FMUSIC_MODULE *mod)
+bool FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 {
     if (!mod)
     {
-		return FALSE;
+		return false;
     }
 
 	FMUSIC_StopSong();
 
 	if (!FSOUND_File_Open || !FSOUND_File_Close || !FSOUND_File_Read || !FSOUND_File_Seek || !FSOUND_File_Tell)
     {
-		return FALSE;
+		return false;
     }
 
 	// ========================================================================================================
@@ -256,7 +256,7 @@ char FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 
 		if (hr)
         {
-			return FALSE;
+			return false;
         }
 	}
 
@@ -304,13 +304,13 @@ char FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 		// ========================================================================================================
 		// CREATE THREADS / TIMERS (last)
 		// ========================================================================================================
-		FSOUND_Software_Exit = FALSE;
+		FSOUND_Software_Exit = false;
 
-		FSOUND_Software_hThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)FSOUND_Software_DoubleBufferThread, nullptr,0, &FSOUND_dwThreadId);
+		FSOUND_Software_hThread = CreateThread(nullptr, 0, (LPTHREAD_START_ROUTINE)FSOUND_Software_DoubleBufferThread, nullptr,0, &FSOUND_dwThreadId);
 
 		SetThreadPriority(FSOUND_Software_hThread, THREAD_PRIORITY_TIME_CRITICAL);	// THREAD_PRIORITY_HIGHEST);
 	}
-	return TRUE;
+	return true;
 }
 
 
@@ -332,10 +332,10 @@ char FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 	FMUSIC_PlaySong
 ]
 */
-char FMUSIC_StopSong()
+void FMUSIC_StopSong()
 {
 	// Kill the thread
-	FSOUND_Software_Exit = TRUE;
+	FSOUND_Software_Exit = true;
 
 	// wait until callback has settled down and exited
 	BLOCK_ON_SOFTWAREUPDATE();
@@ -382,8 +382,6 @@ char FMUSIC_StopSong()
 
 	FSOUND_Software_FillBlock = 0;
     FSOUND_Software_RealBlock = 0;
-
-	return TRUE;
 }
 
 //= INFORMATION FUNCTIONS ======================================================================

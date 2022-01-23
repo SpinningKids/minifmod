@@ -316,7 +316,7 @@ void FMUSIC_XM_ProcessEnvelope(FMUSIC_CHANNEL &channel, int *pos, int *tick, uns
 			if (*pos == numpoints - 1)
 			{
 				*value = points[(currpos<<1)+1];
-				*envstopped = TRUE;
+				*envstopped = true;
 				channel.notectrl |= control;
 				return;
 			}
@@ -576,7 +576,7 @@ void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL &channel, FSOUND_SAMPLE *sptr, FMUSIC_
 		//==========================================================================================
 		// START THE SOUND!
 		//==========================================================================================
-		if (ccptr->sampleoffset >= sptr->loopstart + sptr->looplen)
+		if (ccptr->sampleoffset >= sptr->header.loop_start + sptr->header.loop_length)
 		{
 		    ccptr->sampleoffset = 0;
 		}
@@ -651,8 +651,8 @@ void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL &channel, FSOUND_SAMPLE *sptr, FMUSIC_
 
 void FMUSIC_XM_Resetcptr(FMUSIC_CHANNEL &cptr, FSOUND_SAMPLE	*sptr)
 {
-	cptr.volume		= (int)sptr->defvol;
-	cptr.pan			= sptr->defpan;
+	cptr.volume		= (int)sptr->header.default_volume;
+	cptr.pan			= sptr->header.default_panning;
 	cptr.envvol		= 64;
 	cptr.envvolpos		= 0;
 	cptr.envvoltick	= 0;
@@ -663,10 +663,10 @@ void FMUSIC_XM_Resetcptr(FMUSIC_CHANNEL &cptr, FSOUND_SAMPLE	*sptr)
 	cptr.envpantick	= 0;
 	cptr.envpandelta	= 0;
 
-	cptr.keyoff		= FALSE;
+	cptr.keyoff		= false;
 	cptr.fadeoutvol	= 65536;
-	cptr.envvolstopped = FALSE;
-	cptr.envpanstopped = FALSE;
+	cptr.envvolstopped = false;
+	cptr.envpanstopped = false;
 	cptr.ivibsweeppos = 0;
 	cptr.ivibpos = 0;
 
@@ -704,7 +704,7 @@ void FMUSIC_XM_Resetcptr(FMUSIC_CHANNEL &cptr, FSOUND_SAMPLE	*sptr)
 */
 void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
 {
-    signed char	jumpflag=FALSE;
+    signed char	jumpflag= false;
 
     mod.nextorder = -1;
 	mod.nextrow = -1;
@@ -725,13 +725,10 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
         unsigned char paramx = note.eparam >> 4;			// get effect param x
 		unsigned char paramy = note.eparam & 0xF;			// get effect param y
 
-
-
 //			**** FIXME!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
 //		if (LinkedListIsRootNode(cptr, &cptr.vchannelhead))
 //			cptr = &FMUSIC_DummyVirtualChannel; // no channels allocated yet
 //			**** FIXME!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-
 
 		signed char porta = (note.effect == FMUSIC_XM_PORTATO || note.effect == FMUSIC_XM_PORTATOVOLSLIDE);
 
@@ -785,17 +782,17 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
 		if (note.note && note.note != FMUSIC_KEYOFF)
 		{
 			// get note according to relative note
-			channel.realnote = note.note + sptr->relative - 1;
+			channel.realnote = note.note + sptr->header.relative_note - 1;
 
 			// get period according to realnote and finetune
 			if (mod.header.flags & FMUSIC_XMFLAGS_LINEARFREQUENCY)
 			{
-				channel.period = (10*12*16*4) - (channel.realnote*16*4) - (sptr->finetune / 2);
+				channel.period = (10*12*16*4) - (channel.realnote*16*4) - (sptr->header.finetune / 2);
 			}
 			else
 			{
 #ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
-				channel.period = FMUSIC_XM_GetAmigaPeriod(channel.realnote, sptr->finetune);
+				channel.period = FMUSIC_XM_GetAmigaPeriod(channel.realnote, sptr->header.finetune);
 #endif
 			}
 
@@ -823,7 +820,7 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
 
 		//= PROCESS KEY OFF ============================================================================
 		if (note.note == FMUSIC_KEYOFF || note.effect == FMUSIC_XM_KEYOFF)
-			channel.keyoff = TRUE;
+			channel.keyoff = true;
 
 		//= PROCESS ENVELOPES ==========================================================================
 #ifdef FMUSIC_XM_VOLUMEENVELOPE_ACTIVE
@@ -972,7 +969,7 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
 
 				unsigned int offset = (int)(channel.sampleoffset) << 8;
 
-				if (offset >= sptr->loopstart + sptr->looplen)
+				if (offset >= sptr->header.loop_start + sptr->header.loop_length)
 				{
 					channel.notectrl &= ~FMUSIC_TRIGGER;
 					channel.notectrl |= FMUSIC_STOP;
@@ -1018,7 +1015,7 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
 #ifdef FMUSIC_XM_PATTERNBREAK_ACTIVE
 			case FMUSIC_XM_PATTERNBREAK :
 			{
-                signed char breakflag=FALSE;
+                signed char breakflag=false;
                 mod.nextrow = (paramx*10) + paramy;
 				if (mod.nextrow > 63)
                 {
@@ -1081,7 +1078,7 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
 #ifdef FMUSIC_XM_SETFINETUNE_ACTIVE
 					case FMUSIC_XM_SETFINETUNE :
 					{
-						sptr->finetune = paramy;
+						sptr->header.finetune = paramy;
 						break;
 					}
 #endif
@@ -1240,11 +1237,11 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
 				if (channel.envvolpos >= iptr->sample_header.numVolPoints - 1)
 				{
 					channel.envvol = iptr->sample_header.volEnvelope[((iptr->sample_header.numVolPoints -1)<<1)+1];
-					channel.envvolstopped = TRUE;
+					channel.envvolstopped = true;
 					break;
 				}
 
-				channel.envvolstopped = FALSE;
+				channel.envvolstopped = false;
 				channel.envvoltick = note.eparam;
 
 				int nextpos = channel.envvolpos + 1;
@@ -1512,8 +1509,8 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod)
 						            channel.freqdelta = paramx << 6;
 #ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
 						        else
-						            channel.freqdelta = FMUSIC_XM_GetAmigaPeriod(channel.realnote+paramx, sptr->finetune) -
-                                                      FMUSIC_XM_GetAmigaPeriod(channel.realnote, sptr->finetune);
+						            channel.freqdelta = FMUSIC_XM_GetAmigaPeriod(channel.realnote+paramx, sptr->header.finetune) -
+                                                      FMUSIC_XM_GetAmigaPeriod(channel.realnote, sptr->header.finetune);
 #endif
 						        break;
 						    }
@@ -1523,8 +1520,8 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod)
 						            channel.freqdelta = paramy << 6;
 #ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
 						        else
-						            channel.freqdelta = FMUSIC_XM_GetAmigaPeriod(channel.realnote+paramy, sptr->finetune) -
-                                                      FMUSIC_XM_GetAmigaPeriod(channel.realnote, sptr->finetune);
+						            channel.freqdelta = FMUSIC_XM_GetAmigaPeriod(channel.realnote+paramy, sptr->header.finetune) -
+                                                      FMUSIC_XM_GetAmigaPeriod(channel.realnote, sptr->header.finetune);
 #endif
 						        break;
 						    }
@@ -2084,9 +2081,6 @@ std::unique_ptr<FMUSIC_MODULE> FMUSIC_LoadXM(void* fp, SAMPLELOADCALLBACK sample
 
 		if (iptr->header.numSamples > 0)
 		{
-			unsigned int		count2;
-			unsigned char tempchar = 0;
-
 			FSOUND_File_Read(&iptr->sample_header, sizeof(iptr->sample_header), fp);
 
 			iptr->sample_header.volFadeout *= 2;		// i DONT KNOW why i needed this.. it just made it work
@@ -2102,141 +2096,81 @@ std::unique_ptr<FMUSIC_MODULE> FMUSIC_LoadXM(void* fp, SAMPLELOADCALLBACK sample
 
 			// seek to first sample
 			FSOUND_File_Seek(fp, firstsampleoffset, SEEK_SET);
-			for (count2=0; count2< iptr->header.numSamples; count2++)
+			for (unsigned int count2 = 0; count2 < iptr->header.numSamples; count2++)
 			{
-                unsigned char	dat;
-
 				FSOUND_SAMPLE* sptr = &iptr->sample[count2];
 
-#if 1	// WARNING! DONT CHANGE THE HEADER AROUND BECAUSE OF THIS HACK.
-				FSOUND_File_Read(&sptr->length, 14, fp);
-#else
-				FSOUND_File_Read(&sptr->length, 4, fp);
-				FSOUND_File_Read(&sptr->loopstart, 4, fp);
-				FSOUND_File_Read(&sptr->looplen, 4, fp);
-				sptr->defvol = FSOUND_File_GetChar(fp);
-				sptr->finetune = FSOUND_File_GetChar(fp);			// finetune -128 to +127
-#endif
+				FSOUND_File_Read(&sptr->header, sizeof(sptr->header), fp);
 
-				// type of sample
-				sptr->loopmode = FSOUND_LOOP_OFF;
-				sptr->bits = 8;
-
-				FSOUND_File_Read(&dat, 1, fp);
-				if (dat & 1)
+			    // type of sample
+				if (sptr->header.bits16)
 				{
-					sptr->loopmode &= ~(FSOUND_LOOP_OFF);
-					sptr->loopmode |= FSOUND_LOOP_NORMAL;
-				}
-				if (dat & 2)
-				{
-					sptr->loopmode &= ~(FSOUND_LOOP_OFF | FSOUND_LOOP_NORMAL);
-					sptr->loopmode |= FSOUND_LOOP_BIDI;		// bidirectional
-				}
-				if (dat & 16)	sptr->bits = 16;
-
-
-				if (sptr->loopmode & FSOUND_LOOP_OFF)
-				{
-					sptr->loopstart = 0;
-					sptr->looplen = sptr->length;
+					sptr->header.length /= 2;
+					sptr->header.loop_start /= 2;
+					sptr->header.loop_length /= 2;
 				}
 
-				if (sptr->bits == 16)
+				if ((sptr->header.loop_mode == FSOUND_XM_LOOP_OFF) || (sptr->header.length == 0))
 				{
-					sptr->length >>= 1;
-					sptr->loopstart >>= 1;
-					sptr->looplen >>= 1;
+					sptr->header.loop_start = 0;
+					sptr->header.loop_length = sptr->header.length;
+					sptr->header.loop_mode = FSOUND_XM_LOOP_OFF;
 				}
 
-				if (!sptr->looplen)
-				{
-					sptr->loopstart = 0;
-					sptr->looplen = sptr->length;
-					sptr->loopmode = FSOUND_LOOP_OFF;
-				}
-
-				FSOUND_File_Read(&tempchar, 1, fp);
-				sptr->defpan = (int)tempchar;
-				FSOUND_File_Read(&tempchar, 1, fp);
-				sptr->relative = (int)tempchar;
-
-				FSOUND_File_Seek(fp, 23, SEEK_CUR);
-
-				//= ALLOCATE MEMORY FOR THE SAMPLE BUFFER ==============================================
-
-				if (sptr->length)
-                {
-					sptr->buff = new short[sptr->length +8];
-                }
 			}
 
 			// Load sample data
-			for (count2=0; count2< iptr->header.numSamples; count2++)
+			for (unsigned int count2 = 0; count2 < iptr->header.numSamples; count2++)
 			{
 				FSOUND_SAMPLE	*sptr = &iptr->sample[count2];
-				unsigned int	samplelenbytes = sptr->length * sptr->bits / 8;
+				//unsigned int	samplelenbytes = sptr->header.length * sptr->bits / 8;
 
-                if (sptr->length)
+			    //= ALLOCATE MEMORY FOR THE SAMPLE BUFFER ==============================================
+
+				if (sptr->header.length)
 				{
-                    unsigned char* buff = new unsigned char[samplelenbytes];
+					sptr->buff = new short[sptr->header.length + 8];
 
 					if (samplecallback)
 					{
-						samplecallback(buff, samplelenbytes, sptr->bits, count, count2);
-						FSOUND_File_Seek(fp, samplelenbytes, SEEK_CUR);
+						samplecallback(sptr->buff, sptr->header.length, count, count2);
+						FSOUND_File_Seek(fp, sptr->header.length*(sptr->header.bits16?2:1), SEEK_CUR);
 					}
 					else
                     {
-						FSOUND_File_Read(buff, samplelenbytes, fp);
-                    }
+						if (sptr->header.bits16)
+						{
+							FSOUND_File_Read(sptr->buff, sptr->header.length*sizeof(short), fp);
+						}
+						else
+						{
+							int8_t *buff = new int8_t[sptr->header.length + 8];
+							FSOUND_File_Read(buff, sptr->header.length, fp);
+							for (uint32_t count3 = 0; count3 < sptr->header.length; count3++)
+							{
+								sptr->buff[count3] = int16_t(buff[count3]) << 8;
+							}
 
-					if (sptr->bits == 8)
-					{
-                        // promote to 16bits
-						short* wptr = sptr->buff;
+							sptr->header.bits16 = 1;
+							delete[] buff;
+						}
 
-						for (int count3 = 0; count3 < (int)sptr->length; count3++)
-                        {
-							*wptr++ = (short)(buff[count3]) << 8;
-                        }
-
-						sptr->bits = 16;
-
-					}
-					else
-					{
-						memcpy(sptr->buff, buff, samplelenbytes);
-					}
-					delete[] buff;
-
-					if (!samplecallback)
-					{
-						short* wptr = sptr->buff;
-
-                        // DO DELTA CONVERSION
+						// DO DELTA CONVERSION
 						int oldval = 0;
-						for (unsigned int count3 = 0; count3 < sptr->length; count3++)
+						for (uint32_t count3 = 0; count3 < sptr->header.length; count3++)
 						{
-							int newval = *wptr + oldval;
-							*wptr = (short)newval;
-							oldval = newval;
-							wptr++;
+                            sptr->buff[count3] = oldval = (short)(sptr->buff[count3] + oldval);
 						}
 					}
 
+					// BUGFIX 1.3 - removed click for end of non looping sample (also size optimized a bit)
+					if (sptr->header.loop_mode == FSOUND_XM_LOOP_BIDI)
 					{
-						short *buff = sptr->buff;
-
-						// BUGFIX 1.3 - removed click for end of non looping sample (also size optimized a bit)
-						if (sptr->loopmode == FSOUND_LOOP_BIDI)
-						{
-							buff[sptr->loopstart+sptr->looplen] = buff[sptr->loopstart+sptr->looplen-1];// fix it
-						}
-						else if (sptr->loopmode == FSOUND_LOOP_NORMAL)
-						{
-							buff[sptr->loopstart+sptr->looplen] = buff[sptr->loopstart];// fix it
-						}
+						sptr->buff[sptr->header.loop_start+sptr->header.loop_length] = sptr->buff[sptr->header.loop_start+sptr->header.loop_length-1];// fix it
+					}
+					else if (sptr->header.loop_mode == FSOUND_XM_LOOP_NORMAL)
+					{
+						sptr->buff[sptr->header.loop_start+sptr->header.loop_length] = sptr->buff[sptr->header.loop_start];// fix it
 					}
 				}
 			}

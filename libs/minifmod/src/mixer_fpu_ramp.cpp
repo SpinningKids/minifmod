@@ -84,8 +84,8 @@ void FSOUND_Mixer_FPU_Ramp(float *mixptr, int len)
         {
             unsigned int mix_endflag = FSOUND_OUTPUTBUFF_END;
             uint64_t samples_to_mix = (channel.speeddir == FSOUND_MIXDIR_FORWARDS) ?
-                                          (((uint64_t)(channel.sptr->loopstart + channel.sptr->looplen)) << 32) - channel.mixpos64 :
-                                          channel.mixpos64 - (((uint64_t)channel.sptr->loopstart) << 32);
+                                          (((uint64_t)(channel.sptr->header.loop_start + channel.sptr->header.loop_length)) << 32) - channel.mixpos64 :
+                                          channel.mixpos64 - (((uint64_t)channel.sptr->header.loop_start) << 32);
             uint64_t samples = (samples_to_mix + channel.speed64 - 1) / channel.speed64; // round up the division
             if (samples <= (uint64_t)mix_count)
             {
@@ -194,32 +194,32 @@ void FSOUND_Mixer_FPU_Ramp(float *mixptr, int len)
             //=============================================================================================
             // SWITCH ON LOOP MODE TYPE
             //=============================================================================================
-            if (channel.sptr->loopmode & FSOUND_LOOP_NORMAL)
+            if (channel.sptr->header.loop_mode == FSOUND_XM_LOOP_NORMAL)
             {
-                unsigned target = channel.sptr->loopstart + channel.sptr->looplen;
+                unsigned target = channel.sptr->header.loop_start + channel.sptr->header.loop_length;
                 do
                 {
-                    channel.mixpos64 -= uint64_t(channel.sptr->looplen) << 32;
+                    channel.mixpos64 -= uint64_t(channel.sptr->header.loop_length) << 32;
                 } while ((channel.mixpos64 >> 32) >= target);
-            } else if (channel.sptr->loopmode & FSOUND_LOOP_BIDI)
+            } else if (channel.sptr->header.loop_mode == FSOUND_XM_LOOP_BIDI)
             {
                 do {
                     if (channel.speeddir != FSOUND_MIXDIR_FORWARDS)
                     {
                         //BidiBackwards
-                        channel.mixpos64 = (uint64_t(2 * channel.sptr->loopstart) << 32) - channel.mixpos64 - 1;
+                        channel.mixpos64 = (uint64_t(2 * channel.sptr->header.loop_start) << 32) - channel.mixpos64 - 1;
                         channel.speeddir = FSOUND_MIXDIR_FORWARDS;
-                        if ((channel.mixpos64 >> 32) < channel.sptr->loopstart + channel.sptr->looplen)
+                        if ((channel.mixpos64 >> 32) < channel.sptr->header.loop_start + channel.sptr->header.loop_length)
                         {
                             break;
                         }
 
                     }
                     //BidiForward
-                    channel.mixpos64 = (uint64_t(2 * (channel.sptr->loopstart + channel.sptr->looplen)) << 32) - channel.mixpos64 - 1;
+                    channel.mixpos64 = (uint64_t(2 * (channel.sptr->header.loop_start + channel.sptr->header.loop_length)) << 32) - channel.mixpos64 - 1;
                     channel.speeddir = FSOUND_MIXDIR_BACKWARDS;
 
-                } while ((channel.mixpos64 >> 32) < channel.sptr->loopstart);
+                } while ((channel.mixpos64 >> 32) < channel.sptr->header.loop_start);
             } else
             {
                 channel.mixpos64 = 0;

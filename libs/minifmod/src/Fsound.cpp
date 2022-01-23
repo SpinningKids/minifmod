@@ -113,7 +113,7 @@ void FSOUND_Software_Fill()
 */
 DWORD FSOUND_Software_DoubleBufferThread(LPDWORD lpdwParam)
 {
-    FSOUND_Software_ThreadFinished = FALSE;
+    FSOUND_Software_ThreadFinished = false;
 
 	int totalblocks = FSOUND_BufferSize / FSOUND_BlockSize;
 
@@ -129,7 +129,7 @@ DWORD FSOUND_Software_DoubleBufferThread(LPDWORD lpdwParam)
 
 		while (FSOUND_Software_FillBlock != cursorblock)
 		{
-			FSOUND_Software_UpdateMutex = TRUE;
+			FSOUND_Software_UpdateMutex = true;
 
 			FSOUND_Software_Fill();
 
@@ -139,13 +139,13 @@ DWORD FSOUND_Software_DoubleBufferThread(LPDWORD lpdwParam)
 				FSOUND_Software_RealBlock = 0;
             }
 
-			FSOUND_Software_UpdateMutex = FALSE;
+			FSOUND_Software_UpdateMutex = false;
 		}
 
 		Sleep(5);
 	}
 
-	FSOUND_Software_ThreadFinished = TRUE;
+	FSOUND_Software_ThreadFinished = true;
 
 	return 0;
 }

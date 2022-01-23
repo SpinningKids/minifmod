@@ -32,7 +32,7 @@ struct FMUSIC_MODULE;
 // ==================================
 // Initialization / Global functions.
 // ==================================
-typedef void (*SAMPLELOADCALLBACK)(void *buff, int lenbytes, int numbits, int instno, int sampno);
+typedef void (*SAMPLELOADCALLBACK)(short *buff, size_t length_samples, int instno, int sampno);
 typedef void (*FMUSIC_CALLBACK)(FMUSIC_MODULE *mod, unsigned char param);
 
 // this must be called before FSOUND_Init!
@@ -50,9 +50,9 @@ void FSOUND_File_SetCallbacks(void*         (*OpenCallback)(const char *name),
 // =====================================
 
 FMUSIC_MODULE * FMUSIC_LoadSong(const char *data, SAMPLELOADCALLBACK sampleloadcallback);
-char    		FMUSIC_FreeSong(FMUSIC_MODULE *mod);
-char    		FMUSIC_PlaySong(FMUSIC_MODULE *mod);
-char    		FMUSIC_StopSong();
+bool    		FMUSIC_FreeSong(FMUSIC_MODULE *mod);
+bool    		FMUSIC_PlaySong(FMUSIC_MODULE *mod);
+void    		FMUSIC_StopSong();
 
 // Runtime song information.
 // =========================
