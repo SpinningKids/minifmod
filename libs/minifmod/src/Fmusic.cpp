@@ -192,7 +192,6 @@ bool FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 	FSOUND_BufferSize <<= 1;	// double buffer
 
 	mix_volumerampsteps      = FSOUND_MixRate * FSOUND_VOLUMERAMP_STEPS / 44100;
-	mix_1overvolumerampsteps = 1.0f / mix_volumerampsteps;
 	int totalblocks = FSOUND_BufferSize / FSOUND_BlockSize;
 
 	//=======================================================================================
