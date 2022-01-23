@@ -17,7 +17,6 @@
 
 void FSOUND_Mixer_FPU_Ramp(float *mixptr, int len);
 
-extern unsigned int mix_volumerampsteps;
-extern float		mix_1overvolumerampsteps;
+inline unsigned int mix_volumerampsteps;
 
 #endif
