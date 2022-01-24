@@ -873,8 +873,7 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
 					channel.portaspeed = note.eparam;
                 }
 				channel.portatarget = channel.period;
-				channel.notectrl &= ~FMUSIC_TRIGGER;
-				channel.notectrl &= ~FMUSIC_FREQ;
+				channel.notectrl &= ~(FMUSIC_TRIGGER | FMUSIC_FREQ);
 				break;
 			}
 #endif
@@ -886,8 +885,7 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
                 {
 					channel.volslide = note.eparam;
                 }
-				channel.notectrl &= ~FMUSIC_TRIGGER;
-				channel.notectrl &= ~FMUSIC_FREQ;
+				channel.notectrl &= ~(FMUSIC_TRIGGER | FMUSIC_FREQ);
 				break;
 			}
 #endif
@@ -1149,9 +1147,7 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
 						channel.volume = oldvolume;
 						channel.freq   = oldfreq;
 						channel.pan    = oldpan;
-						channel.notectrl &= ~FMUSIC_FREQ;
-						channel.notectrl &= ~FMUSIC_VOLUME_PAN;
-						channel.notectrl &= ~FMUSIC_TRIGGER;
+						channel.notectrl &= ~(FMUSIC_FREQ | FMUSIC_VOLUME_PAN | FMUSIC_TRIGGER);
 						break;
 					}
 #endif
@@ -1716,9 +1712,7 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod)
 						}
 						else
 						{
-							channel.notectrl &= ~FMUSIC_FREQ;
-							channel.notectrl &= ~FMUSIC_VOLUME_PAN;
-							channel.notectrl &= ~FMUSIC_TRIGGER;
+							channel.notectrl &= ~(FMUSIC_FREQ | FMUSIC_VOLUME_PAN | FMUSIC_TRIGGER);
 						}
 						break;
 					}
@@ -1860,6 +1854,7 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod)
 				    }
 					cptr->notectrl |= FMUSIC_VOLUME;
 				}
+				channel.notectrl |= FMUSIC_VOLUME_PAN;
 				break;
 			}
 #endif
