@@ -1843,6 +1843,7 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod)
                     {
 						mod.globalvolume = 64;
 				    }
+					channel.notectrl |= FMUSIC_VOLUME_PAN;
 				}
 				else if (paramy)
 				{
@@ -1851,8 +1852,8 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod)
                     {
 						mod.globalvolume = 0;
 				    }
+					channel.notectrl |= FMUSIC_VOLUME_PAN;
 				}
-				channel.notectrl |= FMUSIC_VOLUME_PAN;
 				break;
 			}
 #endif
