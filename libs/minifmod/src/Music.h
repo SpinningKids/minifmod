@@ -235,9 +235,9 @@ static_assert(sizeof(FMUSIC_XM_HEADER) == 60 + 20 + 256); // xm header is 336 by
 // Song type - contains info on song
 struct FMUSIC_MODULE final
 {
-	FMUSIC_XM_HEADER				header;
-	FMUSIC_PATTERN					pattern[256];	// patterns array for this song
-	FMUSIC_INSTRUMENT				instrument[128];	// instrument array for this song (not used in MOD/S3M)
+	FMUSIC_XM_HEADER	header;
+	FMUSIC_PATTERN		pattern[256];	// patterns array for this song
+	FMUSIC_INSTRUMENT	instrument[128];	// instrument array for this song (not used in MOD/S3M)
 	int				mixer_samplesleft;
 	int				mixer_samplespertick;
 
