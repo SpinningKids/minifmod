@@ -1887,6 +1887,7 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE *mod)
                     {
 						mod->globalvolume = 64;
 				    }
+					cptr->notectrl |= FMUSIC_VOLUME;
 				}
 				else if (paramy)
 				{
@@ -1895,6 +1896,7 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE *mod)
                     {
 						mod->globalvolume = 0;
 				    }
+					cptr->notectrl |= FMUSIC_VOLUME;
 				}
 				break;
 			}
