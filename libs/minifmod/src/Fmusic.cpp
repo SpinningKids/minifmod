@@ -206,7 +206,7 @@ bool FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 	for (int count = 0; count < 64; count++)
 	{
 		FSOUND_Channel[count].index = count;
-		FSOUND_Channel[count].speed64 = 0x0000000100000000;
+		FSOUND_Channel[count].speed = 1.0f;
 	}
 
 	mod->globalvolume       = 64;

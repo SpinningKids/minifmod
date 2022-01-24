@@ -89,8 +89,8 @@ typedef struct
 	// software mixer stuff
 	unsigned int	leftvolume;     // mixing information. adjusted volume for left channel (panning involved)
 	unsigned int	rightvolume;    // mixing information. adjusted volume for right channel (panning involved)
-	uint64_t		mixpos64;		// mixing information. 32:32 fractional position in sample
-	uint64_t		speed64;		// mixing information. playback rate - 32:32
+	float			mixpos;			// mixing information. floating point fractional position in sample. should this be a double?
+	float			speed;			// mixing information. playback rate - floating point. should this be a double?
 	unsigned int	speeddir;		// mixing information. playback direction - forwards or backwards
 
 	// software mixer volume ramping stuff

@@ -581,7 +581,7 @@ void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL &channel, FSOUND_SAMPLE *sptr, FMUSIC_
 		    ccptr->sampleoffset = 0;
 		}
 
-		ccptr->mixpos64  = uint64_t(ccptr->sampleoffset) << 32;
+		ccptr->mixpos  = ccptr->sampleoffset;
 		ccptr->speeddir  = FSOUND_MIXDIR_FORWARDS;
 		ccptr->sampleoffset = 0;	// reset it (in case other samples come in and get corrupted etc)
 
@@ -635,13 +635,13 @@ void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL &channel, FSOUND_SAMPLE *sptr, FMUSIC_
 
 		freq = std::max(freq, 100);
 
-    	ccptr->speed64 = (uint64_t(freq) << 32) / FSOUND_MixRate;
+    	ccptr->speed = float(freq) / FSOUND_MixRate;
 	}
 	if (channel.notectrl & FMUSIC_STOP)
 	{
 //		FSOUND_StopSound(channel);
 
-		ccptr->mixpos64 = 0;
+		ccptr->mixpos = 0;
 //		ccptr->sptr = nullptr;
 		ccptr->sampleoffset = 0;	// if this channel gets stolen it will be safe
 	}
