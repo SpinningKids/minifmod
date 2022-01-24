@@ -13,7 +13,6 @@
 #ifndef _MUSIC_H
 #define _MUSIC_H
 
-#include <array>
 #include <cassert>
 #include <cstdint>
 
@@ -53,7 +52,7 @@ typedef struct
 class FMUSIC_PATTERN
 {
 	int		rows_;
-	std::array<std::array<FMUSIC_NOTE, 32>, 256> data_;
+	FMUSIC_NOTE data_[256][32];
 public:
 	FMUSIC_PATTERN() : rows_{ 64 }, data_{} {}
 
@@ -64,13 +63,13 @@ public:
 	    rows_ = rows;
 	}
 
-	[[nodiscard]] const std::array<FMUSIC_NOTE, 32>& row(int row) const
+	[[nodiscard]] auto row(int row) const -> decltype(data_[row])
 	{
 		assert(row < rows_);
 		return data_[row];
 	}
 
-    [[nodiscard]] std::array<FMUSIC_NOTE, 32>& row(int row)
+	[[nodiscard]] auto row(int row) -> decltype(data_[row])
 	{
 		assert(row < rows_);
 		return data_[row];
@@ -128,7 +127,7 @@ struct FMUSIC_INSTRUMENT final
 {
 	FMUSIC_XM_INSTHEADER		header;
 	FMUSIC_XM_INSTSAMPHEADER	sample_header;
-	std::array<FSOUND_SAMPLE, 16>	sample;		// 16 samples per instrument
+	FSOUND_SAMPLE				sample[16];		// 16 samples per instrument
 };
 
 
@@ -237,8 +236,8 @@ static_assert(sizeof(FMUSIC_XM_HEADER) == 60 + 20 + 256); // xm header is 336 by
 struct FMUSIC_MODULE final
 {
 	FMUSIC_XM_HEADER				header;
-	std::array<FMUSIC_PATTERN, 256>	pattern;	// patterns array for this song
-	std::array<FMUSIC_INSTRUMENT, 128>	instrument;	// instrument array for this song (not used in MOD/S3M)
+	FMUSIC_PATTERN					pattern[256];	// patterns array for this song
+	FMUSIC_INSTRUMENT				instrument[128];	// instrument array for this song (not used in MOD/S3M)
 	int				mixer_samplesleft;
 	int				mixer_samplespertick;
 
