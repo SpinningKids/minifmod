@@ -6,7 +6,7 @@ cmake_minimum_required (VERSION 3.8)
 project ("minifmod")
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-	add_definitions("/Os")
+	add_definitions("/O1i /FAs /GL /EHs-a- /GS- /GR-")
 endif()
 
 # Include sub-projects.
