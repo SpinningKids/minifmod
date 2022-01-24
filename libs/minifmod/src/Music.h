@@ -25,18 +25,14 @@
 #define FMUSIC_KEYOFF						97
 
 #define FMUSIC_FREQ							1
-#define FMUSIC_VOLUME						2
-#define FMUSIC_PAN							4
-#define FMUSIC_TRIGGER						8
-#define FMUSIC_SURROUND						16
-#define FMUSIC_STOP							32
-#define FMUSIC_SURROUNDOFF					64
+#define FMUSIC_VOLUME_PAN					2
+#define FMUSIC_TRIGGER						4
+#define FMUSIC_STOP							8
 
 #define FMUSIC_ENVELOPE_OFF					0
 #define FMUSIC_ENVELOPE_ON					1
 #define FMUSIC_ENVELOPE_SUSTAIN				2
 #define FMUSIC_ENVELOPE_LOOP				4
-#define FMUSIC_ENVELOPE_CARRY				8
 
 // Single note type - contains info on 1 note in a pattern
 typedef struct
