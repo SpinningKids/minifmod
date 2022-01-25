@@ -8,6 +8,7 @@ project ("minifmod")
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 	if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
 		add_definitions("/O1i /FAs /GL /EHs-a- /GS- /GR-")
+		SET(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} /MAP:out.map")
 	endif()
 endif()
 
