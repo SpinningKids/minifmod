@@ -121,8 +121,6 @@ void FMUSIC_XM_Vibrato(FMUSIC_CHANNEL &channel)
 		        delta = 255;//rand()&255;					// random
 		        break;
 		    }
-		default:
-			assert(false);
 	}
 
 	delta *= channel.vibdepth;
@@ -181,8 +179,6 @@ void FMUSIC_XM_InstrumentVibrato(FMUSIC_CHANNEL &channel, FMUSIC_INSTRUMENT *ipt
 		        delta = (128-(((256-channel.ivibpos)+128)%256))>>1;
 		        break;
 		    }
-		default:
-			assert(false);
 	}
 
 	delta *= iptr->sample_header.vibDepth;
@@ -445,8 +441,6 @@ void FMUSIC_XM_ProcessVolumeByte(FMUSIC_CHANNEL &channel, unsigned char volume)
 				channel.notectrl &= ~FMUSIC_TRIGGER;
 				break;
 			}
-			default:
-				assert(false);
 		}
 	}
 }
@@ -538,7 +532,7 @@ void FMUSIC_XM_Tremor(FMUSIC_CHANNEL &channel)
 */
 void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL &channel, FSOUND_SAMPLE *sptr, FMUSIC_MODULE &mod)
 {
-	FSOUND_CHANNEL *ccptr = channel.cptr;
+    FSOUND_CHANNEL *ccptr = channel.cptr;
 
     int channel_number = ccptr->index;
 
@@ -554,7 +548,7 @@ void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL &channel, FSOUND_SAMPLE *sptr, FMUSIC_
 		//==========================================================================================
 		ccptr = &FSOUND_Channel[channel_number];
 
-        // this swaps between channels to avoid sounds cutting each other off and causing a click
+		// this swaps between channels to avoid sounds cutting each other off and causing a click
         if (ccptr->sptr != nullptr)
         {
 			channel_number ^= 32;
@@ -567,11 +561,11 @@ void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL &channel, FSOUND_SAMPLE *sptr, FMUSIC_
 		    ccptr->leftvolume  = 0;
 		    ccptr->rightvolume = 0;
 
-            ccptr = &FSOUND_Channel[channel_number];
-            channel.cptr = ccptr;
-        }
+			ccptr = &FSOUND_Channel[channel_number];
+			channel.cptr = ccptr;
+		}
 
-		ccptr->sptr = sptr;
+        ccptr->sptr = sptr;
 
 		//==========================================================================================
 		// START THE SOUND!
@@ -591,13 +585,13 @@ void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL &channel, FSOUND_SAMPLE *sptr, FMUSIC_
 		ccptr->ramp_count		= 0;
 	}
 
-	if (channel.notectrl & FMUSIC_VOLUME_PAN)
+    if (channel.notectrl & FMUSIC_VOLUME_PAN)
 	{
 		int64_t high_precision_volume = int64_t(channel.envvol * (channel.volume + channel.voldelta) * channel.fadeoutvol) * mod.globalvolume;
 
         int high_precision_pan = std::clamp(channel.pan * 32 + (channel.envpan - 32) * (128 - abs(channel.pan - 128)), 0, 8191);
 
-    	ccptr->volume = ccptr->actualvolume = 255 * high_precision_volume >> 35;
+    	ccptr->volume = ccptr->actualvolume = (255 * high_precision_volume) >> 35;
 		ccptr->pan = ccptr->actualpan = high_precision_pan >> 5;
 
 		ccptr->leftvolume  = (high_precision_volume * high_precision_pan) >> 40;
@@ -1302,8 +1296,6 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
 				break;
 			}
 #endif
-			default:
-				assert(false);
 		}
 #endif
 		//= INSTRUMENT VIBRATO ============================================================================
@@ -1468,8 +1460,6 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod)
 				break;
 			}
 #endif
-			default:
-				assert(false);
 		}
 		#endif
 
@@ -1505,8 +1495,6 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod)
 #endif
 						        break;
 						    }
-						default:
-							assert(false);
 					}
 					channel.notectrl |= FMUSIC_FREQ;
 				}
@@ -1717,8 +1705,6 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod)
 						break;
 					}
 #endif
-					default:
-						assert(false);
 				}
 				break;
 			}
@@ -1811,8 +1797,6 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod)
 							        channel.volume <<= 1;
 							        break;
 							    }
-						    default:
-								assert(false);
 						}
 						if (channel.volume > 64)
 						{
@@ -1892,8 +1876,6 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod)
 				break;
 			}
 #endif
-			default:
-				assert(false);
 		}
 
 		//= INSTRUMENT VIBRATO ============================================================================
