@@ -35,14 +35,14 @@
 #define FMUSIC_ENVELOPE_LOOP				4
 
 // Single note type - contains info on 1 note in a pattern
-typedef struct
+struct FMUSIC_NOTE
 {
 	unsigned char	note;			// note to play at     (0-133) 132=none,133=keyoff
 	unsigned char	number;			// sample being played (0-99)
 	unsigned char	volume;			// volume column value (0-64)  255=no volume
 	unsigned char	effect;			// effect number       (0-1Ah)
 	unsigned char	eparam;			// effect parameter    (0-255)
-} FMUSIC_NOTE;
+};
 
 // pattern data type
 class FMUSIC_PATTERN
@@ -74,12 +74,12 @@ public:
 
 #pragma pack(push, 1)
 
-typedef struct
+struct FMUSIC_TIMMEINFO
 {
 	unsigned char order;
 	unsigned char row;
 	unsigned int  ms;
-} FMUSIC_TIMMEINFO;
+};
 
 struct FMUSIC_XM_INSTSAMPHEADER {
 	uint32_t	headerSize;             // sample header size
@@ -129,7 +129,7 @@ struct FMUSIC_INSTRUMENT final
 
 
 // Channel type - contains information on a mod channel
-typedef struct FMUSIC_CHANNEL
+struct FMUSIC_CHANNEL
 {
 	unsigned char  	note;  				// last note set in channel
 
@@ -201,7 +201,7 @@ typedef struct FMUSIC_CHANNEL
 	unsigned char	finevslup;			// parameter for fine volume slide down
 	unsigned char	fineportaup;		// parameter for fine porta slide up
 	unsigned char	fineportadown;		// parameter for fine porta slide down
-} FMUSIC_CHANNEL;
+};
 
 #pragma pack(push, 1)
 

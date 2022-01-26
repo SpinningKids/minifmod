@@ -75,33 +75,29 @@ struct FSOUND_SAMPLE final
 
 
 // Channel type - contains information on a mixing channel
-typedef struct
+struct FSOUND_CHANNEL
 {
 	int				index;			// position in channel pool.
-	int				volume;   		// current volume (00-FFh).
-	int				pan;   			// panning value (00-FFh).
-	int				actualvolume;   // driver level current volume.
-	int				actualpan;   	// driver level panning value.
 	unsigned int 	sampleoffset; 	// sample offset (sample starts playing from here).
 
 	FSOUND_SAMPLE	*sptr;			// currently playing sample
 
 	// software mixer stuff
-	unsigned int	leftvolume;     // mixing information. adjusted volume for left channel (panning involved)
-	unsigned int	rightvolume;    // mixing information. adjusted volume for right channel (panning involved)
+	float			leftvolume;     // mixing information. adjusted volume for left channel (panning involved)
+	float			rightvolume;    // mixing information. adjusted volume for right channel (panning involved)
 	float			mixpos;			// mixing information. floating point fractional position in sample. should this be a double?
 	float			speed;			// mixing information. playback rate - floating point. should this be a double?
 	unsigned int	speeddir;		// mixing information. playback direction - forwards or backwards
 
 	// software mixer volume ramping stuff
-	unsigned int	ramp_lefttarget;
-	unsigned int	ramp_righttarget;
-	unsigned int	ramp_leftvolume;
-	unsigned int	ramp_rightvolume;
+	float			ramp_lefttarget;
+	float			ramp_righttarget;
+	float			ramp_leftvolume;
+	float			ramp_rightvolume;
 	float			ramp_leftspeed;
 	float			ramp_rightspeed;
 	unsigned int	ramp_count;
-} FSOUND_CHANNEL;
+};
 
 //= FUNCTIONS =================================================================================
 
