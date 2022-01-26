@@ -69,16 +69,11 @@ void FSOUND_Mixer_FPU_Ramp(float *mixptr, int len)
             // 3. sample ends (ramp last n number of samples from volume to 0)
 
             // now if the volume has changed, make end condition equal a volume ramp
-            if (
-                (channel.ramp_count == 0) ||
-                (channel.leftvolume != channel.ramp_lefttarget) ||
-                (channel.rightvolume != channel.ramp_righttarget))
+            if (channel.volume_changed || channel.ramp_count == 0)
             {
                 // if it tries to continue an old ramp, but the target has changed,
                 // set up a new ramp
-                channel.ramp_lefttarget = channel.leftvolume;
                 channel.ramp_leftspeed = (channel.leftvolume - channel.ramp_leftvolume) / mix_volumerampsteps;
-                channel.ramp_righttarget = channel.rightvolume;
                 channel.ramp_rightspeed = (channel.rightvolume - channel.ramp_rightvolume) / mix_volumerampsteps;
                 channel.ramp_count = mix_volumerampsteps;
             }
