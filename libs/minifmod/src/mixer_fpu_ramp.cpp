@@ -12,6 +12,7 @@
 
 #include "mixer_fpu_ramp.h"
 
+#include <cassert>
 #include <cmath>
 #include <cstdint>
 
@@ -21,11 +22,6 @@
 // =========================================================================================
 // GLOBAL VARIABLES
 // =========================================================================================
-
-//= made global to free ebp.============================================================================
-static const float	mix_256m255		= 256.0f*255.0f;
-static const float	mix_1over256over255	= 1.0f / 256.0f / 255.0f;
-static const float	mix_1over4gig   = 1.0f / 4294967296.0f;
 
 /*
 [API]
@@ -81,22 +77,23 @@ void FSOUND_Mixer_FPU_Ramp(float *mixptr, int len)
                 // if it tries to continue an old ramp, but the target has changed,
                 // set up a new ramp
                 channel.ramp_lefttarget = channel.leftvolume;
-                channel.ramp_leftspeed = (float(channel.leftvolume) - (channel.ramp_leftvolume >> 8)) / (255 * mix_volumerampsteps);
+                channel.ramp_leftspeed = (channel.leftvolume - channel.ramp_leftvolume) / mix_volumerampsteps;
                 channel.ramp_righttarget = channel.rightvolume;
-                channel.ramp_rightspeed = (float(channel.rightvolume) - (channel.ramp_rightvolume >> 8)) / (255 * mix_volumerampsteps);
+                channel.ramp_rightspeed = (channel.rightvolume - channel.ramp_rightvolume) / mix_volumerampsteps;
                 channel.ramp_count = mix_volumerampsteps;
             }
-            if (channel.ramp_count > 0) {
+            assert(channel.ramp_count > 0);
+            //if (channel.ramp_count > 0) {
                 if (mix_count > channel.ramp_count) {
                     mix_count = channel.ramp_count;
                 }
-            }
+            //}
 
             float samples_to_mix = (channel.speeddir == FSOUND_MIXDIR_FORWARDS) ?
                                           channel.sptr->header.loop_start + channel.sptr->header.loop_length - channel.mixpos :
                                           channel.mixpos - channel.sptr->header.loop_start;
             uint32_t samples = (uint32_t)ceil(samples_to_mix / channel.speed); // round up the division
-            if (samples <= (uint64_t)mix_count)
+            if (samples <= mix_count)
             {
                 mix_count = samples;
                 mix_endflag_sample = true;
@@ -111,22 +108,16 @@ void FSOUND_Mixer_FPU_Ramp(float *mixptr, int len)
 
             //= SET UP VOLUME MULTIPLIERS ==================================================
 
-            // left ramp volume
-            float ramplvol = channel.ramp_leftvolume * mix_1over256over255;
-
-            // right ramp volume
-            float ramprvol = channel.ramp_rightvolume * mix_1over256over255;
-
             for (unsigned int i = 0; i < mix_count; ++i)
             {
                 uint32_t mixpos = (uint32_t)channel.mixpos;
                 float frac = channel.mixpos - mixpos;
                 float samp1 = channel.sptr->buff[mixpos];
                 float newsamp = (channel.sptr->buff[mixpos + 1] - samp1) * frac + samp1;
-                mixptr[0 + (sample_index + i) * 2] += ramplvol * newsamp;
-                mixptr[1 + (sample_index + i) * 2] += ramprvol * newsamp;
-                ramplvol += channel.ramp_leftspeed;
-                ramprvol += channel.ramp_rightspeed;
+                mixptr[0 + (sample_index + i) * 2] += channel.ramp_leftvolume * newsamp;
+                mixptr[1 + (sample_index + i) * 2] += channel.ramp_rightvolume * newsamp;
+                channel.ramp_leftvolume += channel.ramp_leftspeed;
+                channel.ramp_rightvolume += channel.ramp_rightspeed;
                 channel.mixpos += speed;
             }
 
@@ -136,8 +127,6 @@ void FSOUND_Mixer_FPU_Ramp(float *mixptr, int len)
             // DID A VOLUME RAMP JUST HAPPEN
             //=============================================================================================
             if (channel.ramp_count != 0) {
-                channel.ramp_leftvolume = (unsigned int)(ramplvol * mix_256m255);
-                channel.ramp_rightvolume = (unsigned int)(ramprvol * mix_256m255);
                 channel.ramp_count -= mix_count;
 
                 // if rampcount now = 0, a ramp has FINISHED, so finish the rest of the mix
@@ -149,8 +138,8 @@ void FSOUND_Mixer_FPU_Ramp(float *mixptr, int len)
                     channel.ramp_rightspeed = 0;
 
                     // clamp the 2 volumes together in case the speed wasnt accurate enough!
-                    channel.ramp_leftvolume = channel.leftvolume << 8;
-                    channel.ramp_rightvolume = channel.rightvolume << 8;
+                    channel.ramp_leftvolume = channel.leftvolume;
+                    channel.ramp_rightvolume = channel.rightvolume;
 
                 }
             }

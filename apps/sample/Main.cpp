@@ -61,12 +61,12 @@ int filetell(void* handle)
 
 #else
 
-typedef struct
+struct MEMFILE
 {
 	int length;
 	int pos;
 	void *data;
-} MEMFILE;
+};
 
 void* memopen(const char *name)
 {

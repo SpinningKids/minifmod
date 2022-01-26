@@ -373,7 +373,8 @@ void FMUSIC_XM_ProcessVolumeByte(FMUSIC_CHANNEL &channel, unsigned char volume)
 	{
 		switch (volume >> 4)
 		{
-			case 0x6 :
+			case 0x6:
+			case 0x8:
 			{
 				channel.volume -= (volume & 0xF);
 				if (channel.volume < 0)
@@ -381,23 +382,8 @@ void FMUSIC_XM_ProcessVolumeByte(FMUSIC_CHANNEL &channel, unsigned char volume)
 				channel.notectrl |= FMUSIC_VOLUME_PAN;
 				break;
 			}
-			case 0x7 :
-			{
-				channel.volume += (volume & 0xF);
-				if (channel.volume > 0x40)
-					channel.volume = 0x40;
-				channel.notectrl |= FMUSIC_VOLUME_PAN;
-				break;
-			}
-			case 0x8 :
-			{
-				channel.volume -= (volume & 0xF);
-				if (channel.volume < 0)
-					channel.volume = 0;
-				channel.notectrl |= FMUSIC_VOLUME_PAN;
-				break;
-			}
-			case 0x9 :
+			case 0x7:
+			case 0x9:
 			{
 				channel.volume += (volume & 0xF);
 				if (channel.volume > 0x40)
@@ -557,7 +543,6 @@ void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL &channel, FSOUND_SAMPLE *sptr, FMUSIC_
             FSOUND_Channel[channel_number].index = channel_number; // oops dont want its index
 
             // this should cause the old channel to ramp out nicely.
-		    ccptr->volume = ccptr->actualvolume = 0;
 		    ccptr->leftvolume  = 0;
 		    ccptr->rightvolume = 0;
 
@@ -591,11 +576,12 @@ void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL &channel, FSOUND_SAMPLE *sptr, FMUSIC_
 
         int high_precision_pan = std::clamp(channel.pan * 32 + (channel.envpan - 32) * (128 - abs(channel.pan - 128)), 0, 8191);
 
-    	ccptr->volume = ccptr->actualvolume = (255 * high_precision_volume) >> 35;
-		ccptr->pan = ccptr->actualpan = high_precision_pan >> 5;
+		constexpr float norm = 1.0f/281440616972288.0f; // 2^40/255.0
 
-		ccptr->leftvolume  = (high_precision_volume * high_precision_pan) >> 40;
-		ccptr->rightvolume = (high_precision_volume * (8191 - high_precision_pan)) >> 40;
+		float normalized_high_precision_volume = high_precision_volume * norm;
+
+		ccptr->leftvolume  = normalized_high_precision_volume * high_precision_pan;
+		ccptr->rightvolume = normalized_high_precision_volume * (8191 - high_precision_pan);
 
 //		FSOUND_Software_SetVolume(&FSOUND_Channel[channel], (int)finalvol);
 //		FSOUND_Software_SetPan(&FSOUND_Channel[channel], finalpan);
@@ -1360,7 +1346,7 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod)
 			if (!sptr)
             {
 				sptr = &FMUSIC_DummySample;
-		}
+		    }
 		}
 
 		unsigned char effect = note.effect;			// grab the effect number
