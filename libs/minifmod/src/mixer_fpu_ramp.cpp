@@ -89,9 +89,18 @@ void FSOUND_Mixer_FPU_Ramp(float *mixptr, int len)
                 }
             //}
 
-            float samples_to_mix = (channel.speeddir == FSOUND_MIXDIR_FORWARDS) ?
-                                          channel.sptr->header.loop_start + channel.sptr->header.loop_length - channel.mixpos :
-                                          channel.mixpos - channel.sptr->header.loop_start;
+            float samples_to_mix;
+            if (channel.speeddir == FSOUND_MIXDIR_FORWARDS)
+            {
+                samples_to_mix = channel.sptr->header.loop_start + channel.sptr->header.loop_length - channel.mixpos;
+                if (samples_to_mix <= 0) {
+                    samples_to_mix = channel.sptr->header.length - channel.mixpos;
+                }
+            }
+            else
+            {
+                samples_to_mix = channel.mixpos - channel.sptr->header.loop_start;
+            }
             uint32_t samples = (uint32_t)ceil(samples_to_mix / channel.speed); // round up the division
             if (samples <= mix_count)
             {
