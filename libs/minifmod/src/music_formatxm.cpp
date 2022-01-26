@@ -575,14 +575,14 @@ void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL &channel, FSOUND_SAMPLE *sptr, FMUSIC_
 	{
 		int64_t high_precision_volume = int64_t(channel.envvol * (channel.volume + channel.voldelta) * channel.fadeoutvol) * mod.globalvolume;
 
-        int high_precision_pan = std::clamp(channel.pan * 32 + (channel.envpan - 32) * (128 - abs(channel.pan - 128)), 0, 8191);
+        int high_precision_pan = std::clamp(channel.pan * 32 + (channel.envpan - 32) * (128 - abs(channel.pan - 128)), 0, 8160); // 32*255
 
-		constexpr float norm = 1.0f/281440616972288.0f; // 2^40/255.0
+		constexpr float norm = 1.0f/ 280375465082880.0f; // 2^34 (volume normalization) * 2^6 (pan normalization) * 255.0 (pan scale)
 
 		float normalized_high_precision_volume = high_precision_volume * norm;
 
 		ccptr->leftvolume  = normalized_high_precision_volume * high_precision_pan;
-		ccptr->rightvolume = normalized_high_precision_volume * (8191 - high_precision_pan);
+		ccptr->rightvolume = normalized_high_precision_volume * (8160 - high_precision_pan); // 32*(256-1)
 		ccptr->volume_changed = true;
 
 //		FSOUND_Software_SetVolume(&FSOUND_Channel[channel], (int)finalvol);
