@@ -939,7 +939,7 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
 				}
 				else
                 {
-					channel.sampleoffset = offset;
+					channel.cptr->sampleoffset = offset;
                 }
 				break;
 			}
