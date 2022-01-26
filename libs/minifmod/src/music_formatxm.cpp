@@ -542,9 +542,10 @@ void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL &channel, FSOUND_SAMPLE *sptr, FMUSIC_
             memcpy(&FSOUND_Channel[channel_number], ccptr, sizeof(FSOUND_CHANNEL));
             FSOUND_Channel[channel_number].index = channel_number; // oops dont want its index
 
-            // this should cause the old channel to ramp out nicely.
+            // this will cause the old channel to ramp out nicely.
 		    ccptr->leftvolume  = 0;
 		    ccptr->rightvolume = 0;
+			ccptr->volume_changed = true;
 
 			ccptr = &FSOUND_Channel[channel_number];
 			channel.cptr = ccptr;
@@ -582,6 +583,7 @@ void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL &channel, FSOUND_SAMPLE *sptr, FMUSIC_
 
 		ccptr->leftvolume  = normalized_high_precision_volume * high_precision_pan;
 		ccptr->rightvolume = normalized_high_precision_volume * (8191 - high_precision_pan);
+		ccptr->volume_changed = true;
 
 //		FSOUND_Software_SetVolume(&FSOUND_Channel[channel], (int)finalvol);
 //		FSOUND_Software_SetPan(&FSOUND_Channel[channel], finalpan);
