@@ -15,8 +15,10 @@
 
 #include <cstdint>
 
+#ifdef WIN32
 #define NOMINMAX
 #include <Windows.h>
+#endif
 
 //= DEFINITIONS ===============================================================================
 
@@ -100,11 +102,13 @@ struct FSOUND_CHANNEL
 
 //= FUNCTIONS =================================================================================
 
-typedef struct
+struct FSOUND_SoundBlock
 {
+#ifdef WIN32
 	WAVEHDR		wavehdr;
+#endif
 	short		*data;
-} FSOUND_SoundBlock;
+};
 
 //= CONSTANT EXPRESSIONS ======================================================================
 constexpr int			FSOUND_BufferSizeMs = 1000;
@@ -113,7 +117,9 @@ constexpr int			FSOUND_BufferSizeMs = 1000;
 //= VARIABLE EXTERNS ==========================================================================
 inline FSOUND_CHANNEL		FSOUND_Channel[64];			// channel pool
 inline int					FSOUND_MixRate = 44100;		// mixing rate in hz.
+#ifdef WIN32
 inline HWAVEOUT				FSOUND_WaveOutHandle;
+#endif
 inline FSOUND_SoundBlock	FSOUND_MixBlock;
 
 // mixing info
@@ -125,11 +131,15 @@ inline int					FSOUND_BlockSize;			// LATENCY ms worth of samples
 inline bool					FSOUND_Software_Exit			= false;		// mixing thread termination flag
 inline bool					FSOUND_Software_UpdateMutex		= false;
 inline bool					FSOUND_Software_ThreadFinished	= true;
+#ifdef WIN32
 inline HANDLE				FSOUND_Software_hThread			= NULL;
+#endif
 inline int					FSOUND_Software_FillBlock		= 0;
 inline int					FSOUND_Software_RealBlock;
 
+#ifdef WIN32
 DWORD						FSOUND_Software_DoubleBufferThread(LPDWORD lpdwParam);
+#endif
 void						FSOUND_Software_Fill();
 
 #endif

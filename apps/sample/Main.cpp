@@ -10,7 +10,9 @@
 
 #include <cstdio>
 #include <cstdlib>
+#ifdef WIN32
 #include <conio.h>
+#endif
 
 #define USEMEMLOAD
 //#define USEMEMLOADRESOURCE
@@ -214,11 +216,12 @@ int main(int argc, char *argv[])
 		{
 			int		ord = 0, row = 0;
 			float	mytime = 0;
+#ifdef WIN32
 			if (kbhit())
 			{
 				key = getch();
 			}
-
+#endif
 			ord = FMUSIC_GetOrder();
 			row = FMUSIC_GetRow();
 			mytime = (float)FMUSIC_GetTime() / 1000.0f;
