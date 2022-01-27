@@ -12,6 +12,8 @@
 
 #include "Music.h"
 
+#include <cstring>
+
 #include <minifmod/minifmod.h>
 #include "mixer_fpu_ramp.h"
 #include "music_formatxm.h"
@@ -239,7 +241,8 @@ bool FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 	// ========================================================================================================
 	{
 
-        // ========================================================================================================
+#ifdef WIN32
+		// ========================================================================================================
 		// INITIALIZE WAVEOUT
 		// ========================================================================================================
 		WAVEFORMATEX	pcmwf;
@@ -254,9 +257,10 @@ bool FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 		UINT hr = waveOutOpen(&FSOUND_WaveOutHandle, WAVE_MAPPER, &pcmwf, 0, 0, 0);
 
 		if (hr)
-        {
+		{
 			return false;
-        }
+	    }
+#endif
 	}
 
 	{
@@ -266,6 +270,7 @@ bool FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 
 		FSOUND_MixBlock.data = new short[length]; // TODO: Check Leak
 
+#ifdef WIN32
 		FSOUND_MixBlock.wavehdr.dwFlags			= WHDR_BEGINLOOP | WHDR_ENDLOOP;
 		FSOUND_MixBlock.wavehdr.lpData				= (LPSTR)FSOUND_MixBlock.data;
 		FSOUND_MixBlock.wavehdr.dwBufferLength		= length*sizeof(short);
@@ -273,6 +278,7 @@ bool FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 		FSOUND_MixBlock.wavehdr.dwUser				= 0;
 		FSOUND_MixBlock.wavehdr.dwLoops			= -1;
 		waveOutPrepareHeader(FSOUND_WaveOutHandle, &FSOUND_MixBlock.wavehdr, sizeof(WAVEHDR));
+#endif
 	}
 
 	// ========================================================================================================
@@ -295,6 +301,7 @@ bool FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 	// START THE OUTPUT
 	// ========================================================================================================
 
+#ifdef WIN32
 	waveOutWrite(FSOUND_WaveOutHandle, &FSOUND_MixBlock.wavehdr, sizeof(WAVEHDR));
 
 	{
@@ -309,6 +316,7 @@ bool FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 
 		SetThreadPriority(FSOUND_Software_hThread, THREAD_PRIORITY_TIME_CRITICAL);	// THREAD_PRIORITY_HIGHEST);
 	}
+#endif
 	return true;
 }
 
@@ -339,6 +347,7 @@ void FMUSIC_StopSong()
 	// wait until callback has settled down and exited
 	BLOCK_ON_SOFTWAREUPDATE();
 
+#ifdef WIN32
 	if (FSOUND_Software_hThread)
 	{
 		while (!FSOUND_Software_ThreadFinished)
@@ -347,6 +356,7 @@ void FMUSIC_StopSong()
         }
 		FSOUND_Software_hThread = nullptr;
 	}
+#endif
 
 	// remove the output mixbuffer
 	if (FSOUND_MixBuffer)
@@ -355,6 +365,7 @@ void FMUSIC_StopSong()
         FSOUND_MixBuffer = nullptr;
     }
 
+#ifdef WIN32
     if (FSOUND_MixBlock.wavehdr.lpData)
     {
     	waveOutUnprepareHeader(FSOUND_WaveOutHandle, &FSOUND_MixBlock.wavehdr, sizeof(WAVEHDR));
@@ -363,6 +374,7 @@ void FMUSIC_StopSong()
 		FSOUND_MixBlock.data = nullptr;
         FSOUND_MixBlock.wavehdr.lpData = nullptr;
     }
+#endif
 
 	FMUSIC_PlayingSong = nullptr;
 
@@ -375,9 +387,11 @@ void FMUSIC_StopSong()
 	// ========================================================================================================
 	// SHUT DOWN OUTPUT DRIVER
 	// ========================================================================================================
+#ifdef WIN32
 	waveOutReset(FSOUND_WaveOutHandle);
 
 	waveOutClose(FSOUND_WaveOutHandle);
+#endif
 
 	FSOUND_Software_FillBlock = 0;
     FSOUND_Software_RealBlock = 0;

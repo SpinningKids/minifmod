@@ -14,8 +14,7 @@
 
 #include "Sound.h"
 
-#define NOMINMAX
-#include <Windows.h>
+#include <cstring>
 
 #include "mixer_clipcopy.h"
 #include "mixer_fpu_ramp.h"
@@ -99,7 +98,7 @@ void FSOUND_Software_Fill()
     }
 }
 
-
+#ifdef WIN32
 /*
 	[DESCRIPTION]
 
@@ -158,9 +157,12 @@ bool FSOUND_Init(int mixrate, int vcmmode)
 
 float FSOUND_TimeFromSamples()
 {
+#ifdef WIN32
 	MMTIME mmtime;
 	mmtime.wType = TIME_SAMPLES;
 	waveOutGetPosition(FSOUND_WaveOutHandle, &mmtime, sizeof(mmtime));
 	return mmtime.u.sample / (float)FSOUND_MixRate;
+#else
+	return 0;
+#endif
 }
-

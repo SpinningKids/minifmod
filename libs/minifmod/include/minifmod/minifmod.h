@@ -18,6 +18,8 @@
 #ifndef _MINIFMOD_H_
 #define _MINIFMOD_H_
 
+#include <cstddef>
+
 //===============================================================================================
 //= DEFINITIONS
 //===============================================================================================
@@ -32,7 +34,7 @@ struct FMUSIC_MODULE;
 // ==================================
 // Initialization / Global functions.
 // ==================================
-typedef void (*SAMPLELOADCALLBACK)(short *buff, size_t length_samples, int instno, int sampno);
+typedef void (*SAMPLELOADCALLBACK)(short *buff, std::size_t length_samples, int instno, int sampno);
 typedef void (*FMUSIC_CALLBACK)(FMUSIC_MODULE *mod, unsigned char param);
 
 // this must be called before FSOUND_Init!
