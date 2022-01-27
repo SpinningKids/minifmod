@@ -41,6 +41,8 @@ void FSOUND_File_SetCallbacks(void*         (*OpenCallback)(const char *name),
                               int			(*ReadCallback)(void *buffer, int size, void* handle),
                               void			(*SeekCallback)(void* handle, int pos, int mode),
                               int			(*TellCallback)(void* handle));
+bool FSOUND_Init(int mixrate, int vcmmode = 0);
+float FSOUND_TimeFromSamples();
 
 // =============================================================================================
 // FMUSIC API

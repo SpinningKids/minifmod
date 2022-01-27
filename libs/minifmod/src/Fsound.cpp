@@ -149,3 +149,18 @@ DWORD FSOUND_Software_DoubleBufferThread(LPDWORD lpdwParam)
 
 	return 0;
 }
+
+bool FSOUND_Init(int mixrate, int vcmmode)
+{
+	FSOUND_MixRate = mixrate;
+	return true;
+}
+
+float FSOUND_TimeFromSamples()
+{
+	MMTIME mmtime;
+	mmtime.wType = TIME_SAMPLES;
+	waveOutGetPosition(FSOUND_WaveOutHandle, &mmtime, sizeof(mmtime));
+	return mmtime.u.sample / (float)FSOUND_MixRate;
+}
+
