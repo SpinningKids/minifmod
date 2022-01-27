@@ -148,6 +148,7 @@ DWORD FSOUND_Software_DoubleBufferThread(LPDWORD lpdwParam)
 
 	return 0;
 }
+#endif
 
 bool FSOUND_Init(int mixrate, int vcmmode)
 {
