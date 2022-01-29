@@ -29,11 +29,6 @@
 #define FMUSIC_TRIGGER						4
 #define FMUSIC_STOP							8
 
-#define FMUSIC_ENVELOPE_OFF					0
-#define FMUSIC_ENVELOPE_ON					1
-#define FMUSIC_ENVELOPE_SUSTAIN				2
-#define FMUSIC_ENVELOPE_LOOP				4
-
 // pattern data type
 class FMUSIC_PATTERN
 {
@@ -75,6 +70,14 @@ struct FMUSIC_INSTRUMENT final
 	XMInstrumentHeader		header;
 	XMInstrumentSampleHeader	sample_header;
 	FSOUND_SAMPLE				sample[16];		// 16 samples per instrument
+};
+
+enum class WaveControl : uint8_t
+{
+    Sine,
+	SawTooth,
+	Square,
+	Random,
 };
 
 // Channel type - contains information on a mod channel
@@ -145,8 +148,10 @@ struct FMUSIC_CHANNEL
  	int				patlooprow;
  	int 			patloopno;  		// pattern loop variables for effect  E6x
 
-	unsigned char 	wavecontrol_vibrato;// waveform type for vibrato (4bits)
-	unsigned char 	wavecontrol_tremolo;// waveform type for tremolo (4bits)
+	WaveControl 	wavecontrol_vibrato;// waveform type for vibrato (2bits)
+	bool			continue_vibrato;
+	WaveControl		wavecontrol_tremolo;// waveform type for tremolo (2bits)
+	bool			continue_tremolo;
 
 	unsigned char	finevslup;			// parameter for fine volume slide down
 	unsigned char	fineportaup;		// parameter for fine porta slide up

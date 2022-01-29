@@ -77,8 +77,7 @@ void* memopen(const char *name)
 #ifndef USEMEMLOADRESOURCE
     {
         // load an external file and read it
-        FILE* fp = fopen(name, "rb");
-		if (fp)
+        if (FILE* fp = fopen(name, "rb"))
 		{
 			fseek(fp, 0, SEEK_END);
 			memfile->length = ftell(fp);
@@ -146,7 +145,7 @@ void memseek(void* handle, int pos, int mode)
 
 int memtell(void* handle)
 {
-	MEMFILE *memfile = (MEMFILE *)handle;
+    const MEMFILE *memfile = (MEMFILE *)handle;
 
 	return memfile->pos;
 }
@@ -220,9 +219,9 @@ int main(int argc, char *argv[])
 				key = getch();
 			}
 #endif
-            int ord = FMUSIC_GetOrder();
-			int row = FMUSIC_GetRow();
-			float mytime = (float)FMUSIC_GetTime() / 1000.0f;
+            const int ord = FMUSIC_GetOrder();
+			const int row = FMUSIC_GetRow();
+			const float mytime = (float)FMUSIC_GetTime() / 1000.0f;
 
 			printf("ord %2d row %2d seconds %5.02f %s      \r", ord, row, mytime, (row % 8 ? "    " : "TICK"));
 

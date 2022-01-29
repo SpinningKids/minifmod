@@ -39,47 +39,63 @@ static_assert(sizeof(XMPatternHeader) == 9);
 
 struct XMNote
 {
-	unsigned char	note;			// note to play at     (0-133) 132=none,133=keyoff
-	unsigned char	number;			// sample being played (0-99)
-	unsigned char	volume;			// volume column value (0-64)  255=no volume
-	unsigned char	effect;			// effect number       (0-1Ah)
-	unsigned char	eparam;			// effect parameter    (0-255)
+	unsigned char	note;				// note to play at     (0-133) 132=none,133=keyoff
+	unsigned char	sample_index;		// sample being played (0-99)
+	unsigned char	volume;				// volume column value (0-64)  255=no volume
+	unsigned char	effect;				// effect number       (0-1Ah)
+	unsigned char	effect_parameter;	// effect parameter    (0-255)
 };
 
 static_assert(sizeof(XMNote) == 5);
 
 struct XMInstrumentHeader
 {
-	uint32_t	instSize;               // instrument size
-	char		instName[22];           // instrument filename
-	uint8_t		instType;               // instrument type (now 0)
-	uint16_t	numSamples;             // number of samples in instrument
+	uint32_t	header_size;			// instrument size
+	char		instrument_name[22];	// instrument filename
+	uint8_t		instrument_type;		// instrument type (now 0)
+	uint16_t	samples_count;			// number of samples in instrument
 };
 
 static_assert(sizeof(XMInstrumentHeader) == 29);
 
+enum XMEnvelopeFlags : uint8_t
+{
+    XMEnvelopeFlagsOff = 0,
+    XMEnvelopeFlagsOn = 1,
+    XMEnvelopeFlagsSustain = 2,
+    XMEnvelopeFlagsLoop = 4
+};
+
+enum class XMInstrumentVibratoType : uint8_t
+{
+    Sine = 0,
+	Square = 1,
+	InverseSawTooth = 2,
+	SawTooth = 3
+};
+
 struct XMInstrumentSampleHeader
 {
-	uint32_t	headerSize;             // sample header size
-	uint8_t		noteSmpNums[96];        // sample numbers for notes
-	uint16_t	volEnvelope[24];        // volume envelope points
-	uint16_t	panEnvelope[24];        // panning envelope points
-	uint8_t		numVolPoints;           // number of volume envelope points
-	uint8_t		numPanPoints;           // number of panning env. points
-	uint8_t		volSustain;             // volume sustain point
-	uint8_t		volLoopStart;           // volume loop start point
-	uint8_t		volLoopEnd;             // volume loop end point
-	uint8_t		panSustain;             // panning sustain point
-	uint8_t		panLoopStart;           // panning loop start point
-	uint8_t		panLoopEnd;             // panning loop end point
-	uint8_t		volEnvFlags;            // volume envelope flags
-	uint8_t		panEnvFlags;            // panning envelope flags
-	uint8_t		vibType;                // vibrato type
-	uint8_t		vibSweep;               // vibrato sweep
-	uint8_t		vibDepth;               // vibrato depth
-	uint8_t		vibRate;                // vibrato rate
-	uint16_t	volFadeout;             // volume fadeout
-	uint16_t	reserved;
+	uint32_t				header_size;				// sample header size
+	uint8_t					note_sample_number[96];		// sample numbers for notes
+	uint16_t				volume_envelope[24];		// volume envelope points
+	uint16_t				pan_envelope[24];			// panning envelope points
+	uint8_t					volume_envelope_count;		// number of volume envelope points
+	uint8_t					pan_envelope_count;			// number of panning env. points
+	uint8_t					volume_sustain_index;		// volume sustain point
+	uint8_t					volume_loop_start_index;	// volume loop start point
+	uint8_t					volume_loop_end_index;		// volume loop end point
+	uint8_t					pan_sustain_index;			// panning sustain point
+	uint8_t					pan_loop_start;				// panning loop start point
+	uint8_t					pan_loop_end;				// panning loop end point
+	XMEnvelopeFlags			volume_envelope_flags;		// volume envelope flags
+	XMEnvelopeFlags			pan_envelope_flags;			// panning envelope flags
+	XMInstrumentVibratoType	vibrato_type;				// vibrato type
+	uint8_t					vibrato_sweep;				// vibrato sweep
+	uint8_t					vibrato_depth;				// vibrato depth
+	uint8_t					vibrato_rate;				// vibrato rate
+	uint16_t				volume_fadeout;				// volume fadeout
+	uint16_t				reserved;
 };
 
 static_assert(sizeof(XMInstrumentSampleHeader) == 214);
