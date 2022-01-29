@@ -227,7 +227,7 @@ bool FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 	memset(FMUSIC_Channel, 0, mod->header.channels_count * sizeof(FMUSIC_CHANNEL));
 //	memset(FSOUND_Channel, 0, 64 * sizeof(FSOUND_CHANNEL));
 
-	for (int count=0; count < mod->header.channels_count; count++)
+	for (uint16_t count=0; count < mod->header.channels_count; count++)
 	{
 		FMUSIC_Channel[count].cptr = &FSOUND_Channel[count];
 	}
@@ -418,7 +418,7 @@ void FMUSIC_StopSong()
 	FMUSIC_GetPattern
 ]
 */
-int FMUSIC_GetOrder()
+unsigned char FMUSIC_GetOrder()
 {
 	if (!FMUSIC_TimeInfo)
 	{
@@ -447,7 +447,7 @@ int FMUSIC_GetOrder()
 	[SEE_ALSO]
 ]
 */
-int FMUSIC_GetRow()
+unsigned char FMUSIC_GetRow()
 {
 	if (!FMUSIC_TimeInfo)
     {

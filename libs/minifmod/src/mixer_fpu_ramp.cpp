@@ -165,7 +165,7 @@ void FSOUND_Mixer_FPU_Ramp(float *mixptr, int len)
                         if (channel.speeddir != FSOUND_MIXDIR_FORWARDS)
                         {
                             //BidiBackwards
-                            channel.mixpos = 2 * channel.sptr->header.loop_start - 1 - channel.mixpos;
+                            channel.mixpos = 2 * channel.sptr->header.loop_start - channel.mixpos - 1;
                             channel.speeddir = FSOUND_MIXDIR_FORWARDS;
                             if (channel.mixpos < channel.sptr->header.loop_start + channel.sptr->header.loop_length)
                             {
@@ -173,7 +173,7 @@ void FSOUND_Mixer_FPU_Ramp(float *mixptr, int len)
                             }
                         }
                         //BidiForward
-                        channel.mixpos = 2 * (channel.sptr->header.loop_start + channel.sptr->header.loop_length) - 1 - channel.mixpos;
+                        channel.mixpos = 2 * (channel.sptr->header.loop_start + channel.sptr->header.loop_length) - channel.mixpos - 1;
                         channel.speeddir = FSOUND_MIXDIR_BACKWARDS;
 
                     } while (channel.mixpos < channel.sptr->header.loop_start);

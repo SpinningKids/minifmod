@@ -21,6 +21,7 @@ set(PRIVATE_HEADER_FILES
   ${SRC_DIR}/Sound.h
   ${SRC_DIR}/system_file.h
   ${SRC_DIR}/xmeffects.h
+  ${SRC_DIR}/xmfile.h
 )
 
 set(SRC_FILES

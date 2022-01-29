@@ -10,8 +10,8 @@
 /* This source must not be redistributed without this notice.                 */
 /******************************************************************************/
 
-#ifndef _MIXER_FPU_RAMP_H
-#define _MIXER_FPU_RAMP_H
+#ifndef MIXER_FPU_RAMP_H
+#define MIXER_FPU_RAMP_H
 
 #define FSOUND_VOLUMERAMP_STEPS	128		// at 44.1khz
 
