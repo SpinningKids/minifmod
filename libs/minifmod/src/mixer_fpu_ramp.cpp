@@ -96,7 +96,7 @@ void FSOUND_Mixer_FPU_Ramp(float *mixptr, int len)
             {
                 samples_to_mix = channel.mixpos - channel.sptr->header.loop_start;
             }
-            uint32_t samples = (uint32_t)ceil(samples_to_mix / channel.speed); // round up the division
+            const uint32_t samples = (uint32_t)ceil(samples_to_mix / channel.speed); // round up the division
             if (samples <= mix_count)
             {
                 mix_count = samples;
@@ -114,10 +114,10 @@ void FSOUND_Mixer_FPU_Ramp(float *mixptr, int len)
 
             for (unsigned int i = 0; i < mix_count; ++i)
             {
-                uint32_t mixpos = (uint32_t)channel.mixpos;
-                float frac = channel.mixpos - mixpos;
-                float samp1 = channel.sptr->buff[mixpos];
-                float newsamp = (channel.sptr->buff[mixpos + 1] - samp1) * frac + samp1;
+                const uint32_t mixpos = (uint32_t)channel.mixpos;
+                const float frac = channel.mixpos - mixpos;
+                const float samp1 = channel.sptr->buff[mixpos];
+                const float newsamp = (channel.sptr->buff[mixpos + 1] - samp1) * frac + samp1;
                 mixptr[0 + (sample_index + i) * 2] += channel.ramp_leftvolume * newsamp;
                 mixptr[1 + (sample_index + i) * 2] += channel.ramp_rightvolume * newsamp;
                 channel.ramp_leftvolume += channel.ramp_leftspeed;
@@ -154,7 +154,7 @@ void FSOUND_Mixer_FPU_Ramp(float *mixptr, int len)
             {
                 if (channel.sptr->header.loop_mode == FSOUND_XM_LOOP_NORMAL)
                 {
-                    unsigned target = channel.sptr->header.loop_start + channel.sptr->header.loop_length;
+                    const uint32_t target = channel.sptr->header.loop_start + channel.sptr->header.loop_length;
                     do
                     {
                         channel.mixpos -= channel.sptr->header.loop_length;

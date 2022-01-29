@@ -34,8 +34,8 @@
 */
 void FSOUND_Software_Fill()
 {
-    int		mixpos		= FSOUND_Software_FillBlock * FSOUND_BlockSize;
-	int		totalblocks = FSOUND_BufferSize / FSOUND_BlockSize;
+    const int mixpos = FSOUND_Software_FillBlock * FSOUND_BlockSize;
+	const int totalblocks = FSOUND_BufferSize / FSOUND_BlockSize;
 
 
 	float * const mixbuffer = FSOUND_MixBuffer + (mixpos << 1);
@@ -114,7 +114,7 @@ DWORD FSOUND_Software_DoubleBufferThread(LPDWORD lpdwParam)
 {
     FSOUND_Software_ThreadFinished = false;
 
-	int totalblocks = FSOUND_BufferSize / FSOUND_BlockSize;
+    const int totalblocks = FSOUND_BufferSize / FSOUND_BlockSize;
 
 	while (!FSOUND_Software_Exit)
 	{
@@ -123,8 +123,8 @@ DWORD FSOUND_Software_DoubleBufferThread(LPDWORD lpdwParam)
 		mmt.wType = TIME_BYTES;
 		waveOutGetPosition(FSOUND_WaveOutHandle, &mmt, sizeof(MMTIME));
 
-		int cursorpos = (mmt.u.cb >> 2) % FSOUND_BufferSize;
-		int cursorblock = cursorpos / FSOUND_BlockSize;
+		const int cursorpos = (mmt.u.cb >> 2) % FSOUND_BufferSize;
+		const int cursorblock = cursorpos / FSOUND_BlockSize;
 
 		while (FSOUND_Software_FillBlock != cursorblock)
 		{

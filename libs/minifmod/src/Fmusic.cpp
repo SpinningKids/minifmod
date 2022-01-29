@@ -254,9 +254,7 @@ bool FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 		pcmwf.nAvgBytesPerSec	= pcmwf.nSamplesPerSec * pcmwf.nBlockAlign;
 		pcmwf.cbSize			= 0;
 
-		UINT hr = waveOutOpen(&FSOUND_WaveOutHandle, WAVE_MAPPER, &pcmwf, 0, 0, 0);
-
-		if (hr)
+        if (UINT hr = waveOutOpen(&FSOUND_WaveOutHandle, WAVE_MAPPER, &pcmwf, 0, 0, 0))
 		{
 			return false;
 	    }
@@ -266,7 +264,7 @@ bool FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 	{
         // CREATE AND START LOOPING WAVEOUT BLOCK
 
-		int length = FSOUND_BufferSize * 2; // stereo
+        const int length = FSOUND_BufferSize * 2; // stereo
 
 		FSOUND_MixBlock.data = new short[length]; // TODO: Check Leak
 
