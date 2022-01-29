@@ -4,8 +4,8 @@
 
 // Generated for urk7.xm
 
-#ifndef _XMEFFECTS_H
-#define _XMEFFECTS_H
+#ifndef XMEFFECTS_H_
+#define XMEFFECTS_H_
 
 #ifdef FMUSIC_ALL_ACTIVE
 

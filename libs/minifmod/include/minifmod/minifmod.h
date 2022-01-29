@@ -15,8 +15,8 @@
 // Based on FMOD, copyright (c), Firelight Technologies, 2000-2004.
 //==========================================================================================
 
-#ifndef _MINIFMOD_H_
-#define _MINIFMOD_H_
+#ifndef MINIFMOD_H_
+#define MINIFMOD_H_
 
 #include <cstddef>
 
@@ -53,7 +53,7 @@ float FSOUND_TimeFromSamples();
 // Song management / playback functions.
 // =====================================
 
-FMUSIC_MODULE * FMUSIC_LoadSong(const char *data, SAMPLELOADCALLBACK sampleloadcallback);
+FMUSIC_MODULE * FMUSIC_LoadSong(const char *name, SAMPLELOADCALLBACK sampleloadcallback);
 bool    		FMUSIC_FreeSong(FMUSIC_MODULE *mod);
 bool    		FMUSIC_PlaySong(FMUSIC_MODULE *mod);
 void    		FMUSIC_StopSong();
@@ -61,8 +61,8 @@ void    		FMUSIC_StopSong();
 // Runtime song information.
 // =========================
 
-int				FMUSIC_GetOrder();
-int				FMUSIC_GetRow();
+unsigned char	FMUSIC_GetOrder();
+unsigned char	FMUSIC_GetRow();
 unsigned int	FMUSIC_GetTime();
 
 #endif
