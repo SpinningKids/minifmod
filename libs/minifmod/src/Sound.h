@@ -10,8 +10,8 @@
 /* This source must not be redistributed without this notice.                 */
 /******************************************************************************/
 
-#ifndef _SOUND_H_
-#define _SOUND_H_
+#ifndef SOUND_H_
+#define SOUND_H_
 
 #include <cstdint>
 
@@ -19,6 +19,8 @@
 #define NOMINMAX
 #include <Windows.h>
 #endif
+
+#include "xmfile.h"
 
 //= DEFINITIONS ===============================================================================
 
@@ -34,32 +36,12 @@
 // STRUCTURE DEFINITIONS
 // ==============================================================================================
 
-#pragma pack(push, 1)
-
-struct FSOUND_XM_SAMPLE
-{
-	uint32_t	length;
-	uint32_t	loop_start;
-	uint32_t	loop_length;
-	uint8_t		default_volume;
-	int8_t		finetune;
-	uint8_t		loop_mode : 2;
-	uint8_t		skip_bits_1 : 2;
-	uint8_t		bits16 : 1;
-	uint8_t		default_panning;
-	int8_t		relative_note;
-	uint8_t		reserved;
-	char		sample_name[22];
-};
-
-#pragma pack(pop)
-
 // Sample type - contains info on sample
 struct FSOUND_SAMPLE final
 {
 	int16_t		 	*buff;			// pointer to sound data
 
-	FSOUND_XM_SAMPLE header;
+	XMSampleHeader header;
 
 	// music stuff
 	unsigned char 	globalvol;    	// sample global volume (scalar)
