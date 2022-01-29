@@ -10,8 +10,8 @@
 /* This source must not be redistributed without this notice.                 */
 /******************************************************************************/
 
-#ifndef _SYSTEM_FILE_H_
-#define _SYSTEM_FILE_H_
+#ifndef SYSTEM_FILE_H_
+#define SYSTEM_FILE_H_
 
 inline void*    (*FSOUND_File_Open)(const char *name);
 inline void	    (*FSOUND_File_Close)(void* handle);

@@ -10,8 +10,8 @@
 /* This source must not be redistributed without this notice.                 */
 /******************************************************************************/
 
-#ifndef _MIXER_CLIPCOPY_H
-#define _MIXER_CLIPCOPY_H
+#ifndef MIXER_CLIPCOPY_H
+#define MIXER_CLIPCOPY_H
 
 void FSOUND_MixerClipCopy_Float32(short* dest, const float* src, int len);
 

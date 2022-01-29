@@ -211,20 +211,18 @@ int main(int argc, char *argv[])
 	printf("Playing song...\n");
 
 	{
-		char key = 0;
+		int key = 0;
 		do
 		{
-			int		ord = 0, row = 0;
-			float	mytime = 0;
 #ifdef WIN32
 			if (kbhit())
 			{
 				key = getch();
 			}
 #endif
-			ord = FMUSIC_GetOrder();
-			row = FMUSIC_GetRow();
-			mytime = (float)FMUSIC_GetTime() / 1000.0f;
+            int ord = FMUSIC_GetOrder();
+			int row = FMUSIC_GetRow();
+			float mytime = (float)FMUSIC_GetTime() / 1000.0f;
 
 			printf("ord %2d row %2d seconds %5.02f %s      \r", ord, row, mytime, (row % 8 ? "    " : "TICK"));
 

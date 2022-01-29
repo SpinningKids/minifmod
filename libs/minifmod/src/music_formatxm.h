@@ -10,8 +10,8 @@
 /* This source must not be redistributed without this notice.                 */
 /******************************************************************************/
 
-#ifndef _FMUSIC_FORMATXM
-#define _FMUSIC_FORMATXM
+#ifndef FMUSIC_FORMATXM_
+#define FMUSIC_FORMATXM_
 
 #include "Music.h"
 

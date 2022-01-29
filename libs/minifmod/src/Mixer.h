@@ -10,8 +10,8 @@
 /* This source must not be redistributed without this notice.                 */
 /******************************************************************************/
 
-#ifndef _MIXER_H_
-#define _MIXER_H_
+#ifndef MIXER_H_
+#define MIXER_H_
 
 #define FSOUND_MIXDIR_FORWARDS		1
 #define FSOUND_MIXDIR_BACKWARDS		2
