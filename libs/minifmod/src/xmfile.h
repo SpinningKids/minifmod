@@ -74,12 +74,18 @@ enum class XMInstrumentVibratoType : uint8_t
 	SawTooth = 3
 };
 
+struct XMEnvelopePoint
+{
+	uint16_t position;
+	uint16_t value;
+};
+
 struct XMInstrumentSampleHeader
 {
 	uint32_t				header_size;				// sample header size
 	uint8_t					note_sample_number[96];		// sample numbers for notes
-	uint16_t				volume_envelope[24];		// volume envelope points
-	uint16_t				pan_envelope[24];			// panning envelope points
+	XMEnvelopePoint			volume_envelope[12];		// volume envelope points
+	XMEnvelopePoint			pan_envelope[12];			// panning envelope points
 	uint8_t					volume_envelope_count;		// number of volume envelope points
 	uint8_t					pan_envelope_count;			// number of panning env. points
 	uint8_t					volume_sustain_index;		// volume sustain point
