@@ -225,15 +225,9 @@ void FMUSIC_XM_ProcessEnvelope(FMUSIC_CHANNEL &channel, int *pos, int *tick, uns
 			const int currpos = *pos;
 
 			// if it is at the last position, abort the envelope and continue last value
-			if (currpos == numpoints - 1)
-			{
-				*value = points[currpos].value;
-				*envstopped = true;
-				channel.notectrl |= FMUSIC_VOLUME_PAN;
-				return;
-			}
+			*envstopped = currpos == numpoints - 1;
 			// sustain
-			if ((type & XMEnvelopeFlagsSustain) && currpos == sustain && !channel.keyoff)
+			if (*envstopped || ((type & XMEnvelopeFlagsSustain) && currpos == sustain && !channel.keyoff))
 			{
 				*value = points[currpos].value;
 				channel.notectrl |= FMUSIC_VOLUME_PAN;
@@ -715,7 +709,9 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
 		if (iptr->sample_header.volume_envelope_flags & XMEnvelopeFlagsOn)
 		{
 			if (!channel.envvolstopped)
+			{
 				FMUSIC_XM_ProcessEnvelope(channel, &channel.envvolpos, &channel.envvoltick, iptr->sample_header.volume_envelope_flags, iptr->sample_header.volume_envelope_count, iptr->sample_header.volume_envelope, iptr->sample_header.volume_loop_end_index, iptr->sample_header.volume_loop_start_index, iptr->sample_header.volume_sustain_index, &channel.envvol, &channel.envvolfrac, &channel.envvolstopped, &channel.envvoldelta);
+			}
 		}
 		else
 #endif
@@ -1098,9 +1094,9 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
 
 					// search and reinterpolate new envelope position
 					while (note.effect_parameter > iptr->sample_header.volume_envelope[currpos+1].position && currpos < iptr->sample_header.volume_envelope_count) currpos++;
-	
+
 					channel.envvolpos = currpos;
-	
+
 					// if it is at the last position, abort the envelope and continue last volume
 					channel.envvolstopped = channel.envvolpos >= iptr->sample_header.volume_envelope_count - 1;
 					if (channel.envvolstopped)
@@ -1110,22 +1106,22 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
 					else
 					{
 						channel.envvoltick = note.effect_parameter;
-		
+
 						int nextpos = channel.envvolpos + 1;
-		
+
 						int currtick = iptr->sample_header.volume_envelope[currpos].position;				// get tick at this point
 						int nexttick = iptr->sample_header.volume_envelope[nextpos].position;				// get tick at next point
-		
+
 						int currvol = iptr->sample_header.volume_envelope[currpos].value << 16;	// get VOL at this point << 16
 						int nextvol = iptr->sample_header.volume_envelope[nextpos].value << 16;	// get VOL at next point << 16
-		
+
 						// interpolate 2 points to find delta step
 						int tickdiff = nexttick - currtick;
 						if (tickdiff) channel.envvoldelta = (nextvol-currvol) / tickdiff;
 						else		  channel.envvoldelta = 0;
-		
+
 						tickdiff = channel.envvoltick - currtick;
-		
+
 						channel.envvolfrac  = currvol + (channel.envvoldelta * tickdiff);
 						channel.envvol = channel.envvolfrac >> 16;
 						channel.envvolpos++;
