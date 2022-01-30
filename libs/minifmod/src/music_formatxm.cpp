@@ -208,52 +208,36 @@ void FMUSIC_XM_Tremolo(FMUSIC_CHANNEL &channel)
 ]
 */
 #if defined(FMUSIC_XM_VOLUMEENVELOPE_ACTIVE) || defined(FMUSIC_XM_PANENVELOPE_ACTIVE)
-void FMUSIC_XM_ProcessEnvelope(FMUSIC_CHANNEL &channel, int *pos, int *tick, unsigned char type, int numpoints, XMEnvelopePoint (& points)[12], unsigned char loopend, unsigned char loopstart, unsigned char sustain, int* value, int* valfrac, bool* envstopped, int* envdelta)
+void FMUSIC_XM_ProcessEnvelope(FMUSIC_CHANNEL &channel, int *pos, EnvelopePoint *point, unsigned char type, const EnvelopePoints& envelope, unsigned char loopend, unsigned char loopstart, unsigned char sustain)
 {
-	// Envelope
-	if (*pos < numpoints)
-	{
-		if (*tick == points[*pos].position)	// if we are at the correct tick for the position
-		{
+	if (*pos < envelope.count)
+    {
+		// Envelope
+        channel.notectrl |= FMUSIC_VOLUME_PAN;
+        if (point->position == envelope.envelope[*pos].position)	// if we are at the correct tick for the position
+        {
             // handle loop
-			if ((type & XMEnvelopeFlagsLoop) && *pos == loopend)
-			{
-				*pos  = loopstart;
-				*tick = points[*pos].position;
-			}
+            if ((type & XMEnvelopeFlagsLoop) && *pos == loopend)
+            {
+                *pos  = loopstart;
+            }
 
-			const int currpos = *pos;
+			*point = envelope.envelope[*pos];
 
 			// if it is at the last position, abort the envelope and continue last value
-			*envstopped = currpos == numpoints - 1;
-			// sustain
-			if (*envstopped || ((type & XMEnvelopeFlagsSustain) && currpos == sustain && !channel.keyoff))
-			{
-				*value = points[currpos].value;
-				channel.notectrl |= FMUSIC_VOLUME_PAN;
-				return;
-			}
-
-			const int nextpos = currpos + 1;
-			const int curr = points[currpos].value << 16;	// get  at this point << 16
-			const int next = points[nextpos].value << 16;	// get  at next point << 16
-			// interpolate 2 points to find delta step
-			const int tickdiff = points[nextpos].position - points[currpos].position;
-			*envdelta = tickdiff ? (next-curr) / tickdiff : 0;
-			*valfrac = curr;
-
+			// same if we're at sustain point
+            if ((type & XMEnvelopeFlagsSustain) && *pos == sustain && !channel.keyoff)
+            {
+                return; // skip ticking, stay in position
+            }
 			(*pos)++;
 		}
-		else
+        else
         {
-			*valfrac += *envdelta;				// interpolate
+            point->fracvalue += point->fracdelta;				// interpolate
         }
+		++point->position;
 	}
-
-	*value = *valfrac >> 16;
-	(*tick)++;
-
-	channel.notectrl |= FMUSIC_VOLUME_PAN;
 }
 #endif // (FMUSIC_XM_VOLUMEENVELOPE_ACTIVE) || defined(FMUSIC_XM_PANENVELOPE_ACTIVE)
 
@@ -480,11 +464,11 @@ void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL &channel, FSOUND_SAMPLE *sptr, FMUSIC_
 
     if (channel.notectrl & FMUSIC_VOLUME_PAN)
 	{
-		int64_t high_precision_volume = int64_t(channel.envvol * (channel.volume + channel.voldelta) * channel.fadeoutvol) * mod.globalvolume;
+		int64_t high_precision_volume = int64_t((channel.envvol.fracvalue >> 16) * (channel.volume + channel.voldelta) * channel.fadeoutvol) * mod.globalvolume;
 
-        int high_precision_pan = std::clamp(channel.pan * 32 + (channel.envpan - 32) * (128 - abs(channel.pan - 128)), 0, 8160); // 32*255
+        int high_precision_pan = std::clamp(channel.pan * 32 + ((channel.envpan.fracvalue >> 16) - 32) * (128 - abs(channel.pan - 128)), 0, 8160); // 32*255
 
-		constexpr float norm = 1.0f/ 280375465082880.0f; // 2^34 (volume normalization) * 2^6 (pan normalization) * 255.0 (pan scale)
+		constexpr float norm = 1.0f/ 140187732541440.0f; // 2^33 (volume normalization) * 2^6 (pan normalization) * 255.0 (pan scale)
 
 		float normalized_high_precision_volume = high_precision_volume * norm;
 
@@ -526,20 +510,18 @@ void FMUSIC_XM_Resetcptr(FMUSIC_CHANNEL& cptr, FSOUND_SAMPLE* sptr)
 {
 	cptr.volume = (int)sptr->header.default_volume;
 	cptr.pan = sptr->header.default_panning;
-	cptr.envvol = 64;
+	cptr.envvol.fracvalue = 64 << 16;
 	cptr.envvolpos = 0;
-	cptr.envvoltick = 0;
-	cptr.envvoldelta = 0;
+	cptr.envvol.position = 0;
+	cptr.envvol.fracdelta = 0;
 
-	cptr.envpan = 32;
+	cptr.envpan.fracvalue = 32 << 16;
 	cptr.envpanpos = 0;
-	cptr.envpantick = 0;
-	cptr.envpandelta = 0;
+	cptr.envpan.position = 0;
+	cptr.envpan.fracdelta = 0;
 
 	cptr.keyoff = false;
-	cptr.fadeoutvol = 65536;
-	cptr.envvolstopped = false;
-	cptr.envpanstopped = false;
+	cptr.fadeoutvol = 32768;
 	cptr.ivibsweeppos = 0;
 	cptr.ivibpos = 0;
 
@@ -706,26 +688,20 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
 
         //= PROCESS ENVELOPES ==========================================================================
 #ifdef FMUSIC_XM_VOLUMEENVELOPE_ACTIVE
-		if (iptr->sample_header.volume_envelope_flags & XMEnvelopeFlagsOn)
+		if (iptr->volume_envelope.count > 0)
 		{
-			if (!channel.envvolstopped)
-			{
-				FMUSIC_XM_ProcessEnvelope(channel, &channel.envvolpos, &channel.envvoltick, iptr->sample_header.volume_envelope_flags, iptr->sample_header.volume_envelope_count, iptr->sample_header.volume_envelope, iptr->sample_header.volume_loop_end_index, iptr->sample_header.volume_loop_start_index, iptr->sample_header.volume_sustain_index, &channel.envvol, &channel.envvolfrac, &channel.envvolstopped, &channel.envvoldelta);
-			}
+			FMUSIC_XM_ProcessEnvelope(channel, &channel.envvolpos, &channel.envvol, iptr->sample_header.volume_envelope_flags, iptr->volume_envelope, iptr->sample_header.volume_loop_end_index, iptr->sample_header.volume_loop_start_index, iptr->sample_header.volume_sustain_index);
 		}
 		else
 #endif
 		{
 			if (channel.keyoff)
 			{
-				channel.envvol = 0;
+				channel.envvol.fracvalue = 0;
 			}
 		}
 #ifdef FMUSIC_XM_PANENVELOPE_ACTIVE
-		if (iptr->sample_header.pan_envelope_flags & XMEnvelopeFlagsOn && !channel.envpanstopped)
-		{
-			FMUSIC_XM_ProcessEnvelope(channel, &channel.envpanpos, &channel.envpantick, iptr->sample_header.pan_envelope_flags, iptr->sample_header.pan_envelope_count, iptr->sample_header.pan_envelope, iptr->sample_header.pan_loop_end, iptr->sample_header.pan_loop_start, iptr->sample_header.pan_sustain_index, &channel.envpan, &channel.envpanfrac, &channel.envpanstopped, &channel.envpandelta);
-		}
+		FMUSIC_XM_ProcessEnvelope(channel, &channel.envpanpos, &channel.envpan, iptr->sample_header.pan_envelope_flags, iptr->pan_envelope, iptr->sample_header.pan_loop_end, iptr->sample_header.pan_loop_start, iptr->sample_header.pan_sustain_index);
 #endif
 
 		//= PROCESS VOLUME FADEOUT =====================================================================
@@ -1088,44 +1064,22 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
 #ifdef FMUSIC_XM_SETENVELOPEPOS_ACTIVE
 			case FMUSIC_XM_SETENVELOPEPOS :
 			{
-                if (iptr->sample_header.volume_envelope_flags & XMEnvelopeFlagsOn)
+                if (iptr->volume_envelope.count > 0)
                 {
 					int currpos = 0;
 
 					// search and reinterpolate new envelope position
-					while (note.effect_parameter > iptr->sample_header.volume_envelope[currpos+1].position && currpos < iptr->sample_header.volume_envelope_count) currpos++;
+					while (currpos < iptr->volume_envelope.count - 1 && note.effect_parameter > iptr->volume_envelope.envelope[currpos+1].position) currpos++;
 
 					channel.envvolpos = currpos;
 
-					// if it is at the last position, abort the envelope and continue last volume
-					channel.envvolstopped = channel.envvolpos >= iptr->sample_header.volume_envelope_count - 1;
-					if (channel.envvolstopped)
-					{
-						channel.envvol = iptr->sample_header.volume_envelope[iptr->sample_header.volume_envelope_count - 1].value;
-					}
-					else
-					{
-						channel.envvoltick = note.effect_parameter;
+					int currvol = iptr->volume_envelope.envelope[currpos].fracvalue;	// get VOL at this point << 16
 
-						int nextpos = channel.envvolpos + 1;
+					channel.envvol.position = note.effect_parameter;
 
-						int currtick = iptr->sample_header.volume_envelope[currpos].position;				// get tick at this point
-						int nexttick = iptr->sample_header.volume_envelope[nextpos].position;				// get tick at next point
-
-						int currvol = iptr->sample_header.volume_envelope[currpos].value << 16;	// get VOL at this point << 16
-						int nextvol = iptr->sample_header.volume_envelope[nextpos].value << 16;	// get VOL at next point << 16
-
-						// interpolate 2 points to find delta step
-						int tickdiff = nexttick - currtick;
-						if (tickdiff) channel.envvoldelta = (nextvol-currvol) / tickdiff;
-						else		  channel.envvoldelta = 0;
-
-						tickdiff = channel.envvoltick - currtick;
-
-						channel.envvolfrac  = currvol + (channel.envvoldelta * tickdiff);
-						channel.envvol = channel.envvolfrac >> 16;
-						channel.envvolpos++;
-					}
+                    channel.envvol.fracdelta = iptr->volume_envelope.envelope[currpos].fracdelta;
+					channel.envvol.fracvalue  = currvol + channel.envvol.fracdelta * (channel.envvol.position - iptr->volume_envelope.envelope[currpos].position);
+					++channel.envvolpos;
 				}
 				break;
 			}
@@ -1253,21 +1207,15 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod)
 		unsigned char paramy = note.effect_parameter & 0xF;		// grab the effect parameter y
 
 		channel.voldelta	= 0;				// this is for tremolo / tremor etc
-		channel.freqdelta = 0;				// this is for vibrato / arpeggio etc
+		channel.freqdelta	= 0;				// this is for vibrato / arpeggio etc
 		channel.notectrl	= 0;
 
 		//= PROCESS ENVELOPES ==========================================================================
 #ifdef FMUSIC_XM_VOLUMEENVELOPE_ACTIVE
-		if (iptr->sample_header.volume_envelope_flags & XMEnvelopeFlagsOn && !channel.envvolstopped)
-        {
-			FMUSIC_XM_ProcessEnvelope(channel, &channel.envvolpos, &channel.envvoltick, iptr->sample_header.volume_envelope_flags, iptr->sample_header.volume_envelope_count, iptr->sample_header.volume_envelope, iptr->sample_header.volume_loop_end_index, iptr->sample_header.volume_loop_start_index, iptr->sample_header.volume_sustain_index, &channel.envvol, &channel.envvolfrac, &channel.envvolstopped, &channel.envvoldelta);
-        }
+		FMUSIC_XM_ProcessEnvelope(channel, &channel.envvolpos, &channel.envvol, iptr->sample_header.volume_envelope_flags, iptr->volume_envelope, iptr->sample_header.volume_loop_end_index, iptr->sample_header.volume_loop_start_index, iptr->sample_header.volume_sustain_index);
 #endif
 #ifdef FMUSIC_XM_PANENVELOPE_ACTIVE
-		if (iptr->sample_header.pan_envelope_flags & XMEnvelopeFlagsOn && !channel.envpanstopped)
-        {
-			FMUSIC_XM_ProcessEnvelope(channel, &channel.envpanpos, &channel.envpantick, iptr->sample_header.pan_envelope_flags, iptr->sample_header.pan_envelope_count, iptr->sample_header.pan_envelope, iptr->sample_header.pan_loop_end, iptr->sample_header.pan_loop_start, iptr->sample_header.pan_sustain_index, &channel.envpan, &channel.envpanfrac, &channel.envpanstopped, &channel.envpandelta);
-        }
+		FMUSIC_XM_ProcessEnvelope(channel, &channel.envpanpos, &channel.envpan, iptr->sample_header.pan_envelope_flags, iptr->pan_envelope, iptr->sample_header.pan_loop_end, iptr->sample_header.pan_loop_start, iptr->sample_header.pan_sustain_index);
 #endif
 
 		//= PROCESS VOLUME FADEOUT =====================================================================
@@ -1848,16 +1796,25 @@ std::unique_ptr<FMUSIC_MODULE> FMUSIC_LoadXM(void* fp, SAMPLELOADCALLBACK sample
 		{
 			FSOUND_File_Read(&iptr->sample_header, sizeof(iptr->sample_header), fp);
 
-			iptr->sample_header.volume_fadeout *= 2;		// i DONT KNOW why i needed this.. it just made it work
+			iptr->volume_envelope.count = (iptr->sample_header.volume_envelope_count < 2 || !(iptr->sample_header.volume_envelope_flags & XMEnvelopeFlagsOn)) ? 0 : iptr->sample_header.volume_envelope_count;
+			iptr->pan_envelope.count = (iptr->sample_header.pan_envelope_count < 2 || !(iptr->sample_header.pan_envelope_flags & XMEnvelopeFlagsOn)) ? 0 : iptr->sample_header.pan_envelope_count;
+			auto adjust_envelope = [](EnvelopePoints& e, const XMEnvelopePoint(&original_points)[12])
+			{
+				for (int i = 0; i < e.count; ++i)
+				{
+					e.envelope[i].position = original_points[i].position;
+					e.envelope[i].fracvalue = original_points[i].value << 16;
+					if (i > 0)
+					{
+						const int tickdiff = e.envelope[i].position - e.envelope[i - 1].position;
 
-			if (iptr->sample_header.volume_envelope_count < 2)
-            {
-				iptr->sample_header.volume_envelope_flags = XMEnvelopeFlagsOff;
-            }
-			if (iptr->sample_header.pan_envelope_count < 2)
-            {
-				iptr->sample_header.pan_envelope_flags = XMEnvelopeFlagsOff;
-            }
+						e.envelope[i - 1].fracdelta = tickdiff ? (e.envelope[i].fracvalue - e.envelope[i - 1].fracvalue) / tickdiff : 0;
+					}
+				}
+				e.envelope[e.count - 1].fracdelta = 0;
+			};
+			adjust_envelope(iptr->volume_envelope, iptr->sample_header.volume_envelope);
+			adjust_envelope(iptr->pan_envelope, iptr->sample_header.pan_envelope);
 
 			// seek to first sample
 			FSOUND_File_Seek(fp, firstsampleoffset, SEEK_SET);

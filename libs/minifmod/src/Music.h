@@ -64,11 +64,26 @@ struct FMUSIC_TIMMEINFO
 	unsigned int  ms;
 };
 
+struct EnvelopePoint
+{
+	int position;
+	int fracvalue;
+	int fracdelta;
+};
+
+struct EnvelopePoints
+{
+	uint8_t count;
+	EnvelopePoint envelope[12];
+};
+
 // Multi sample extended instrument
 struct FMUSIC_INSTRUMENT final
 {
-	XMInstrumentHeader		header;
+	XMInstrumentHeader			header;
 	XMInstrumentSampleHeader	sample_header;
+	EnvelopePoints				volume_envelope;
+	EnvelopePoints				pan_envelope;
 	FSOUND_SAMPLE				sample[16];		// 16 samples per instrument
 };
 
@@ -96,19 +111,11 @@ struct FMUSIC_CHANNEL
 	int				voldelta;			// delta for volume commands.. tremolo/tremor etc
 	int				freqdelta;			// delta for frequency commands.. vibrato/arpeggio etc
 
-	int				envvoltick;			// tick counter for envelope position
-	int				envvolpos;			// envelope position
-	int				envvolfrac;			// fractional interpolated envelope volume
-	int				envvol;				// final interpolated envelope volume
-	int				envvoldelta;		// delta step between points
-	bool			envvolstopped;		// flag to say whether envelope has finished or not
+	int				envvolpos;			// envelope position - stopped if >= to the number of volume points
+	EnvelopePoint   envvol;				// tick, fracvalue and fracdelta for volume envelope
 
-	int				envpantick;			// tick counter for envelope position
-	int				envpanpos;			// envelope position
-	int				envpanfrac;			// fractional interpolated envelope pan
-	int				envpan;				// final interpolated envelope pan
-	int				envpandelta;		// delta step between points
-	bool			envpanstopped;		// flag to say whether envelope has finished or not
+	int				envpanpos;			// envelope position - stopped if >= to the number of pan points
+	EnvelopePoint   envpan;				// tick, fracvalue and fracdelta for pan envelope
 
 	int				fadeoutvol;			// volume fade out
 	int				ivibpos;   			// instrument vibrato position
