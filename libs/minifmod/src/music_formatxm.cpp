@@ -234,7 +234,7 @@ void FMUSIC_XM_ProcessEnvelope(FMUSIC_CHANNEL &channel, int *pos, EnvelopePoint 
 		}
         else
         {
-            point->fracvalue += point->fracdelta;				// interpolate
+            point->value += point->delta;				// interpolate
         }
 		++point->position;
 	}
@@ -464,16 +464,15 @@ void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL &channel, FSOUND_SAMPLE *sptr, FMUSIC_
 
     if (channel.notectrl & FMUSIC_VOLUME_PAN)
 	{
-		int64_t high_precision_volume = int64_t((channel.envvol.fracvalue >> 16) * (channel.volume + channel.voldelta) * channel.fadeoutvol) * mod.globalvolume;
+		mod.globalvolume = std::clamp(mod.globalvolume, 0, 64);
+        float high_precision_pan = std::clamp(channel.pan+ channel.envpan.value * (128 - abs(channel.pan - 128)), 0.0f, 255.0f); // 32*255
 
-        int high_precision_pan = std::clamp(channel.pan * 32 + ((channel.envpan.fracvalue >> 16) - 32) * (128 - abs(channel.pan - 128)), 0, 8160); // 32*255
+		constexpr float norm = 1.0f/ 68451041280.0f; // 2^27 (volume normalization) * 255.0 (pan scale) (*2 for safety?!?)
 
-		constexpr float norm = 1.0f/ 140187732541440.0f; // 2^33 (volume normalization) * 2^6 (pan normalization) * 255.0 (pan scale)
+		float high_precision_volume = (channel.volume + channel.voldelta) * channel.fadeoutvol * mod.globalvolume * channel.envvol.value * norm;
 
-		float normalized_high_precision_volume = high_precision_volume * norm;
-
-		ccptr->leftvolume  = normalized_high_precision_volume * high_precision_pan;
-		ccptr->rightvolume = normalized_high_precision_volume * (8160 - high_precision_pan); // 32*(256-1)
+		ccptr->leftvolume  = high_precision_volume * high_precision_pan;
+		ccptr->rightvolume = high_precision_volume * (255 - high_precision_pan);
 		ccptr->volume_changed = true;
 
 //		FSOUND_Software_SetVolume(&FSOUND_Channel[channel], (int)finalvol);
@@ -510,15 +509,15 @@ void FMUSIC_XM_Resetcptr(FMUSIC_CHANNEL& cptr, FSOUND_SAMPLE* sptr)
 {
 	cptr.volume = (int)sptr->header.default_volume;
 	cptr.pan = sptr->header.default_panning;
-	cptr.envvol.fracvalue = 64 << 16;
+	cptr.envvol.value = 1.0;
 	cptr.envvolpos = 0;
 	cptr.envvol.position = 0;
-	cptr.envvol.fracdelta = 0;
+	cptr.envvol.delta = 0;
 
-	cptr.envpan.fracvalue = 32 << 16;
+	cptr.envpan.value = 0;
 	cptr.envpanpos = 0;
 	cptr.envpan.position = 0;
-	cptr.envpan.fracdelta = 0;
+	cptr.envpan.delta = 0;
 
 	cptr.keyoff = false;
 	cptr.fadeoutvol = 32768;
@@ -697,7 +696,7 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
 		{
 			if (channel.keyoff)
 			{
-				channel.envvol.fracvalue = 0;
+				channel.envvol.value = 0;
 			}
 		}
 #ifdef FMUSIC_XM_PANENVELOPE_ACTIVE
@@ -1043,10 +1042,6 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
 			case FMUSIC_XM_SETGLOBALVOLUME :
 			{
 				mod.globalvolume = note.effect_parameter;
-				if (mod.globalvolume > 64)
-                {
-					mod.globalvolume=64;
-                }
 				channel.notectrl |= FMUSIC_VOLUME_PAN;
 				break;
 			}
@@ -1073,12 +1068,11 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
 
 					channel.envvolpos = currpos;
 
-					int currvol = iptr->volume_envelope.envelope[currpos].fracvalue;	// get VOL at this point << 16
+					float currvol = iptr->volume_envelope.envelope[currpos].value;	// get VOL at this point << 16
 
 					channel.envvol.position = note.effect_parameter;
-
-                    channel.envvol.fracdelta = iptr->volume_envelope.envelope[currpos].fracdelta;
-					channel.envvol.fracvalue  = currvol + channel.envvol.fracdelta * (channel.envvol.position - iptr->volume_envelope.envelope[currpos].position);
+                    channel.envvol.delta = iptr->volume_envelope.envelope[currpos].delta;
+					channel.envvol.value  = currvol + channel.envvol.delta * (channel.envvol.position - iptr->volume_envelope.envelope[currpos].position);
 					++channel.envvolpos;
 				}
 				break;
@@ -1603,11 +1597,11 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod)
 				// slide up takes precedence over down
 				if (paramx)
 				{
-					mod.globalvolume = std::min(mod.globalvolume + paramx, 0x40);
+					mod.globalvolume = mod.globalvolume + paramx;
 				}
 				else
 				{
-					mod.globalvolume = std::max(mod.globalvolume - paramy, 0);
+					mod.globalvolume = mod.globalvolume - paramy;
 				}
 				channel.notectrl |= FMUSIC_VOLUME_PAN;
 				break;
@@ -1798,23 +1792,23 @@ std::unique_ptr<FMUSIC_MODULE> FMUSIC_LoadXM(void* fp, SAMPLELOADCALLBACK sample
 
 			iptr->volume_envelope.count = (iptr->sample_header.volume_envelope_count < 2 || !(iptr->sample_header.volume_envelope_flags & XMEnvelopeFlagsOn)) ? 0 : iptr->sample_header.volume_envelope_count;
 			iptr->pan_envelope.count = (iptr->sample_header.pan_envelope_count < 2 || !(iptr->sample_header.pan_envelope_flags & XMEnvelopeFlagsOn)) ? 0 : iptr->sample_header.pan_envelope_count;
-			auto adjust_envelope = [](EnvelopePoints& e, const XMEnvelopePoint(&original_points)[12])
+			auto adjust_envelope = [](EnvelopePoints& e, const XMEnvelopePoint(&original_points)[12], int offset, float scale)
 			{
 				for (int i = 0; i < e.count; ++i)
 				{
 					e.envelope[i].position = original_points[i].position;
-					e.envelope[i].fracvalue = original_points[i].value << 16;
+					e.envelope[i].value = (original_points[i].value - offset) / scale;
 					if (i > 0)
 					{
 						const int tickdiff = e.envelope[i].position - e.envelope[i - 1].position;
 
-						e.envelope[i - 1].fracdelta = tickdiff ? (e.envelope[i].fracvalue - e.envelope[i - 1].fracvalue) / tickdiff : 0;
+						e.envelope[i - 1].delta = tickdiff ? (e.envelope[i].value - e.envelope[i - 1].value) / tickdiff : 0;
 					}
 				}
-				e.envelope[e.count - 1].fracdelta = 0;
+				e.envelope[e.count - 1].delta = 0;
 			};
-			adjust_envelope(iptr->volume_envelope, iptr->sample_header.volume_envelope);
-			adjust_envelope(iptr->pan_envelope, iptr->sample_header.pan_envelope);
+			adjust_envelope(iptr->volume_envelope, iptr->sample_header.volume_envelope, 0, 64);
+			adjust_envelope(iptr->pan_envelope, iptr->sample_header.pan_envelope, 32, 32);
 
 			// seek to first sample
 			FSOUND_File_Seek(fp, firstsampleoffset, SEEK_SET);

@@ -67,8 +67,8 @@ struct FMUSIC_TIMMEINFO
 struct EnvelopePoint
 {
 	int position;
-	int fracvalue;
-	int fracdelta;
+	float value;
+	float delta;
 };
 
 struct EnvelopePoints
