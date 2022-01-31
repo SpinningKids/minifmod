@@ -79,7 +79,6 @@ struct FSOUND_CHANNEL
 	float			ramp_rightvolume;
 	float			ramp_leftspeed;
 	float			ramp_rightspeed;
-	unsigned int	ramp_count;
 };
 
 //= FUNCTIONS =================================================================================

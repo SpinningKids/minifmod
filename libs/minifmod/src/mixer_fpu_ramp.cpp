@@ -62,27 +62,11 @@ void FSOUND_Mixer_FPU_Ramp(float *mixptr, int len)
             unsigned int mix_count = len - sample_index;
             bool mix_endflag_sample = false;
 
-            //= VOLUME RAMP SETUP =========================================================
-            // Reasons to ramp
-            // 1. volume change
-            // 2. sample starts (just treat as volume change - 0 to volume)
-            // 3. sample ends (ramp last n number of samples from volume to 0)
+            channel.ramp_leftspeed = (channel.leftvolume - channel.ramp_leftvolume) / mix_volumerampsteps;
+            channel.ramp_rightspeed = (channel.rightvolume - channel.ramp_rightvolume) / mix_volumerampsteps;
 
-            // now if the volume has changed, make end condition equal a volume ramp
-            if (channel.volume_changed || channel.ramp_count == 0)
-            {
-                // if it tries to continue an old ramp, but the target has changed,
-                // set up a new ramp
-                channel.ramp_leftspeed = (channel.leftvolume - channel.ramp_leftvolume) / mix_volumerampsteps;
-                channel.ramp_rightspeed = (channel.rightvolume - channel.ramp_rightvolume) / mix_volumerampsteps;
-                channel.ramp_count = mix_volumerampsteps;
-            }
-            assert(channel.ramp_count > 0);
-            //if (channel.ramp_count > 0) {
-                if (mix_count > channel.ramp_count) {
-                    mix_count = channel.ramp_count;
-                }
-            //}
+            unsigned int ramp_count = mix_volumerampsteps;
+            mix_count = std::min(mix_count, ramp_count);
 
             float samples_to_mix;
             if (channel.speeddir == FSOUND_MIXDIR_FORWARDS)
@@ -130,22 +114,20 @@ void FSOUND_Mixer_FPU_Ramp(float *mixptr, int len)
             //=============================================================================================
             // DID A VOLUME RAMP JUST HAPPEN
             //=============================================================================================
-            if (channel.ramp_count != 0) {
-                channel.ramp_count -= mix_count;
+            ramp_count -= mix_count;
 
-                // if rampcount now = 0, a ramp has FINISHED, so finish the rest of the mix
-                if (channel.ramp_count == 0)
-                {
+            // if rampcount now = 0, a ramp has FINISHED, so finish the rest of the mix
+            if (ramp_count == 0)
+            {
 
-                    // clear out the ramp speeds
-                    channel.ramp_leftspeed = 0;
-                    channel.ramp_rightspeed = 0;
+                // clear out the ramp speeds
+                channel.ramp_leftspeed = 0;
+                channel.ramp_rightspeed = 0;
 
-                    // clamp the 2 volumes together in case the speed wasnt accurate enough!
-                    channel.ramp_leftvolume = channel.leftvolume;
-                    channel.ramp_rightvolume = channel.rightvolume;
+                // clamp the 2 volumes together in case the speed wasnt accurate enough!
+                channel.ramp_leftvolume = channel.leftvolume;
+                channel.ramp_rightvolume = channel.rightvolume;
 
-                }
             }
             //=============================================================================================
             // SWITCH ON LOOP MODE TYPE
