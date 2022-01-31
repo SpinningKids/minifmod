@@ -43,7 +43,7 @@
 ]
 */
 #if defined(FMUSIC_XM_PORTATO_ACTIVE) || defined(FMUSIC_XM_PORTATOVOLSLIDE_ACTIVE)
-void FMUSIC_XM_Portamento(FMUSIC_CHANNEL &channel)
+static void FMUSIC_XM_Portamento(FMUSIC_CHANNEL &channel)
 {
 	// TODO: check if the following replaces the entire portaup/down (it should)
 	//   channel.freq = std::clamp(channel.portatarget, channel.freq - channel.portaspeed, channel.freq + channel.portaspeed);
@@ -88,7 +88,7 @@ void FMUSIC_XM_Portamento(FMUSIC_CHANNEL &channel)
 ]
 */
 #if defined(FMUSIC_XM_VIBRATO_ACTIVE) || defined(FMUSIC_XM_VIBRATOVOLSLIDE_ACTIVE)
-void FMUSIC_XM_Vibrato(FMUSIC_CHANNEL &channel)
+static void FMUSIC_XM_Vibrato(FMUSIC_CHANNEL &channel)
 {
 	switch (channel.wavecontrol_vibrato)
 	{
@@ -114,7 +114,7 @@ void FMUSIC_XM_Vibrato(FMUSIC_CHANNEL &channel)
 #endif // defined(FMUSIC_XM_VIBRATO_ACTIVE) || defined(FMUSIC_XM_VIBRATOVOLSLIDE_ACTIVE)
 
 #ifdef FMUSIC_XM_INSTRUMENTVIBRATO_ACTIVE
-void FMUSIC_XM_InstrumentVibrato(FMUSIC_CHANNEL &channel, const FMUSIC_INSTRUMENT *iptr)
+static void FMUSIC_XM_InstrumentVibrato(FMUSIC_CHANNEL &channel, const FMUSIC_INSTRUMENT *iptr)
 {
 	int delta;
 
@@ -159,7 +159,7 @@ void FMUSIC_XM_InstrumentVibrato(FMUSIC_CHANNEL &channel, const FMUSIC_INSTRUMEN
 #endif	// FMUSIC_XM_INSTRUMENTVIBRATO_ACTIVE
 
 #ifdef FMUSIC_XM_TREMOLO_ACTIVE
-void FMUSIC_XM_Tremolo(FMUSIC_CHANNEL &channel)
+static void FMUSIC_XM_Tremolo(FMUSIC_CHANNEL &channel)
 {
 	switch(channel.wavecontrol_tremolo)
 	{
@@ -208,7 +208,7 @@ void FMUSIC_XM_Tremolo(FMUSIC_CHANNEL &channel)
 ]
 */
 #if defined(FMUSIC_XM_VOLUMEENVELOPE_ACTIVE) || defined(FMUSIC_XM_PANENVELOPE_ACTIVE)
-void FMUSIC_XM_ProcessEnvelope(FMUSIC_CHANNEL &channel, EnvelopePoint *point, unsigned char type, const EnvelopePoints& envelope, unsigned char loopend, unsigned char loopstart, unsigned char sustain)
+static void FMUSIC_XM_ProcessEnvelope(FMUSIC_CHANNEL &channel, EnvelopePoint *point, unsigned char type, const EnvelopePoints& envelope, unsigned char loopend, unsigned char loopstart, unsigned char sustain)
 {
 	if (envelope.count > 0)
     {
@@ -258,7 +258,7 @@ void FMUSIC_XM_ProcessEnvelope(FMUSIC_CHANNEL &channel, EnvelopePoint *point, un
 ]
 */
 #ifdef FMUSIC_XM_VOLUMEBYTE_ACTIVE
-void FMUSIC_XM_ProcessVolumeByte(FMUSIC_CHANNEL &channel, unsigned char volume)
+static void FMUSIC_XM_ProcessVolumeByte(FMUSIC_CHANNEL &channel, unsigned char volume)
 {
 	if (volume >= 0x10 && volume <= 0x50)
 	{
@@ -341,7 +341,7 @@ void FMUSIC_XM_ProcessVolumeByte(FMUSIC_CHANNEL &channel, unsigned char volume)
 ]
 */
 #ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
-int FMUSIC_XM_GetAmigaPeriod(int note, int finetune)
+static int FMUSIC_XM_GetAmigaPeriod(int note, int finetune)
 {
     int period = (int)(powf(2.0f, (float)(132 - note) / 12.0f) * 13.375f);
 
@@ -380,7 +380,7 @@ int FMUSIC_XM_GetAmigaPeriod(int note, int finetune)
 ]
 */
 #ifdef FMUSIC_XM_TREMOR_ACTIVE
-void FMUSIC_XM_Tremor(FMUSIC_CHANNEL &channel)
+static void FMUSIC_XM_Tremor(FMUSIC_CHANNEL &channel)
 {
 	if (channel.tremorpos >= channel.tremoron)
 	{
@@ -409,7 +409,7 @@ void FMUSIC_XM_Tremor(FMUSIC_CHANNEL &channel)
 	[SEE_ALSO]
 ]
 */
-void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL &channel, FSOUND_SAMPLE *sptr, FMUSIC_MODULE &mod)
+static void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL &channel, FSOUND_SAMPLE *sptr, FMUSIC_MODULE &mod)
 {
     FSOUND_CHANNEL *ccptr = channel.cptr;
 
@@ -507,7 +507,7 @@ void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL &channel, FSOUND_SAMPLE *sptr, FMUSIC_
 	}
 }
 
-void FMUSIC_XM_Resetcptr(FMUSIC_CHANNEL& cptr, FSOUND_SAMPLE* sptr)
+static void FMUSIC_XM_Resetcptr(FMUSIC_CHANNEL& cptr, FSOUND_SAMPLE* sptr)
 {
 	cptr.volume = (int)sptr->header.default_volume;
 	cptr.pan = sptr->header.default_panning;
@@ -541,7 +541,7 @@ void FMUSIC_XM_Resetcptr(FMUSIC_CHANNEL& cptr, FSOUND_SAMPLE* sptr)
 	cptr.notectrl |= FMUSIC_VOLUME_PAN;
 }
 
-void XM_ProcessCommon(FMUSIC_CHANNEL& channel, FMUSIC_INSTRUMENT* iptr)
+static void XM_ProcessCommon(FMUSIC_CHANNEL& channel, FMUSIC_INSTRUMENT* iptr)
 {
 	//= PROCESS ENVELOPES ==========================================================================
 #ifdef FMUSIC_XM_VOLUMEENVELOPE_ACTIVE
@@ -576,7 +576,7 @@ void XM_ProcessCommon(FMUSIC_CHANNEL& channel, FMUSIC_INSTRUMENT* iptr)
 	[SEE_ALSO]
 ]
 */
-void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
+static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
 {
     bool jumpflag = false;
 
@@ -1145,7 +1145,7 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
 	[SEE_ALSO]
 ]
 */
-void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod)
+ static void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod)
 {
     const auto& row = mod.pattern[mod.header.pattern_order[mod.order]].row(mod.row);
 
