@@ -24,8 +24,6 @@
 #define FMUSIC_KEYCUT						254
 #define FMUSIC_KEYOFF						97
 
-#define FMUSIC_FREQ							1
-#define FMUSIC_VOLUME_PAN					2
 #define FMUSIC_TRIGGER						4
 #define FMUSIC_STOP							8
 
@@ -100,7 +98,8 @@ struct FMUSIC_CHANNEL
 {
 	unsigned char  	note;  				// last note set in channel
 
-	unsigned char	notectrl;			// flags for FSOUND
+	bool			trigger;
+	bool			stop;
 
 	FSOUND_CHANNEL	*cptr;				// pointer to FSOUND system mixing channel
 	FSOUND_SAMPLE	*sptr;				// pointer to FSOUND system sample
