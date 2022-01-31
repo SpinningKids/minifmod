@@ -434,7 +434,6 @@ static void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL &channel, FSOUND_SAMPLE *sptr, 
 		// volume ramping
 		ccptr->ramp_leftvolume	= 0;
 		ccptr->ramp_rightvolume	= 0;
-		ccptr->ramp_count		= 0;
 	}
 
 	{
