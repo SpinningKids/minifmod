@@ -208,35 +208,37 @@ void FMUSIC_XM_Tremolo(FMUSIC_CHANNEL &channel)
 ]
 */
 #if defined(FMUSIC_XM_VOLUMEENVELOPE_ACTIVE) || defined(FMUSIC_XM_PANENVELOPE_ACTIVE)
-void FMUSIC_XM_ProcessEnvelope(FMUSIC_CHANNEL &channel, int *pos, EnvelopePoint *point, unsigned char type, const EnvelopePoints& envelope, unsigned char loopend, unsigned char loopstart, unsigned char sustain)
+void FMUSIC_XM_ProcessEnvelope(FMUSIC_CHANNEL &channel, EnvelopePoint *point, unsigned char type, const EnvelopePoints& envelope, unsigned char loopend, unsigned char loopstart, unsigned char sustain)
 {
-	if (*pos < envelope.count)
+	if (envelope.count > 0)
     {
+	    int currpos = 0;
+
+		if ((type & XMEnvelopeFlagsLoop) && point->position == envelope.envelope[loopend].position)	// if we are at the correct tick for the position
+		{
+			// loop
+			point->position = envelope.envelope[loopstart].position;
+			currpos = loopstart;
+		}
+		else
+		{
+			// search new envelope position
+			while (currpos < envelope.count - 1 && point->position > envelope.envelope[currpos + 1].position) currpos++;
+		}
+
+		// interpolate new envelope position
+
+        point->value = envelope.envelope[currpos].value + envelope.envelope[currpos].delta * (point->position - envelope.envelope[currpos].position);
+
 		// Envelope
         channel.notectrl |= FMUSIC_VOLUME_PAN;
-        if (point->position == envelope.envelope[*pos].position)	// if we are at the correct tick for the position
+
+		// if it is at the last position, abort the envelope and continue last value
+        // same if we're at sustain point
+		if (!(type & XMEnvelopeFlagsSustain) || currpos != sustain || channel.keyoff)
         {
-            // handle loop
-            if ((type & XMEnvelopeFlagsLoop) && *pos == loopend)
-            {
-                *pos  = loopstart;
-            }
-
-			*point = envelope.envelope[*pos];
-
-			// if it is at the last position, abort the envelope and continue last value
-			// same if we're at sustain point
-            if ((type & XMEnvelopeFlagsSustain) && *pos == sustain && !channel.keyoff)
-            {
-                return; // skip ticking, stay in position
-            }
-			(*pos)++;
+			++point->position;
 		}
-        else
-        {
-            point->value += point->delta;				// interpolate
-        }
-		++point->position;
 	}
 }
 #endif // (FMUSIC_XM_VOLUMEENVELOPE_ACTIVE) || defined(FMUSIC_XM_PANENVELOPE_ACTIVE)
@@ -539,6 +541,27 @@ void FMUSIC_XM_Resetcptr(FMUSIC_CHANNEL& cptr, FSOUND_SAMPLE* sptr)
 	cptr.notectrl |= FMUSIC_VOLUME_PAN;
 }
 
+void XM_ProcessCommon(FMUSIC_CHANNEL& channel, FMUSIC_INSTRUMENT* iptr)
+{
+	//= PROCESS ENVELOPES ==========================================================================
+#ifdef FMUSIC_XM_VOLUMEENVELOPE_ACTIVE
+	FMUSIC_XM_ProcessEnvelope(channel, &channel.envvol, iptr->sample_header.volume_envelope_flags, iptr->volume_envelope, iptr->sample_header.volume_loop_end_index, iptr->sample_header.volume_loop_start_index, iptr->sample_header.volume_sustain_index);
+#endif
+#ifdef FMUSIC_XM_PANENVELOPE_ACTIVE
+	FMUSIC_XM_ProcessEnvelope(channel, &channel.envpan, iptr->sample_header.pan_envelope_flags, iptr->pan_envelope, iptr->sample_header.pan_loop_end, iptr->sample_header.pan_loop_start, iptr->sample_header.pan_sustain_index);
+#endif
+	//= PROCESS VOLUME FADEOUT =====================================================================
+    if (channel.keyoff)
+    {
+        channel.fadeoutvol = std::max(channel.fadeoutvol - iptr->sample_header.volume_fadeout, 0);
+        channel.notectrl |= FMUSIC_VOLUME_PAN;
+    }
+	//= INSTRUMENT VIBRATO ============================================================================
+#ifdef FMUSIC_XM_INSTRUMENTVIBRATO_ACTIVE
+	FMUSIC_XM_InstrumentVibrato(channel, iptr);	// this gets added to previous freqdeltas
+#endif
+}
+
 /*
 [API]
 [
@@ -685,29 +708,9 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
             channel.keyoff = true;
         }
 
-        //= PROCESS ENVELOPES ==========================================================================
-#ifdef FMUSIC_XM_VOLUMEENVELOPE_ACTIVE
-		if (iptr->volume_envelope.count > 0)
+		if (iptr->volume_envelope.count == 0 && channel.keyoff)
 		{
-			FMUSIC_XM_ProcessEnvelope(channel, &channel.envvolpos, &channel.envvol, iptr->sample_header.volume_envelope_flags, iptr->volume_envelope, iptr->sample_header.volume_loop_end_index, iptr->sample_header.volume_loop_start_index, iptr->sample_header.volume_sustain_index);
-		}
-		else
-#endif
-		{
-			if (channel.keyoff)
-			{
-				channel.envvol.value = 0;
-			}
-		}
-#ifdef FMUSIC_XM_PANENVELOPE_ACTIVE
-		FMUSIC_XM_ProcessEnvelope(channel, &channel.envpanpos, &channel.envpan, iptr->sample_header.pan_envelope_flags, iptr->pan_envelope, iptr->sample_header.pan_loop_end, iptr->sample_header.pan_loop_start, iptr->sample_header.pan_sustain_index);
-#endif
-
-		//= PROCESS VOLUME FADEOUT =====================================================================
-		if (channel.keyoff)
-		{
-			channel.fadeoutvol = std::max(channel.fadeoutvol - iptr->sample_header.volume_fadeout, 0);
-			channel.notectrl |= FMUSIC_VOLUME_PAN;
+			channel.envvol.value = 0;
 		}
 
 		//= PROCESS TICK 0 EFFECTS =====================================================================
@@ -1059,22 +1062,7 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
 #ifdef FMUSIC_XM_SETENVELOPEPOS_ACTIVE
 			case FMUSIC_XM_SETENVELOPEPOS :
 			{
-                if (iptr->volume_envelope.count > 0)
-                {
-					int currpos = 0;
-
-					// search and reinterpolate new envelope position
-					while (currpos < iptr->volume_envelope.count - 1 && note.effect_parameter > iptr->volume_envelope.envelope[currpos+1].position) currpos++;
-
-					channel.envvolpos = currpos;
-
-					float currvol = iptr->volume_envelope.envelope[currpos].value;	// get VOL at this point << 16
-
-					channel.envvol.position = note.effect_parameter;
-                    channel.envvol.delta = iptr->volume_envelope.envelope[currpos].delta;
-					channel.envvol.value  = currvol + channel.envvol.delta * (channel.envvol.position - iptr->volume_envelope.envelope[currpos].position);
-					++channel.envvolpos;
-				}
+				channel.envvol.position = note.effect_parameter;
 				break;
 			}
 #endif
@@ -1137,11 +1125,9 @@ void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
 #endif
 		}
 #endif
-		//= INSTRUMENT VIBRATO ============================================================================
-#ifdef FMUSIC_XM_INSTRUMENTVIBRATO_ACTIVE
-		FMUSIC_XM_InstrumentVibrato(channel, iptr);	// this gets added to previous freqdeltas
-#endif
-		FMUSIC_XM_UpdateFlags(channel,sptr,mod);
+		XM_ProcessCommon(channel, iptr);
+
+	    FMUSIC_XM_UpdateFlags(channel,sptr,mod);
 	}
  }
 
@@ -1203,21 +1189,6 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod)
 		channel.voldelta	= 0;				// this is for tremolo / tremor etc
 		channel.freqdelta	= 0;				// this is for vibrato / arpeggio etc
 		channel.notectrl	= 0;
-
-		//= PROCESS ENVELOPES ==========================================================================
-#ifdef FMUSIC_XM_VOLUMEENVELOPE_ACTIVE
-		FMUSIC_XM_ProcessEnvelope(channel, &channel.envvolpos, &channel.envvol, iptr->sample_header.volume_envelope_flags, iptr->volume_envelope, iptr->sample_header.volume_loop_end_index, iptr->sample_header.volume_loop_start_index, iptr->sample_header.volume_sustain_index);
-#endif
-#ifdef FMUSIC_XM_PANENVELOPE_ACTIVE
-		FMUSIC_XM_ProcessEnvelope(channel, &channel.envpanpos, &channel.envpan, iptr->sample_header.pan_envelope_flags, iptr->pan_envelope, iptr->sample_header.pan_loop_end, iptr->sample_header.pan_loop_start, iptr->sample_header.pan_sustain_index);
-#endif
-
-		//= PROCESS VOLUME FADEOUT =====================================================================
-		if (channel.keyoff)
-		{
-			channel.fadeoutvol = std::max(channel.fadeoutvol - iptr->sample_header.volume_fadeout, 0);
-			channel.notectrl |= FMUSIC_VOLUME_PAN;
-		}
 
 		#ifdef FMUSIC_XM_VOLUMEBYTE_ACTIVE
 		switch (note.volume >> 4)
@@ -1636,10 +1607,7 @@ void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod)
 #endif
 		}
 
-		//= INSTRUMENT VIBRATO ============================================================================
-#ifdef FMUSIC_XM_INSTRUMENTVIBRATO_ACTIVE
-		FMUSIC_XM_InstrumentVibrato(channel, iptr);	// this gets added to previous freqdeltas
-#endif
+		XM_ProcessCommon(channel, iptr);
 
 		FMUSIC_XM_UpdateFlags(channel, sptr,mod);
 	}
