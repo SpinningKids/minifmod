@@ -119,15 +119,9 @@ void FSOUND_Mixer_FPU_Ramp(float *mixptr, int len)
             // if rampcount now = 0, a ramp has FINISHED, so finish the rest of the mix
             if (ramp_count == 0)
             {
-
-                // clear out the ramp speeds
-                channel.ramp_leftspeed = 0;
-                channel.ramp_rightspeed = 0;
-
                 // clamp the 2 volumes together in case the speed wasnt accurate enough!
                 channel.ramp_leftvolume = channel.leftvolume;
                 channel.ramp_rightvolume = channel.rightvolume;
-
             }
             //=============================================================================================
             // SWITCH ON LOOP MODE TYPE
