@@ -50,29 +50,15 @@ void FSOUND_Mixer_FPU_Ramp(float *mixptr, int len)
         //==============================================================================================
         // LOOP THROUGH CHANNELS
         //==============================================================================================
-
-        //= SUCCESS - SETUP CODE FOR THIS CHANNEL ======================================================
-
         while (channel.sptr && len > sample_index)
         {
-            // =========================================================================================
-            // the following code sets up a mix counter. it sees what will happen first, will the output buffer
-            // end be reached first? or a volume ramp? or will the end of the sample be reached first?
-            // whatever is smallest will be the mixcount.
-            unsigned int mix_count = len - sample_index;
-            bool mix_endflag_sample = false;
-
-            channel.ramp_leftspeed = (channel.leftvolume - channel.ramp_leftvolume) / mix_volumerampsteps;
-            channel.ramp_rightspeed = (channel.rightvolume - channel.ramp_rightvolume) / mix_volumerampsteps;
-
-            unsigned int ramp_count = mix_volumerampsteps;
-            mix_count = std::min(mix_count, ramp_count);
 
             float samples_to_mix;
             if (channel.speeddir == FSOUND_MIXDIR_FORWARDS)
             {
                 samples_to_mix = channel.sptr->header.loop_start + channel.sptr->header.loop_length - channel.mixpos;
-                if (samples_to_mix <= 0) {
+                if (samples_to_mix <= 0)
+                {
                     samples_to_mix = channel.sptr->header.length - channel.mixpos;
                 }
             }
@@ -80,12 +66,13 @@ void FSOUND_Mixer_FPU_Ramp(float *mixptr, int len)
             {
                 samples_to_mix = channel.mixpos - channel.sptr->header.loop_start;
             }
-            const uint32_t samples = (uint32_t)ceil(samples_to_mix / channel.speed); // round up the division
-            if (samples <= mix_count)
-            {
-                mix_count = samples;
-                mix_endflag_sample = true;
-            }
+            const int samples_to_mix_target = (int)ceil(samples_to_mix / channel.speed); // round up the division
+
+            // =========================================================================================
+            // the following code sets up a mix counter. it sees what will happen first, will the output buffer
+            // end be reached first or will the end of the sample be reached first?
+            // whatever is smallest will be the mixcount.
+            int mix_count = std::min(len - sample_index, samples_to_mix_target);
 
             float speed = channel.speed;
 
@@ -96,37 +83,25 @@ void FSOUND_Mixer_FPU_Ramp(float *mixptr, int len)
 
             //= SET UP VOLUME MULTIPLIERS ==================================================
 
-            for (unsigned int i = 0; i < mix_count; ++i)
+            for (int i = 0; i < mix_count; ++i)
             {
                 const uint32_t mixpos = (uint32_t)channel.mixpos;
                 const float frac = channel.mixpos - mixpos;
                 const float samp1 = channel.sptr->buff[mixpos];
                 const float newsamp = (channel.sptr->buff[mixpos + 1] - samp1) * frac + samp1;
-                mixptr[0 + (sample_index + i) * 2] += channel.ramp_leftvolume * newsamp;
-                mixptr[1 + (sample_index + i) * 2] += channel.ramp_rightvolume * newsamp;
-                channel.ramp_leftvolume += channel.ramp_leftspeed;
-                channel.ramp_rightvolume += channel.ramp_rightspeed;
+                mixptr[0 + (sample_index + i) * 2] += channel.filtered_leftvolume * newsamp;
+                mixptr[1 + (sample_index + i) * 2] += channel.filtered_rightvolume * newsamp;
+                channel.filtered_leftvolume += (channel.leftvolume - channel.filtered_leftvolume) * mix_filter_k;
+                channel.filtered_rightvolume += (channel.rightvolume - channel.filtered_rightvolume) * mix_filter_k;
                 channel.mixpos += speed;
             }
 
             sample_index += mix_count;
 
             //=============================================================================================
-            // DID A VOLUME RAMP JUST HAPPEN
-            //=============================================================================================
-            ramp_count -= mix_count;
-
-            // if rampcount now = 0, a ramp has FINISHED, so finish the rest of the mix
-            if (ramp_count == 0)
-            {
-                // clamp the 2 volumes together in case the speed wasnt accurate enough!
-                channel.ramp_leftvolume = channel.leftvolume;
-                channel.ramp_rightvolume = channel.rightvolume;
-            }
-            //=============================================================================================
             // SWITCH ON LOOP MODE TYPE
             //=============================================================================================
-            if (mix_endflag_sample)
+            if (mix_count == samples_to_mix_target)
             {
                 if (channel.sptr->header.loop_mode == FSOUND_XM_LOOP_NORMAL)
                 {
@@ -153,7 +128,8 @@ void FSOUND_Mixer_FPU_Ramp(float *mixptr, int len)
                         channel.speeddir = FSOUND_MIXDIR_BACKWARDS;
 
                     } while (channel.mixpos < channel.sptr->header.loop_start);
-                } else
+                }
+                else
                 {
                     channel.mixpos = 0;
                     channel.sptr = nullptr;

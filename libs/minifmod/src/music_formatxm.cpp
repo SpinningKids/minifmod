@@ -432,8 +432,8 @@ static void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL &channel, FSOUND_SAMPLE *sptr, 
 		ccptr->sampleoffset = 0;	// reset it (in case other samples come in and get corrupted etc)
 
 		// volume ramping
-		ccptr->ramp_leftvolume	= 0;
-		ccptr->ramp_rightvolume	= 0;
+		ccptr->filtered_leftvolume	= 0;
+		ccptr->filtered_rightvolume	= 0;
 	}
 
 	{

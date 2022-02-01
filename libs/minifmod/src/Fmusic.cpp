@@ -193,7 +193,7 @@ bool FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 	FSOUND_BufferSize   = FSOUND_BlockSize * (FSOUND_BufferSizeMs / FSOUND_LATENCY);	// make it perfectly divisible by granularity
 	FSOUND_BufferSize <<= 1;	// double buffer
 
-	mix_volumerampsteps      = FSOUND_MixRate * FSOUND_VOLUMERAMP_STEPS / 44100;
+	mix_filter_k    = 1.f/(1.f + FSOUND_MixRate * VolumeFilterTimeConstant);
 	int totalblocks = FSOUND_BufferSize / FSOUND_BlockSize;
 
 	//=======================================================================================
