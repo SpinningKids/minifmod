@@ -104,7 +104,7 @@ struct FMUSIC_CHANNEL
 	FSOUND_CHANNEL	*cptr;				// pointer to FSOUND system mixing channel
 	FSOUND_SAMPLE	*sptr;				// pointer to FSOUND system sample
 
-	int				freq;				// current mod frequency period for this channel
+	int				period;				// current mod frequency period for this channel
 	int				volume;				// current mod volume for this channel
 	int				pan;				// current mod pan for this channel
 	int				voldelta;			// delta for volume commands.. tremolo/tremor etc
@@ -123,7 +123,7 @@ struct FMUSIC_CHANNEL
 
 	unsigned char	inst;				// last instrument set in channel
 	unsigned char  	realnote;  			// last realnote set in channel
-	unsigned int	period;				// last period set in channel
+	int				period_target;		// last period set in channel
 	unsigned char	recenteffect;		// previous row's effect.. used to correct tremolo volume
 
 	unsigned int	sampleoffset;		// sample offset for this channel in SAMPLES
