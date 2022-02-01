@@ -180,11 +180,6 @@ bool FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 
 	FMUSIC_StopSong();
 
-	if (!FSOUND_File_Open || !FSOUND_File_Close || !FSOUND_File_Read || !FSOUND_File_Seek || !FSOUND_File_Tell)
-    {
-		return false;
-    }
-
 	// ========================================================================================================
 	// INITIALIZE SOFTWARE MIXER
 	// ========================================================================================================

@@ -46,17 +46,17 @@
 static void FMUSIC_XM_Portamento(FMUSIC_CHANNEL &channel)
 {
 	// TODO: check if the following replaces the entire portaup/down (it should)
-	//   channel.freq = std::clamp(channel.portatarget, channel.freq - channel.portaspeed, channel.freq + channel.portaspeed);
+	//   channel.period = std::clamp(channel.portatarget, channel.period - channel.portaspeed, channel.period + channel.portaspeed);
 
-	if (channel.freq < channel.portatarget)
+	if (channel.period < channel.portatarget)
 	{
 		// slide pitch down if it needs too.
-		channel.freq = std::min(channel.freq + channel.portaspeed, channel.portatarget);
+		channel.period = std::min(channel.period + channel.portaspeed, channel.portatarget);
 	}
 	else
 	{
 		// slide pitch up if it needs too, or if it doesn't (clamping will bring it back).
-		channel.freq = std::max(channel.freq - channel.portaspeed, channel.portatarget);
+		channel.period = std::max(channel.period - channel.portaspeed, channel.portatarget);
 	}
 }
 #endif // FMUSIC_XM_PORTATO_ACTIVE
@@ -296,7 +296,7 @@ static void FMUSIC_XM_ProcessVolumeByte(FMUSIC_CHANNEL &channel, unsigned char v
                 {
                     channel.portaspeed = (volume & 0xF) << 6;
                 }
-                channel.portatarget = channel.period;
+                channel.portatarget = channel.period_target;
 				channel.trigger = false;
 				break;
 			}
@@ -451,20 +451,13 @@ static void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL &channel, FSOUND_SAMPLE *sptr, 
 //		FSOUND_Software_SetVolume(&FSOUND_Channel[channel], (int)finalvol);
 //		FSOUND_Software_SetPan(&FSOUND_Channel[channel], finalpan);
 	}
-	if ((channel.freq + channel.freqdelta) != 0)
+	if ((channel.period + channel.freqdelta) != 0)
 	{
-		int freq;
-
-		if (mod.header.flags & FMUSIC_XMFLAGS_LINEARFREQUENCY)
-		{
-		    freq = FMUSIC_XMLINEARPERIOD2HZ(channel.freq+channel.freqdelta);
-		}
-		else
-		{
-		    freq = FMUSIC_PERIOD2HZ(channel.freq+channel.freqdelta);
-		}
-
-		freq = std::max(freq, 100);
+		int freq = std::max(
+			(mod.header.flags & FMUSIC_XMFLAGS_LINEARFREQUENCY)
+			    ? FMUSIC_XMLINEARPERIOD2HZ(channel.period + channel.freqdelta)
+			    : FMUSIC_PERIOD2HZ(channel.period + channel.freqdelta),
+			100l);
 
     	ccptr->speed = float(freq) / FSOUND_MixRate;
 	}
@@ -478,36 +471,36 @@ static void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL &channel, FSOUND_SAMPLE *sptr, 
 	}
 }
 
-static void FMUSIC_XM_Resetcptr(FMUSIC_CHANNEL& cptr, FSOUND_SAMPLE* sptr)
+static void FMUSIC_XM_Resetcptr(FMUSIC_CHANNEL& channel, FSOUND_SAMPLE* sptr)
 {
-	cptr.volume = (int)sptr->header.default_volume;
-	cptr.pan = sptr->header.default_panning;
-	cptr.envvol.value = 1.0;
-	cptr.envvolpos = 0;
-	cptr.envvol.position = 0;
-	cptr.envvol.delta = 0;
+	channel.volume = (int)sptr->header.default_volume;
+	channel.pan = sptr->header.default_panning;
+	channel.envvol.value = 1.0;
+	channel.envvolpos = 0;
+	channel.envvol.position = 0;
+	channel.envvol.delta = 0;
 
-	cptr.envpan.value = 0;
-	cptr.envpanpos = 0;
-	cptr.envpan.position = 0;
-	cptr.envpan.delta = 0;
+	channel.envpan.value = 0;
+	channel.envpanpos = 0;
+	channel.envpan.position = 0;
+	channel.envpan.delta = 0;
 
-	cptr.keyoff = false;
-	cptr.fadeoutvol = 32768;
-	cptr.ivibsweeppos = 0;
-	cptr.ivibpos = 0;
+	channel.keyoff = false;
+	channel.fadeoutvol = 32768;
+	channel.ivibsweeppos = 0;
+	channel.ivibpos = 0;
 
 	// retrigger tremolo and vibrato waveforms
-	if (!cptr.continue_vibrato)
+	if (!channel.continue_vibrato)
 	{
-		cptr.vibpos = 0;
+		channel.vibpos = 0;
 	}
-	if (!cptr.continue_tremolo)
+	if (!channel.continue_tremolo)
 	{
-		cptr.tremolopos = 0;
+		channel.tremolopos = 0;
 	}
 
-	cptr.tremorpos = 0;								// retrigger tremor count
+	channel.tremorpos = 0;								// retrigger tremor count
 }
 
 static void XM_ProcessCommon(FMUSIC_CHANNEL& channel, FMUSIC_INSTRUMENT* iptr)
@@ -611,7 +604,7 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
 		}
 
 		int oldvolume = channel.volume;
-		int oldfreq = channel.freq;
+		int oldfreq = channel.period;
 		int oldpan = channel.pan;
 
 		// if there is no more tremolo, set volume to volume + last tremolo delta
@@ -634,19 +627,19 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
 			// get period according to realnote and finetune
 			if (mod.header.flags & FMUSIC_XMFLAGS_LINEARFREQUENCY)
 			{
-				channel.period = (10*12*16*4) - (channel.realnote*16*4) - (sptr->header.finetune / 2);
+				channel.period_target = (10*12*16*4) - (channel.realnote*16*4) - (sptr->header.finetune / 2);
 			}
 			else
 			{
 #ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
-				channel.period = FMUSIC_XM_GetAmigaPeriod(channel.realnote, sptr->header.finetune);
+				channel.period_target = FMUSIC_XM_GetAmigaPeriod(channel.realnote, sptr->header.finetune);
 #endif
 			}
 
 			// frequency only changes if there are no portamento effects
 			if (!porta)
             {
-                channel.freq = channel.period;
+                channel.period = channel.period_target;
             }
 
             channel.trigger = true;
@@ -717,7 +710,7 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
                 {
 					channel.portaspeed = note.effect_parameter << 2;
                 }
-				channel.portatarget = channel.period;
+				channel.portatarget = channel.period_target;
 				channel.trigger = false;
 				break;
 			}
@@ -725,7 +718,7 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
 #ifdef FMUSIC_XM_PORTATOVOLSLIDE_ACTIVE
 			case FMUSIC_XM_PORTATOVOLSLIDE :
 			{
-				channel.portatarget = channel.period;
+				channel.portatarget = channel.period_target;
 				if (note.effect_parameter)
                 {
 					channel.volslide = note.effect_parameter;
@@ -875,7 +868,7 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
                         {
 							channel.fineportaup = paramy;
                         }
-						channel.freq -= (channel.fineportaup << 2);
+						channel.period -= (channel.fineportaup << 2);
 						break;
 					}
 #endif
@@ -886,7 +879,7 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
                         {
 							channel.fineportadown = paramy;
                         }
-						channel.freq += (channel.fineportadown << 2);
+						channel.period += (channel.fineportadown << 2);
 						break;
 					}
 #endif
@@ -971,7 +964,7 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
 					case FMUSIC_XM_NOTEDELAY :
 					{
 						channel.volume = oldvolume;
-						channel.freq   = oldfreq;
+						channel.period   = oldfreq;
 						channel.pan    = oldpan;
 						channel.trigger = false;
 						break;
@@ -1069,7 +1062,7 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
                     {
 						channel.xtraportaup = paramy;
                     }
-					channel.freq -= channel.xtraportaup;
+					channel.period -= channel.xtraportaup;
 				}
 				else if (paramx == 2)
 				{
@@ -1077,7 +1070,7 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
                     {
 						channel.xtraportadown = paramy;
                     }
-					channel.freq += channel.xtraportadown;
+					channel.period += channel.xtraportadown;
 				}
 				break;
 			}
@@ -1254,7 +1247,7 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
 			case FMUSIC_XM_PORTAUP :
 			{
 				channel.freqdelta = 0;
-				channel.freq = std::max(channel.freq - (channel.portaup << 2), 56); // subtract freq and stop at B#8
+				channel.period = std::max(channel.period - (channel.portaup << 2), 56); // subtract period and stop at B#8
 				break;
 			}
 #endif
@@ -1262,7 +1255,7 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
 			case FMUSIC_XM_PORTADOWN :
 			{
 				channel.freqdelta = 0;
-				channel.freq += channel.portadown << 2; // subtract freq
+				channel.period += channel.portadown << 2; // subtract period
 				break;
 			}
 #endif
@@ -1391,7 +1384,7 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
 							//= PROCESS INSTRUMENT NUMBER ==================================================================
 							FMUSIC_XM_Resetcptr(channel,sptr);
 
-							channel.freq = channel.period;
+							channel.period = channel.period_target;
 #ifdef FMUSIC_XM_VOLUMEBYTE_ACTIVE
 							if (note.volume)
                             {
