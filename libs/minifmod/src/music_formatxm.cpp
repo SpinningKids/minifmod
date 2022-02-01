@@ -45,19 +45,7 @@
 #if defined(FMUSIC_XM_PORTATO_ACTIVE) || defined(FMUSIC_XM_PORTATOVOLSLIDE_ACTIVE)
 static void FMUSIC_XM_Portamento(FMUSIC_CHANNEL &channel)
 {
-	// TODO: check if the following replaces the entire portaup/down (it should)
-	//   channel.period = std::clamp(channel.portatarget, channel.period - channel.portaspeed, channel.period + channel.portaspeed);
-
-	if (channel.period < channel.portatarget)
-	{
-		// slide pitch down if it needs too.
-		channel.period = std::min(channel.period + channel.portaspeed, channel.portatarget);
-	}
-	else
-	{
-		// slide pitch up if it needs too, or if it doesn't (clamping will bring it back).
-		channel.period = std::max(channel.period - channel.portaspeed, channel.portatarget);
-	}
+	channel.period = std::clamp(channel.portatarget, channel.period - channel.portaspeed, channel.period + channel.portaspeed);
 }
 #endif // FMUSIC_XM_PORTATO_ACTIVE
 
