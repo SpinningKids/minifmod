@@ -13,10 +13,10 @@
 #ifndef MIXER_FPU_RAMP_H
 #define MIXER_FPU_RAMP_H
 
-#define FSOUND_VOLUMERAMP_STEPS	128		// at 44.1khz
+constexpr float VolumeFilterTimeConstant = 0.003f; // time constant (RC) of the volume IIR filter
 
 void FSOUND_Mixer_FPU_Ramp(float *mixptr, int len);
 
-inline unsigned int mix_volumerampsteps;
+inline float mix_filter_k;
 
 #endif

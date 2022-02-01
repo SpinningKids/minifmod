@@ -70,15 +70,13 @@ struct FSOUND_CHANNEL
 	float			leftvolume;     // mixing information. adjusted volume for left channel (panning involved)
 	float			rightvolume;    // mixing information. adjusted volume for right channel (panning involved)
 	bool			volume_changed; // mixing information. set to true every time volume is changed.
-	float			mixpos;			// mixing information. floating point fractional position in sample. should this be a double?
-	float			speed;			// mixing information. playback rate - floating point. should this be a double?
+	float			mixpos;			// mixing information. floating point fractional position in sample.
+	float			speed;			// mixing information. playback rate - floating point.
 	unsigned int	speeddir;		// mixing information. playback direction - forwards or backwards
 
 	// software mixer volume ramping stuff
-	float			ramp_leftvolume;
-	float			ramp_rightvolume;
-	float			ramp_leftspeed;
-	float			ramp_rightspeed;
+	float			filtered_leftvolume;
+	float			filtered_rightvolume;
 };
 
 //= FUNCTIONS =================================================================================
