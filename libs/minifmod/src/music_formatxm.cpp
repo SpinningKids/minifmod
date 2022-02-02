@@ -399,7 +399,6 @@ static void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL &channel, FSOUND_SAMPLE *sptr, 
             // this will cause the old channel to ramp out nicely.
 		    ccptr->leftvolume  = 0;
 		    ccptr->rightvolume = 0;
-			ccptr->volume_changed = true;
 
 			ccptr = &FSOUND_Channel[channel_number];
 			channel.cptr = ccptr;
@@ -434,10 +433,6 @@ static void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL &channel, FSOUND_SAMPLE *sptr, 
 
 		ccptr->leftvolume  = high_precision_volume * high_precision_pan;
 		ccptr->rightvolume = high_precision_volume * (255 - high_precision_pan);
-		ccptr->volume_changed = true;
-
-//		FSOUND_Software_SetVolume(&FSOUND_Channel[channel], (int)finalvol);
-//		FSOUND_Software_SetPan(&FSOUND_Channel[channel], finalpan);
 	}
 	if ((channel.period + channel.freqdelta) != 0)
 	{
@@ -451,8 +446,6 @@ static void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL &channel, FSOUND_SAMPLE *sptr, 
 	}
 	if (channel.stop)
 	{
-//		FSOUND_StopSound(channel);
-
 		ccptr->mixpos = 0;
 //		ccptr->sptr = nullptr;
 		ccptr->sampleoffset = 0;	// if this channel gets stolen it will be safe

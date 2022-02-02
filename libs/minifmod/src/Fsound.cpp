@@ -98,7 +98,6 @@ void FSOUND_Software_Fill()
     }
 }
 
-#ifdef WIN32
 /*
 	[DESCRIPTION]
 
@@ -110,7 +109,7 @@ void FSOUND_Software_Fill()
 
 	[SEE_ALSO]
 */
-DWORD FSOUND_Software_DoubleBufferThread(LPDWORD lpdwParam)
+void FSOUND_Software_DoubleBufferThread()
 {
     FSOUND_Software_ThreadFinished = false;
 
@@ -145,10 +144,7 @@ DWORD FSOUND_Software_DoubleBufferThread(LPDWORD lpdwParam)
 	}
 
 	FSOUND_Software_ThreadFinished = true;
-
-	return 0;
 }
-#endif
 
 bool FSOUND_Init(int mixrate, int vcmmode)
 {

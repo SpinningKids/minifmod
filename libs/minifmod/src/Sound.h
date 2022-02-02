@@ -14,6 +14,7 @@
 #define SOUND_H_
 
 #include <cstdint>
+#include <thread>
 
 #ifdef WIN32
 #define NOMINMAX
@@ -69,7 +70,6 @@ struct FSOUND_CHANNEL
 	// software mixer stuff
 	float			leftvolume;     // mixing information. adjusted volume for left channel (panning involved)
 	float			rightvolume;    // mixing information. adjusted volume for right channel (panning involved)
-	bool			volume_changed; // mixing information. set to true every time volume is changed.
 	float			mixpos;			// mixing information. floating point fractional position in sample.
 	float			speed;			// mixing information. playback rate - floating point.
 	unsigned int	speeddir;		// mixing information. playback direction - forwards or backwards
@@ -110,15 +110,11 @@ inline int					FSOUND_BlockSize;			// LATENCY ms worth of samples
 inline bool					FSOUND_Software_Exit			= false;		// mixing thread termination flag
 inline bool					FSOUND_Software_UpdateMutex		= false;
 inline bool					FSOUND_Software_ThreadFinished	= true;
-#ifdef WIN32
-inline HANDLE				FSOUND_Software_hThread			= NULL;
-#endif
+inline std::thread			FSOUND_Software_Thread;
 inline int					FSOUND_Software_FillBlock		= 0;
 inline int					FSOUND_Software_RealBlock;
 
-#ifdef WIN32
-DWORD						FSOUND_Software_DoubleBufferThread(LPDWORD lpdwParam);
-#endif
+void						FSOUND_Software_DoubleBufferThread();
 void						FSOUND_Software_Fill();
 
 #endif
