@@ -55,7 +55,6 @@ FSOUND_SAMPLE		FMUSIC_DummySample;
 };
 */
 
-FSOUND_CHANNEL			FMUSIC_DummyChannel;
 FMUSIC_INSTRUMENT		FMUSIC_DummyInstrument;
 
 //= PRIVATE FUNCTIONS ==============================================================================
@@ -104,18 +103,14 @@ void FMUSIC_SetBPM(FMUSIC_MODULE &module, int bpm)
 */
 FMUSIC_MODULE * FMUSIC_LoadSong(const char *name, SAMPLELOADCALLBACK sampleloadcallback)
 {
-    void* fp = FSOUND_File_Open(name);
-    if (!fp)
+    if (void* fp = FSOUND_File_Open(name))
     {
-        return nullptr;
+        // create a mod instance
+        std::unique_ptr<FMUSIC_MODULE> mod = FMUSIC_LoadXM(fp, sampleloadcallback);
+        FSOUND_File_Close(fp);
+        return mod.release();
     }
-
-	// create a mod instance
-	std::unique_ptr<FMUSIC_MODULE> mod = FMUSIC_LoadXM(fp, sampleloadcallback);
-
-    FSOUND_File_Close(fp);
-
-	return mod.release();
+    return nullptr;
 }
 
 
@@ -139,17 +134,14 @@ FMUSIC_MODULE * FMUSIC_LoadSong(const char *name, SAMPLELOADCALLBACK sampleloadc
 */
 bool FMUSIC_FreeSong(FMUSIC_MODULE *mod)
 {
-
-	if (!mod)
-		return false;
-
-	BLOCK_ON_SOFTWAREUPDATE();
-
-	FMUSIC_StopSong();
-
-	delete mod;
-
-	return true;
+	if (mod)
+    {
+        BLOCK_ON_SOFTWAREUPDATE();
+        FMUSIC_StopSong();
+        delete mod;
+        return true;
+    }
+    return false;
 }
 
 /*
@@ -296,20 +288,13 @@ bool FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 
 #ifdef WIN32
 	waveOutWrite(FSOUND_WaveOutHandle, &FSOUND_MixBlock.wavehdr, sizeof(WAVEHDR));
-
-	{
-		DWORD	FSOUND_dwThreadId;
-
-		// ========================================================================================================
-		// CREATE THREADS / TIMERS (last)
-		// ========================================================================================================
-		FSOUND_Software_Exit = false;
-
-		FSOUND_Software_hThread = CreateThread(nullptr, 0, (LPTHREAD_START_ROUTINE)FSOUND_Software_DoubleBufferThread, nullptr,0, &FSOUND_dwThreadId);
-
-		SetThreadPriority(FSOUND_Software_hThread, THREAD_PRIORITY_TIME_CRITICAL);	// THREAD_PRIORITY_HIGHEST);
-	}
 #endif
+
+	// ========================================================================================================
+	// CREATE THREADS / TIMERS (last)
+	// ========================================================================================================
+	FSOUND_Software_Exit = false;
+	FSOUND_Software_Thread = std::thread(FSOUND_Software_DoubleBufferThread);
 	return true;
 }
 
@@ -340,16 +325,14 @@ void FMUSIC_StopSong()
 	// wait until callback has settled down and exited
 	BLOCK_ON_SOFTWAREUPDATE();
 
-#ifdef WIN32
-	if (FSOUND_Software_hThread)
+	if (FSOUND_Software_Thread.joinable())
 	{
 		while (!FSOUND_Software_ThreadFinished)
         {
 			Sleep(10);
         }
-		FSOUND_Software_hThread = nullptr;
+		FSOUND_Software_Thread.join();
 	}
-#endif
 
 	// remove the output mixbuffer
 	if (FSOUND_MixBuffer)
@@ -363,11 +346,11 @@ void FMUSIC_StopSong()
     {
     	waveOutUnprepareHeader(FSOUND_WaveOutHandle, &FSOUND_MixBlock.wavehdr, sizeof(WAVEHDR));
 	    FSOUND_MixBlock.wavehdr.dwFlags &= ~WHDR_PREPARED;
-		delete[] FSOUND_MixBlock.data;
 		FSOUND_MixBlock.data = nullptr;
         FSOUND_MixBlock.wavehdr.lpData = nullptr;
     }
 #endif
+	delete[] FSOUND_MixBlock.data;
 
 	FMUSIC_PlayingSong = nullptr;
 
