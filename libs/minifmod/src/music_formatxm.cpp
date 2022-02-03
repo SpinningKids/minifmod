@@ -158,8 +158,6 @@ static void FMUSIC_XM_Tremolo(FMUSIC_CHANNEL &channel)
 		}
 	}
 
-	channel.voldelta = std::clamp(channel.voldelta, -channel.volume, 64 - channel.volume);
-
 	channel.tremolopos += channel.tremolospeed;
 	if (channel.tremolopos > 31)
     {
@@ -244,13 +242,13 @@ static void FMUSIC_XM_ProcessVolumeByte(FMUSIC_CHANNEL &channel, unsigned char v
 			case 0x6:
 			case 0x8:
 			{
-				channel.volume = std::max(channel.volume - (volume & 0xF), 0);
+				channel.volume -= (volume & 0xF);
 				break;
 			}
 			case 0x7:
 			case 0x9:
 			{
-				channel.volume = std::min(channel.volume + (volume & 0xF), 0x40);
+				channel.volume += (volume & 0xF);
 				break;
 			}
 			case 0xa :
@@ -425,7 +423,11 @@ static void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL &channel, FSOUND_SAMPLE *sptr, 
 
 	{
 		mod.globalvolume = std::clamp(mod.globalvolume, 0, 64);
-        float high_precision_pan = std::clamp(channel.pan+ channel.envpan.value * (128 - abs(channel.pan - 128)), 0.0f, 255.0f); // 32*255
+		channel.volume = std::clamp(channel.volume, 0, 64);
+		channel.voldelta = std::clamp(channel.voldelta, -channel.volume, 64 - channel.volume);
+		channel.pan = std::clamp(channel.pan, 0, 255);
+
+        float high_precision_pan = std::clamp(channel.pan+ channel.envpan.value * (128 - abs(channel.pan - 128)), 0.0f, 255.0f); // 255
 
 		constexpr float norm = 1.0f/ 68451041280.0f; // 2^27 (volume normalization) * 255.0 (pan scale) (*2 for safety?!?)
 
@@ -585,7 +587,7 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
 		}
 
 		int oldvolume = channel.volume;
-		int oldfreq = channel.period;
+		int oldperiod = channel.period;
 		int oldpan = channel.pan;
 
 		// if there is no more tremolo, set volume to volume + last tremolo delta
@@ -926,7 +928,7 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
                         {
 							channel.finevslup = paramy;
                         }
-						channel.volume = std::min(channel.volume + channel.finevslup, 0x40);
+						channel.volume += channel.finevslup;
 						break;
 					}
 #endif
@@ -937,16 +939,16 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
                         {
                             channel.finevslup = paramy;
                         }
-                        channel.volume = std::max(channel.volume - channel.finevslup, 0);
+                        channel.volume -= channel.finevslup;
 						break;
 					}
 #endif
 #ifdef FMUSIC_XM_NOTEDELAY_ACTIVE
 					case FMUSIC_XM_NOTEDELAY :
 					{
-						channel.volume = oldvolume;
-						channel.period   = oldfreq;
-						channel.pan    = oldpan;
+						channel.volume  = oldvolume;
+						channel.period  = oldperiod;
+						channel.pan     = oldpan;
 						channel.trigger = false;
 						break;
 					}
@@ -1136,12 +1138,12 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
 //				break;
 			case 0x6:
 			{
-				channel.volume = std::max(channel.volume - (note.volume & 0xF), 0);
+				channel.volume -= (note.volume & 0xF);
 				break;
 			}
 			case 0x7 :
 			{
-				channel.volume = std::min(channel.volume + (note.volume & 0xF), 0x40);
+				channel.volume += (note.volume & 0xF);
 				break;
 			}
 #ifdef FMUSIC_XM_VIBRATO_ACTIVE
@@ -1273,11 +1275,11 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
 				// slide up takes precedence over down
 				if (paramx)
 				{
-					channel.volume = std::min(channel.volume + paramx, 0x40);
+					channel.volume += paramx;
 				}
 				else
 				{
-					channel.volume = std::max(channel.volume - paramy, 0);
+					channel.volume -= paramy;
 				}
 				break;
 			}
@@ -1298,11 +1300,11 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
 				// slide up takes precedence over down
 				if (paramx)
 				{
-					channel.volume = std::min(channel.volume + paramx, 0x40);
+					channel.volume += paramx;
 				}
 				else
 				{
-					channel.volume = std::max(channel.volume - paramy, 0);
+					channel.volume -= paramy;
 				}
 				break;
 			}
@@ -1323,11 +1325,11 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
 				// slide up takes precedence over down
 				if (paramx)
 				{
-					channel.volume = std::min(channel.volume + paramx, 0x40);
+					channel.volume += paramx;
 				}
 				else
 				{
-					channel.volume = std::max(channel.volume - paramy, 0);
+					channel.volume -= paramy;
 				}
 				break;
 			}
@@ -1474,7 +1476,6 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
 							    break;
 							}
 						}
-						channel.volume = std::clamp(channel.volume, 0, 0x40);
 					}
 					channel.trigger = true;
 				}
@@ -1508,11 +1509,11 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod)
 				// slide right takes precedence over left
 				if (paramx)
 				{
-					channel.pan = std::min(channel.pan + paramx, 255);
+					channel.pan += paramx;
 				}
 				else
 				{
-					channel.pan = std::max(channel.pan - paramy, 0);
+					channel.pan -= paramy;
 				}
 
 				break;
