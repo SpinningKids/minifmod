@@ -74,7 +74,7 @@ FMUSIC_INSTRUMENT		FMUSIC_DummyInstrument;
 ]
 */
 
-void FMUSIC_SetBPM(FMUSIC_MODULE &module, int bpm)
+void FMUSIC_SetBPM(FMUSIC_MODULE &module, int bpm) noexcept
 {
 	// number of samples
 	module.mixer_samplespertick = FSOUND_MixRate * 5 / (bpm * 2);
@@ -394,7 +394,7 @@ void FMUSIC_StopSong()
 	FMUSIC_GetPattern
 ]
 */
-unsigned char FMUSIC_GetOrder()
+unsigned char FMUSIC_GetOrder() noexcept
 {
 	if (!FMUSIC_TimeInfo)
 	{
@@ -423,7 +423,7 @@ unsigned char FMUSIC_GetOrder()
 	[SEE_ALSO]
 ]
 */
-unsigned char FMUSIC_GetRow()
+unsigned char FMUSIC_GetRow() noexcept
 {
 	if (!FMUSIC_TimeInfo)
     {
@@ -456,7 +456,7 @@ unsigned char FMUSIC_GetRow()
 	[SEE_ALSO]
 ]
 */
-unsigned int FMUSIC_GetTime()
+unsigned int FMUSIC_GetTime() noexcept
 {
 	if (!FMUSIC_TimeInfo)
     {

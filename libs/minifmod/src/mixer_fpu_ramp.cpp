@@ -38,7 +38,7 @@
 ]
 */
 
-void FSOUND_Mixer_FPU_Ramp(float *mixptr, int len)
+void FSOUND_Mixer_FPU_Ramp(float *mixptr, int len) noexcept
 {
 	//==============================================================================================
 	// LOOP THROUGH CHANNELS
