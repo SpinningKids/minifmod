@@ -31,7 +31,7 @@
 	[SEE_ALSO]
 ]
 */
-void FSOUND_MixerClipCopy_Float32(short* dest, const float* src, int len)
+void FSOUND_MixerClipCopy_Float32(short* dest, const float* src, int len) noexcept
 {
 	if (len <=0 || !dest || !src)
 		return;

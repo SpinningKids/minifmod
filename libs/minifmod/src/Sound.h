@@ -114,7 +114,7 @@ inline std::thread			FSOUND_Software_Thread;
 inline int					FSOUND_Software_FillBlock		= 0;
 inline int					FSOUND_Software_RealBlock;
 
-void						FSOUND_Software_DoubleBufferThread();
-void						FSOUND_Software_Fill();
+void						FSOUND_Software_DoubleBufferThread() noexcept;
+void						FSOUND_Software_Fill() noexcept;
 
 #endif

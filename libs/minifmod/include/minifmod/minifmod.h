@@ -42,9 +42,9 @@ void FSOUND_File_SetCallbacks(void*         (*OpenCallback)(const char *name),
                               void			(*CloseCallback)(void* handle),
                               int			(*ReadCallback)(void *buffer, int size, void* handle),
                               void			(*SeekCallback)(void* handle, int pos, int mode),
-                              int			(*TellCallback)(void* handle));
-bool FSOUND_Init(int mixrate, int vcmmode = 0);
-float FSOUND_TimeFromSamples();
+                              int			(*TellCallback)(void* handle)) noexcept;
+bool FSOUND_Init(int mixrate, int vcmmode = 0) noexcept;
+float FSOUND_TimeFromSamples() noexcept;
 
 // =============================================================================================
 // FMUSIC API
@@ -61,8 +61,8 @@ void    		FMUSIC_StopSong();
 // Runtime song information.
 // =========================
 
-unsigned char	FMUSIC_GetOrder();
-unsigned char	FMUSIC_GetRow();
-unsigned int	FMUSIC_GetTime();
+unsigned char	FMUSIC_GetOrder() noexcept;
+unsigned char	FMUSIC_GetRow() noexcept;
+unsigned int	FMUSIC_GetTime() noexcept;
 
 #endif

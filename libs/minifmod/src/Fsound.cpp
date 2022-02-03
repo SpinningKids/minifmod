@@ -32,7 +32,7 @@
 
 	[SEE_ALSO]
 */
-void FSOUND_Software_Fill()
+void FSOUND_Software_Fill() noexcept
 {
     const int mixpos = FSOUND_Software_FillBlock * FSOUND_BlockSize;
 	const int totalblocks = FSOUND_BufferSize / FSOUND_BlockSize;
@@ -109,7 +109,7 @@ void FSOUND_Software_Fill()
 
 	[SEE_ALSO]
 */
-void FSOUND_Software_DoubleBufferThread()
+void FSOUND_Software_DoubleBufferThread() noexcept
 {
     FSOUND_Software_ThreadFinished = false;
 
@@ -146,13 +146,13 @@ void FSOUND_Software_DoubleBufferThread()
 	FSOUND_Software_ThreadFinished = true;
 }
 
-bool FSOUND_Init(int mixrate, int vcmmode)
+bool FSOUND_Init(int mixrate, int vcmmode) noexcept
 {
 	FSOUND_MixRate = mixrate;
 	return true;
 }
 
-float FSOUND_TimeFromSamples()
+float FSOUND_TimeFromSamples() noexcept
 {
 #ifdef WIN32
 	MMTIME mmtime;

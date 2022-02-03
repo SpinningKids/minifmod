@@ -33,22 +33,22 @@ class FMUSIC_PATTERN
 	int		rows_;
 	XMNote data_[256][32];
 public:
-	FMUSIC_PATTERN() : rows_{ 64 }, data_{} {}
+	FMUSIC_PATTERN() noexcept : rows_{ 64 }, data_{} {}
 
-    [[nodiscard]] int rows() const { return rows_; }
+    [[nodiscard]] int rows() const noexcept { return rows_; }
 	void set_rows(int rows)
 	{
 		assert(rows <= 256);
 	    rows_ = rows;
 	}
 
-	[[nodiscard]] auto row(int row) const -> decltype(data_[row])
+	[[nodiscard]] auto row(int row) const noexcept -> decltype(data_[row])
 	{
 		assert(row < rows_);
 		return data_[row];
 	}
 
-	[[nodiscard]] auto row(int row) -> decltype(data_[row])
+	[[nodiscard]] auto row(int row) noexcept -> decltype(data_[row])
 	{
 		assert(row < rows_);
 		return data_[row];
@@ -199,6 +199,6 @@ extern FMUSIC_TIMMEINFO *		FMUSIC_TimeInfo;
 #define FMUSIC_PERIOD2HZ(_per) (14317056L / (_per))
 
 // private (internal functions)
-void	FMUSIC_SetBPM(FMUSIC_MODULE &mod, int bpm);
+void	FMUSIC_SetBPM(FMUSIC_MODULE &mod, int bpm) noexcept;
 
 #endif
