@@ -13,7 +13,6 @@ set(PUBLIC_HEADER_FILES
 )
 
 set(PRIVATE_HEADER_FILES
-  ${SRC_DIR}/Mixer.h
   ${SRC_DIR}/mixer_clipcopy.h
   ${SRC_DIR}/mixer_fpu_ramp.h
   ${SRC_DIR}/Music.h

@@ -12,50 +12,14 @@
 
 #include "Music.h"
 
-#include <cstring>
-
 #include <minifmod/minifmod.h>
-#include "mixer_fpu_ramp.h"
 #include "music_formatxm.h"
 #include "system_file.h"
 
-FMUSIC_MODULE *		FMUSIC_PlayingSong = nullptr;
 FMUSIC_CHANNEL		FMUSIC_Channel[32];		// channel array for this song
 FMUSIC_TIMMEINFO *	FMUSIC_TimeInfo;
-FSOUND_SAMPLE		FMUSIC_DummySample;
-// initialization taken out due to size.. should be ok.
-/* =
-{
-//	0,								// index
-	nullptr,						// buff
-
-	0,								// length
-	0,								// loopstart
-	0,								// looplen
-	0,								// default volume
-	0,								// finetune value from -128 to 127
-
-	44100,							// default frequency
-	128,							// default pan
-
-	8,								// bits
-	FSOUND_LOOP_OFF,				// loop mode
-
-
-	TRUE,							// music owned
-	0,								// sample global volume (scalar)
-	0,								// relative note
-	8363,							// finetuning adjustment to make for music samples.. relative to 8363hz
-	0,								// sample loop start
-	0,								// sample loop length
-	0,								// vibrato speed 0-64
-	0,								// vibrato depth 0-64
-	0,								// vibrato type 0=sine, 1=rampdown, 2=square, 3=random
-	0,								// vibrato rate 0-64 (like sweep?)
-};
-*/
-
-FMUSIC_INSTRUMENT		FMUSIC_DummyInstrument;
+FSOUND_SAMPLE		FMUSIC_DummySample; // initialization taken out due to size.. should be ok.
+FMUSIC_INSTRUMENT	FMUSIC_DummyInstrument;
 
 //= PRIVATE FUNCTIONS ==============================================================================
 
@@ -136,7 +100,6 @@ bool FMUSIC_FreeSong(FMUSIC_MODULE *mod)
 {
 	if (mod)
     {
-        BLOCK_ON_SOFTWAREUPDATE();
         FMUSIC_StopSong();
         delete mod;
         return true;
@@ -172,129 +135,31 @@ bool FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 
 	FMUSIC_StopSong();
 
-	// ========================================================================================================
-	// INITIALIZE SOFTWARE MIXER
-	// ========================================================================================================
-
-	FSOUND_BlockSize    = ((FSOUND_MixRate * FSOUND_LATENCY / 1000) + 3) & 0xFFFFFFFC;	// Number of *samples*
-	FSOUND_BufferSize   = FSOUND_BlockSize * (FSOUND_BufferSizeMs / FSOUND_LATENCY);	// make it perfectly divisible by granularity
-	FSOUND_BufferSize <<= 1;	// double buffer
-
-	mix_filter_k    = 1.f/(1.f + FSOUND_MixRate * VolumeFilterTimeConstant);
-	int totalblocks = FSOUND_BufferSize / FSOUND_BlockSize;
-
-	//=======================================================================================
-	// ALLOC GLOBAL CHANNEL POOL
-	//=======================================================================================
-	memset(FSOUND_Channel, 0, sizeof(FSOUND_CHANNEL) * 64);
-
-	// ========================================================================================================
-	// SET UP CHANNELS
-	// ========================================================================================================
-
-	for (int count = 0; count < 64; count++)
-	{
-		FSOUND_Channel[count].index = count;
-		FSOUND_Channel[count].speed = 1.0f;
-	}
-
-	mod->globalvolume       = 64;
- 	mod->speed              = (int)mod->header.default_tempo;
-	mod->row                = 0;
-	mod->order              = 0;
-	mod->nextorder          = -1;
-	mod->nextrow            = -1;
-	mod->mixer_samplesleft  = 0;
-	mod->tick               = 0;
-	mod->patterndelay       = 0;
-	mod->time_ms            = 0;
+	mod->globalvolume = 64;
+	mod->speed = (int)mod->header.default_tempo;
+	mod->row = 0;
+	mod->order = 0;
+	mod->nextorder = -1;
+	mod->nextrow = -1;
+	mod->mixer_samplesleft = 0;
+	mod->tick = 0;
+	mod->patterndelay = 0;
+	mod->time_ms = 0;
 
 	FMUSIC_SetBPM(*mod, mod->header.default_bpm);
 
 	memset(FMUSIC_Channel, 0, mod->header.channels_count * sizeof(FMUSIC_CHANNEL));
-//	memset(FSOUND_Channel, 0, 64 * sizeof(FSOUND_CHANNEL));
+	//	memset(FSOUND_Channel, 0, 64 * sizeof(FSOUND_CHANNEL));
 
-	for (uint16_t count=0; count < mod->header.channels_count; count++)
+	for (uint16_t count = 0; count < mod->header.channels_count; count++)
 	{
 		FMUSIC_Channel[count].cptr = &FSOUND_Channel[count];
 	}
 
-	FMUSIC_PlayingSong = mod;
-
-	FMUSIC_TimeInfo = new FMUSIC_TIMMEINFO[totalblocks]{};
-
-	// ========================================================================================================
-	// PREPARE THE OUTPUT
-	// ========================================================================================================
-	{
-
-#ifdef WIN32
-		// ========================================================================================================
-		// INITIALIZE WAVEOUT
-		// ========================================================================================================
-		WAVEFORMATEX	pcmwf;
-		pcmwf.wFormatTag		= WAVE_FORMAT_PCM;
-		pcmwf.nChannels			= 2;
-		pcmwf.wBitsPerSample	= 16;
-		pcmwf.nBlockAlign		= pcmwf.nChannels * pcmwf.wBitsPerSample / 8;
-		pcmwf.nSamplesPerSec	= FSOUND_MixRate;
-		pcmwf.nAvgBytesPerSec	= pcmwf.nSamplesPerSec * pcmwf.nBlockAlign;
-		pcmwf.cbSize			= 0;
-
-        if (UINT hr = waveOutOpen(&FSOUND_WaveOutHandle, WAVE_MAPPER, &pcmwf, 0, 0, 0))
-		{
-			return false;
-	    }
-#endif
-	}
-
-	{
-        // CREATE AND START LOOPING WAVEOUT BLOCK
-
-        const int length = FSOUND_BufferSize * 2; // stereo
-
-		FSOUND_MixBlock.data = new short[length]; // TODO: Check Leak
-
-#ifdef WIN32
-		FSOUND_MixBlock.wavehdr.dwFlags			= WHDR_BEGINLOOP | WHDR_ENDLOOP;
-		FSOUND_MixBlock.wavehdr.lpData				= (LPSTR)FSOUND_MixBlock.data;
-		FSOUND_MixBlock.wavehdr.dwBufferLength		= length*sizeof(short);
-		FSOUND_MixBlock.wavehdr.dwBytesRecorded	= 0;
-		FSOUND_MixBlock.wavehdr.dwUser				= 0;
-		FSOUND_MixBlock.wavehdr.dwLoops			= -1;
-		waveOutPrepareHeader(FSOUND_WaveOutHandle, &FSOUND_MixBlock.wavehdr, sizeof(WAVEHDR));
-#endif
-	}
-
-	// ========================================================================================================
-	// ALLOCATE MIXBUFFER
-	// ========================================================================================================
-
-	FSOUND_MixBuffer = new float[FSOUND_BufferSize*2];
-
-
-	// ========================================================================================================
-	// PREFILL THE MIXER BUFFER
-	// ========================================================================================================
-
-	do
-	{
-		FSOUND_Software_Fill();
-	} while (FSOUND_Software_FillBlock);
-
-	// ========================================================================================================
-	// START THE OUTPUT
-	// ========================================================================================================
-
-#ifdef WIN32
-	waveOutWrite(FSOUND_WaveOutHandle, &FSOUND_MixBlock.wavehdr, sizeof(WAVEHDR));
-#endif
-
-	// ========================================================================================================
+    // ========================================================================================================
 	// CREATE THREADS / TIMERS (last)
 	// ========================================================================================================
-	FSOUND_Software_Exit = false;
-	FSOUND_Software_Thread = std::thread(FSOUND_Software_DoubleBufferThread);
+	FSOUND_Software_Thread = std::thread(FSOUND_Software_DoubleBufferThread, mod);
 	return true;
 }
 
@@ -319,58 +184,13 @@ bool FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 */
 void FMUSIC_StopSong()
 {
-	// Kill the thread
-	FSOUND_Software_Exit = true;
-
 	// wait until callback has settled down and exited
-	BLOCK_ON_SOFTWAREUPDATE();
-
 	if (FSOUND_Software_Thread.joinable())
 	{
-		while (!FSOUND_Software_ThreadFinished)
-        {
-			Sleep(10);
-        }
+		// Kill the thread
+		FSOUND_Software_Exit = true;
 		FSOUND_Software_Thread.join();
 	}
-
-	// remove the output mixbuffer
-	if (FSOUND_MixBuffer)
-    {
-		delete[] FSOUND_MixBuffer;
-        FSOUND_MixBuffer = nullptr;
-    }
-
-#ifdef WIN32
-    if (FSOUND_MixBlock.wavehdr.lpData)
-    {
-    	waveOutUnprepareHeader(FSOUND_WaveOutHandle, &FSOUND_MixBlock.wavehdr, sizeof(WAVEHDR));
-	    FSOUND_MixBlock.wavehdr.dwFlags &= ~WHDR_PREPARED;
-		FSOUND_MixBlock.data = nullptr;
-        FSOUND_MixBlock.wavehdr.lpData = nullptr;
-    }
-#endif
-	delete[] FSOUND_MixBlock.data;
-
-	FMUSIC_PlayingSong = nullptr;
-
-	if (FMUSIC_TimeInfo)
-    {
-		delete[] FMUSIC_TimeInfo;
-        FMUSIC_TimeInfo = nullptr;
-    }
-
-	// ========================================================================================================
-	// SHUT DOWN OUTPUT DRIVER
-	// ========================================================================================================
-#ifdef WIN32
-	waveOutReset(FSOUND_WaveOutHandle);
-
-	waveOutClose(FSOUND_WaveOutHandle);
-#endif
-
-	FSOUND_Software_FillBlock = 0;
-    FSOUND_Software_RealBlock = 0;
 }
 
 //= INFORMATION FUNCTIONS ======================================================================

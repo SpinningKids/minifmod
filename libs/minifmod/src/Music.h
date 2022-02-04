@@ -19,13 +19,7 @@
 #include "Sound.h"
 #include "xmfile.h"
 
-#define FMUSIC_MAXORDERS					256
-
-#define FMUSIC_KEYCUT						254
 #define FMUSIC_KEYOFF						97
-
-#define FMUSIC_TRIGGER						4
-#define FMUSIC_STOP							8
 
 // pattern data type
 class FMUSIC_PATTERN
@@ -187,7 +181,6 @@ struct FMUSIC_MODULE final
 
 
 //= VARIABLE EXTERNS ========================================================================
-extern FMUSIC_MODULE *			FMUSIC_PlayingSong;
 extern FSOUND_SAMPLE			FMUSIC_DummySample;
 extern FSOUND_CHANNEL			FMUSIC_DummyChannel;
 extern FMUSIC_INSTRUMENT		FMUSIC_DummyInstrument;

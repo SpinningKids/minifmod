@@ -18,7 +18,6 @@
 #include <cmath>
 
 #include <minifmod/minifmod.h>
-#include "Mixer.h"
 #include "Music.h"
 #include "Sound.h"
 #include "system_file.h"
@@ -413,7 +412,7 @@ static void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL &channel, FSOUND_SAMPLE *sptr, 
 		}
 
 		ccptr->mixpos  = ccptr->sampleoffset;
-		ccptr->speeddir  = FSOUND_MIXDIR_FORWARDS;
+		ccptr->speeddir  = MixDir::Forwards;
 		ccptr->sampleoffset = 0;	// reset it (in case other samples come in and get corrupted etc)
 
 		// volume ramping
@@ -1715,11 +1714,11 @@ std::unique_ptr<FMUSIC_MODULE> FMUSIC_LoadXM(void* fp, SAMPLELOADCALLBACK sample
 					sptr->header.loop_length /= 2;
 				}
 
-				if ((sptr->header.loop_mode == FSOUND_XM_LOOP_OFF) || (sptr->header.length == 0))
+				if ((sptr->header.loop_mode == XMLoopMode::Off) || (sptr->header.length == 0))
 				{
 					sptr->header.loop_start = 0;
 					sptr->header.loop_length = sptr->header.length;
-					sptr->header.loop_mode = FSOUND_XM_LOOP_OFF;
+					sptr->header.loop_mode = XMLoopMode::Off;
 				}
 
 			}
@@ -1756,7 +1755,7 @@ std::unique_ptr<FMUSIC_MODULE> FMUSIC_LoadXM(void* fp, SAMPLELOADCALLBACK sample
 								sptr->buff[count3] = int16_t(buff[count3]) << 8;
 							}
 
-							sptr->header.bits16 = 1;
+							sptr->header.bits16 = true;
 							delete[] buff;
 						}
 
@@ -1769,11 +1768,11 @@ std::unique_ptr<FMUSIC_MODULE> FMUSIC_LoadXM(void* fp, SAMPLELOADCALLBACK sample
 					}
 
 					// BUGFIX 1.3 - removed click for end of non looping sample (also size optimized a bit)
-					if (sptr->header.loop_mode == FSOUND_XM_LOOP_BIDI)
+					if (sptr->header.loop_mode == XMLoopMode::Bidi)
 					{
 						sptr->buff[sptr->header.loop_start+sptr->header.loop_length] = sptr->buff[sptr->header.loop_start+sptr->header.loop_length-1];// fix it
 					}
-					else if (sptr->header.loop_mode == FSOUND_XM_LOOP_NORMAL)
+					else if (sptr->header.loop_mode == XMLoopMode::Normal)
 					{
 						sptr->buff[sptr->header.loop_start+sptr->header.loop_length] = sptr->buff[sptr->header.loop_start];// fix it
 					}
