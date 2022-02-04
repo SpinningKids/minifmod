@@ -12,12 +12,10 @@
 
 #include "mixer_fpu_ramp.h"
 
-#include <cassert>
 #include <cmath>
 #include <cstdint>
 
 #include "Sound.h"
-#include "Mixer.h"
 
 // =========================================================================================
 // GLOBAL VARIABLES
@@ -54,7 +52,7 @@ void FSOUND_Mixer_FPU_Ramp(float *mixptr, int len) noexcept
         {
 
             float samples_to_mix;
-            if (channel.speeddir == FSOUND_MIXDIR_FORWARDS)
+            if (channel.speeddir == MixDir::Forwards)
             {
                 samples_to_mix = channel.sptr->header.loop_start + channel.sptr->header.loop_length - channel.mixpos;
                 if (samples_to_mix <= 0)
@@ -76,7 +74,7 @@ void FSOUND_Mixer_FPU_Ramp(float *mixptr, int len) noexcept
 
             float speed = channel.speed;
 
-            if (channel.speeddir != FSOUND_MIXDIR_FORWARDS)
+            if (channel.speeddir != MixDir::Forwards)
             {
                 speed = -speed;
             }
@@ -91,8 +89,8 @@ void FSOUND_Mixer_FPU_Ramp(float *mixptr, int len) noexcept
                 const float newsamp = (channel.sptr->buff[mixpos + 1] - samp1) * frac + samp1;
                 mixptr[0 + (sample_index + i) * 2] += channel.filtered_leftvolume * newsamp;
                 mixptr[1 + (sample_index + i) * 2] += channel.filtered_rightvolume * newsamp;
-                channel.filtered_leftvolume += (channel.leftvolume - channel.filtered_leftvolume) * mix_filter_k;
-                channel.filtered_rightvolume += (channel.rightvolume - channel.filtered_rightvolume) * mix_filter_k;
+                channel.filtered_leftvolume += (channel.leftvolume - channel.filtered_leftvolume) * volume_filter_k;
+                channel.filtered_rightvolume += (channel.rightvolume - channel.filtered_rightvolume) * volume_filter_k;
                 channel.mixpos += speed;
             }
 
@@ -103,21 +101,21 @@ void FSOUND_Mixer_FPU_Ramp(float *mixptr, int len) noexcept
             //=============================================================================================
             if (mix_count == samples_to_mix_target)
             {
-                if (channel.sptr->header.loop_mode == FSOUND_XM_LOOP_NORMAL)
+                if (channel.sptr->header.loop_mode == XMLoopMode::Normal)
                 {
                     const uint32_t target = channel.sptr->header.loop_start + channel.sptr->header.loop_length;
                     do
                     {
                         channel.mixpos -= channel.sptr->header.loop_length;
                     } while (channel.mixpos >= target);
-                } else if (channel.sptr->header.loop_mode == FSOUND_XM_LOOP_BIDI)
+                } else if (channel.sptr->header.loop_mode == XMLoopMode::Bidi)
                 {
                     do {
-                        if (channel.speeddir != FSOUND_MIXDIR_FORWARDS)
+                        if (channel.speeddir != MixDir::Forwards)
                         {
                             //BidiBackwards
                             channel.mixpos = 2 * channel.sptr->header.loop_start - channel.mixpos - 1;
-                            channel.speeddir = FSOUND_MIXDIR_FORWARDS;
+                            channel.speeddir = MixDir::Forwards;
                             if (channel.mixpos < channel.sptr->header.loop_start + channel.sptr->header.loop_length)
                             {
                                 break;
@@ -125,7 +123,7 @@ void FSOUND_Mixer_FPU_Ramp(float *mixptr, int len) noexcept
                         }
                         //BidiForward
                         channel.mixpos = 2 * (channel.sptr->header.loop_start + channel.sptr->header.loop_length) - channel.mixpos - 1;
-                        channel.speeddir = FSOUND_MIXDIR_BACKWARDS;
+                        channel.speeddir = MixDir::Backwards;
 
                     } while (channel.mixpos < channel.sptr->header.loop_start);
                 }

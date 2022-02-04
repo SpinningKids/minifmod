@@ -17,6 +17,6 @@ constexpr float VolumeFilterTimeConstant = 0.003f; // time constant (RC) of the 
 
 void FSOUND_Mixer_FPU_Ramp(float *mixptr, int len) noexcept;
 
-inline float mix_filter_k;
+inline float volume_filter_k;
 
 #endif

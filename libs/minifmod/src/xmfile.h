@@ -106,6 +106,13 @@ struct XMInstrumentSampleHeader
 
 static_assert(sizeof(XMInstrumentSampleHeader) == 214);
 
+enum class XMLoopMode : uint8_t
+{
+	Off = 0,
+	Normal = 1,		// For forward looping samples.
+	Bidi = 2,		// For bidirectional looping samples.  (no effect if in hardware).
+};
+
 struct XMSampleHeader
 {
 	uint32_t	length;
@@ -113,9 +120,9 @@ struct XMSampleHeader
 	uint32_t	loop_length;
 	uint8_t		default_volume;
 	int8_t		finetune;
-	uint8_t		loop_mode : 2;
+	XMLoopMode	loop_mode : 2;
 	uint8_t		skip_bits_1 : 2;
-	uint8_t		bits16 : 1;
+	bool		bits16 : 1;
 	uint8_t		default_panning;
 	int8_t		relative_note;
 	uint8_t		reserved;

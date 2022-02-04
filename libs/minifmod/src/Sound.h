@@ -16,22 +16,13 @@
 #include <cstdint>
 #include <thread>
 
-#ifdef WIN32
-#define NOMINMAX
-#include <Windows.h>
-#endif
-
 #include "xmfile.h"
 
-//= DEFINITIONS ===============================================================================
-
-#define FSOUND_LATENCY	20
-
-#define BLOCK_ON_SOFTWAREUPDATE() while(FSOUND_Software_UpdateMutex);
-
-#define FSOUND_XM_LOOP_OFF 0
-#define FSOUND_XM_LOOP_NORMAL	1		// For forward looping samples.
-#define FSOUND_XM_LOOP_BIDI	2		// For bidirectional looping samples.  (no effect if in hardware).
+enum class MixDir
+{
+    Forwards,
+	Backwards
+};
 
 // ==============================================================================================
 // STRUCTURE DEFINITIONS
@@ -58,7 +49,6 @@ struct FSOUND_SAMPLE final
 	}
 };
 
-
 // Channel type - contains information on a mixing channel
 struct FSOUND_CHANNEL
 {
@@ -72,49 +62,24 @@ struct FSOUND_CHANNEL
 	float			rightvolume;    // mixing information. adjusted volume for right channel (panning involved)
 	float			mixpos;			// mixing information. floating point fractional position in sample.
 	float			speed;			// mixing information. playback rate - floating point.
-	unsigned int	speeddir;		// mixing information. playback direction - forwards or backwards
+	MixDir			speeddir;		// mixing information. playback direction - forwards or backwards
 
 	// software mixer volume ramping stuff
 	float			filtered_leftvolume;
 	float			filtered_rightvolume;
 };
 
-//= FUNCTIONS =================================================================================
-
-struct FSOUND_SoundBlock
-{
-#ifdef WIN32
-	WAVEHDR		wavehdr;
-#endif
-	short		*data;
-};
-
-//= CONSTANT EXPRESSIONS ======================================================================
-constexpr int			FSOUND_BufferSizeMs = 1000;
-
-
 //= VARIABLE EXTERNS ==========================================================================
 inline FSOUND_CHANNEL		FSOUND_Channel[64];			// channel pool
 inline int					FSOUND_MixRate = 44100;		// mixing rate in hz.
-#ifdef WIN32
-inline HWAVEOUT				FSOUND_WaveOutHandle;
-#endif
-inline FSOUND_SoundBlock	FSOUND_MixBlock;
-
-// mixing info
-inline float*				FSOUND_MixBuffer;			// mix output buffer (stereo 32bit float)
-inline int					FSOUND_BufferSize;			// size of 1 'latency' ms buffer in bytes
-inline int					FSOUND_BlockSize;			// LATENCY ms worth of samples
 
 // thread control variables
 inline bool					FSOUND_Software_Exit			= false;		// mixing thread termination flag
-inline bool					FSOUND_Software_UpdateMutex		= false;
-inline bool					FSOUND_Software_ThreadFinished	= true;
 inline std::thread			FSOUND_Software_Thread;
-inline int					FSOUND_Software_FillBlock		= 0;
 inline int					FSOUND_Software_RealBlock;
 
-void						FSOUND_Software_DoubleBufferThread() noexcept;
-void						FSOUND_Software_Fill() noexcept;
+struct FMUSIC_MODULE;
+void						FSOUND_Software_DoubleBufferThread(FMUSIC_MODULE* mod) noexcept;
+void						FSOUND_Software_Fill(FMUSIC_MODULE& mod) noexcept;
 
 #endif
