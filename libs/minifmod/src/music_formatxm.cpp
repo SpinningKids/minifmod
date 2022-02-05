@@ -478,7 +478,7 @@ static void XM_ProcessCommon(FMUSIC_CHANNEL& channel, const FMUSIC_INSTRUMENT* i
 	FMUSIC_XM_ProcessEnvelope(channel, &channel.envvol, iptr->sample_header.volume_envelope_flags, iptr->volume_envelope, iptr->sample_header.volume_loop_end_index, iptr->sample_header.volume_loop_start_index, iptr->sample_header.volume_sustain_index);
 #endif
 #ifdef FMUSIC_XM_PANENVELOPE_ACTIVE
-	FMUSIC_XM_ProcessEnvelope(channel, &channel.envpan, iptr->sample_header.pan_envelope_flags, iptr->pan_envelope, iptr->sample_header.pan_loop_end, iptr->sample_header.pan_loop_start, iptr->sample_header.pan_sustain_index);
+	FMUSIC_XM_ProcessEnvelope(channel, &channel.envpan, iptr->sample_header.pan_envelope_flags, iptr->pan_envelope, iptr->sample_header.pan_loop_end_index, iptr->sample_header.pan_loop_start_index, iptr->sample_header.pan_sustain_index);
 #endif
 	//= PROCESS VOLUME FADEOUT =====================================================================
     if (channel.keyoff)

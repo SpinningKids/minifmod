@@ -279,7 +279,7 @@ void FSOUND_Software_Fill(FMUSIC_MODULE &mod) noexcept
 */
 void FSOUND_Software_DoubleBufferThread(FMUSIC_MODULE *mod) noexcept
 {
-	FSOUND_Software_Exit = false;
+	Software_Thread_Exit = false;
 
 // ========================================================================================================
 // INITIALIZE SOFTWARE MIXER
@@ -329,7 +329,7 @@ void FSOUND_Software_DoubleBufferThread(FMUSIC_MODULE *mod) noexcept
 
 		if (UINT hr = waveOutOpen(&FSOUND_WaveOutHandle, WAVE_MAPPER, &pcmwf, 0, 0, 0))
 		{
-			FSOUND_Software_Exit = true;
+			Software_Thread_Exit = true;
 			return;
 		}
 #endif
@@ -376,7 +376,7 @@ void FSOUND_Software_DoubleBufferThread(FMUSIC_MODULE *mod) noexcept
 	waveOutWrite(FSOUND_WaveOutHandle, &FSOUND_MixBlock.wavehdr, sizeof(WAVEHDR));
 #endif
 
-	while (!FSOUND_Software_Exit)
+	while (!Software_Thread_Exit)
 	{
         MMTIME	mmt;
 
