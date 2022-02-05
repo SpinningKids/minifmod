@@ -14,7 +14,6 @@
 #define SOUND_H_
 
 #include <cstdint>
-#include <thread>
 
 #include "xmfile.h"
 
@@ -74,8 +73,7 @@ inline FSOUND_CHANNEL		FSOUND_Channel[64];			// channel pool
 inline int					FSOUND_MixRate = 44100;		// mixing rate in hz.
 
 // thread control variables
-inline bool					FSOUND_Software_Exit			= false;		// mixing thread termination flag
-inline std::thread			FSOUND_Software_Thread;
+inline bool					Software_Thread_Exit			= false;		// mixing thread termination flag
 inline int					FSOUND_Software_RealBlock;
 
 struct FMUSIC_MODULE;

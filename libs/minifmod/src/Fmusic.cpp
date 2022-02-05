@@ -12,6 +12,8 @@
 
 #include "Music.h"
 
+#include <thread>
+
 #include <minifmod/minifmod.h>
 #include "music_formatxm.h"
 #include "system_file.h"
@@ -20,6 +22,8 @@ FMUSIC_CHANNEL		FMUSIC_Channel[32];		// channel array for this song
 FMUSIC_TIMMEINFO *	FMUSIC_TimeInfo;
 FSOUND_SAMPLE		FMUSIC_DummySample; // initialization taken out due to size.. should be ok.
 FMUSIC_INSTRUMENT	FMUSIC_DummyInstrument;
+
+static std::thread	Software_Thread;
 
 //= PRIVATE FUNCTIONS ==============================================================================
 
@@ -159,7 +163,7 @@ bool FMUSIC_PlaySong(FMUSIC_MODULE *mod)
     // ========================================================================================================
 	// CREATE THREADS / TIMERS (last)
 	// ========================================================================================================
-	FSOUND_Software_Thread = std::thread(FSOUND_Software_DoubleBufferThread, mod);
+	Software_Thread = std::thread(FSOUND_Software_DoubleBufferThread, mod);
 	return true;
 }
 
@@ -185,11 +189,11 @@ bool FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 void FMUSIC_StopSong()
 {
 	// wait until callback has settled down and exited
-	if (FSOUND_Software_Thread.joinable())
+	if (Software_Thread.joinable())
 	{
 		// Kill the thread
-		FSOUND_Software_Exit = true;
-		FSOUND_Software_Thread.join();
+		Software_Thread_Exit = true;
+		Software_Thread.join();
 	}
 }
 
