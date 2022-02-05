@@ -161,36 +161,31 @@ static void FMUSIC_XM_InstrumentVibrato(FMUSIC_CHANNEL& channel, const FMUSIC_IN
 ]
 */
 #if defined(FMUSIC_XM_VOLUMEENVELOPE_ACTIVE) || defined(FMUSIC_XM_PANENVELOPE_ACTIVE)
-static float FMUSIC_XM_ProcessEnvelope(int &position, unsigned char type, const EnvelopePoints& envelope, unsigned char loopend, unsigned char loopstart, unsigned char sustain, bool keyoff) noexcept
+static void XM_ProcessEnvelope(int &position, float &value, const EnvelopePoints& envelope, XMEnvelopeFlags flags, unsigned char loop_start_index, unsigned char loop_end_index, unsigned char sustain_index, bool keyoff) noexcept
 {
 	if (envelope.count > 0)
     {
-	    int current_index = 0;
 
-		if ((type & XMEnvelopeFlagsLoop) && position == envelope.envelope[loopend].position)	// if we are at the correct tick for the position
+		if ((flags & XMEnvelopeFlagsLoop) && position == envelope.envelope[loop_end_index].position)	// if we are at the correct tick for the position
 		{
 			// loop
-			position = envelope.envelope[loopstart].position;
-			current_index = loopstart;
+			position = envelope.envelope[loop_start_index].position;
 		}
-		else
-		{
-			// search new envelope position
-			while (current_index < envelope.count - 1 && position > envelope.envelope[current_index + 1].position) current_index++;
-		}
+	    // search new envelope position
+		uint8_t current_index = 0;
+		while (current_index + 1 < envelope.count && position > envelope.envelope[current_index + 1].position) current_index++;
 
 		// interpolate new envelope position
 
-		const float value = envelope.envelope[current_index].value + envelope.envelope[current_index].delta * (position - envelope.envelope[current_index].position);
+		value = envelope.envelope[current_index].value + envelope.envelope[current_index].delta * (position - envelope.envelope[current_index].position);
 
 		// Envelope
 		// if it is at the last position, abort the envelope and continue last value
         // same if we're at sustain point
-		if (!(type & XMEnvelopeFlagsSustain) || current_index != sustain || keyoff)
+		if (keyoff || current_index != sustain_index || !(flags & XMEnvelopeFlagsSustain))
         {
 			++position;
 		}
-		return value;
 	}
 }
 #endif // (FMUSIC_XM_VOLUMEENVELOPE_ACTIVE) || defined(FMUSIC_XM_PANENVELOPE_ACTIVE)
@@ -473,10 +468,10 @@ static void XM_ProcessCommon(FMUSIC_CHANNEL& channel, const FMUSIC_INSTRUMENT* i
 {
 	//= PROCESS ENVELOPES ==========================================================================
 #ifdef FMUSIC_XM_VOLUMEENVELOPE_ACTIVE
-	channel.envvolvalue = FMUSIC_XM_ProcessEnvelope(channel.envvolpos, iptr->sample_header.volume_envelope_flags, iptr->volume_envelope, iptr->sample_header.volume_loop_end_index, iptr->sample_header.volume_loop_start_index, iptr->sample_header.volume_sustain_index, channel.keyoff);
+	XM_ProcessEnvelope(channel.envvolpos, channel.envvolvalue, iptr->volume_envelope, iptr->sample_header.volume_envelope_flags, iptr->sample_header.volume_loop_start_index, iptr->sample_header.volume_loop_end_index, iptr->sample_header.volume_sustain_index, channel.keyoff);
 #endif
 #ifdef FMUSIC_XM_PANENVELOPE_ACTIVE
-	channel.envpanvalue = FMUSIC_XM_ProcessEnvelope(channel.envpanpos, iptr->sample_header.pan_envelope_flags, iptr->pan_envelope, iptr->sample_header.pan_loop_end_index, iptr->sample_header.pan_loop_start_index, iptr->sample_header.pan_sustain_index, channel.keyoff);
+	XM_ProcessEnvelope(channel.envpanpos, channel.envpanvalue, iptr->pan_envelope, iptr->sample_header.pan_envelope_flags, iptr->sample_header.pan_loop_start_index, iptr->sample_header.pan_loop_end_index, iptr->sample_header.pan_sustain_index, channel.keyoff);
 #endif
 	//= PROCESS VOLUME FADEOUT =====================================================================
     if (channel.keyoff)
