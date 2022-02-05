@@ -66,8 +66,6 @@ void FSOUND_Software_Fill(FMUSIC_MODULE &mod) noexcept
     const int mixpos = FSOUND_Software_FillBlock * FSOUND_BlockSize;
 	const int totalblocks = FSOUND_BufferSize / FSOUND_BlockSize;
 
-	FMUSIC_TimeInfo = new FMUSIC_TIMMEINFO[totalblocks]{};
-
 	float * const mixbuffer = FSOUND_MixBuffer + (mixpos << 1);
 
 	//==============================================================================
@@ -150,6 +148,8 @@ void FSOUND_Software_DoubleBufferThread(FMUSIC_MODULE *mod) noexcept
 
 	volume_filter_k = 1.f / (1.f + FSOUND_MixRate * VolumeFilterTimeConstant);
 	int totalblocks = FSOUND_BufferSize / FSOUND_BlockSize;
+
+    FMUSIC_TimeInfo = new FMUSIC_TIMMEINFO[totalblocks]{};
 
 	//=======================================================================================
 	// ALLOC GLOBAL CHANNEL POOL

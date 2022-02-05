@@ -42,12 +42,34 @@
 ]
 */
 #if defined(FMUSIC_XM_PORTATO_ACTIVE) || defined(FMUSIC_XM_PORTATOVOLSLIDE_ACTIVE)
-static void FMUSIC_XM_Portamento(FMUSIC_CHANNEL &channel) noexcept
+static void FMUSIC_XM_Portamento(FMUSIC_CHANNEL& channel) noexcept
 {
 	channel.period = std::clamp(channel.portatarget, channel.period - channel.portaspeed, channel.period + channel.portaspeed);
 }
 #endif // FMUSIC_XM_PORTATO_ACTIVE
 
+#if defined(FMUSIC_XM_VIBRATO_ACTIVE) || defined(FMUSIC_XM_VIBRATOVOLSLIDE_ACTIVE) || defined(FMUSIC_XM_TREMOLO_ACTIVE)
+int WaveControlFunction(WaveControl wave_control, int position, int depth)
+{
+	switch (wave_control)
+	{
+	case WaveControl::Sine:
+	{
+		return -int(sinf((float)position * (2 * 3.141592f / 64.0f)) * depth * 4);
+	}
+	case WaveControl::SawTooth:
+	{
+		return -(position * 8 + 4) * depth / 63;
+	}
+	case WaveControl::Square:
+	case WaveControl::Random:
+	{
+		return (position >= 0) ? -depth * 4 : depth * 4;							// square
+	}
+	}
+
+}
+#endif
 
 /*
 [API]
@@ -67,65 +89,47 @@ static void FMUSIC_XM_Portamento(FMUSIC_CHANNEL &channel) noexcept
 ]
 */
 #if defined(FMUSIC_XM_VIBRATO_ACTIVE) || defined(FMUSIC_XM_VIBRATOVOLSLIDE_ACTIVE)
-static void FMUSIC_XM_Vibrato(FMUSIC_CHANNEL &channel) noexcept
+static void FMUSIC_XM_Vibrato(FMUSIC_CHANNEL& channel) noexcept
 {
-	switch (channel.wavecontrol_vibrato)
-	{
-	    case WaveControl::Sine:
-		{
-			channel.freqdelta = -int(sinf((float)channel.tremolopos * (2 * 3.141592f / 64.0f)) * channel.tremolodepth) * 4;
-			break;
-		}
-	    case WaveControl::SawTooth:
-		{
-			channel.freqdelta = (channel.vibpos + 4) * channel.vibdepth / 126 * 4;
-			break;
-		}
-	    case WaveControl::Square:
-	    case WaveControl::Random:
-		{
-			channel.freqdelta = (channel.tremolopos >= 0) ? - channel.tremolodepth * 8 : channel.tremolodepth * 8;							// square
-			break;
-		}
-	}
+	channel.freqdelta = WaveControlFunction(channel.wavecontrol_vibrato, channel.vibpos, channel.vibdepth * 2);
 }
 #endif // defined(FMUSIC_XM_VIBRATO_ACTIVE) || defined(FMUSIC_XM_VIBRATOVOLSLIDE_ACTIVE)
 
 #ifdef FMUSIC_XM_INSTRUMENTVIBRATO_ACTIVE
-static void FMUSIC_XM_InstrumentVibrato(FMUSIC_CHANNEL &channel, const FMUSIC_INSTRUMENT *iptr) noexcept
+static void FMUSIC_XM_InstrumentVibrato(FMUSIC_CHANNEL& channel, const FMUSIC_INSTRUMENT* iptr) noexcept
 {
 	int delta;
 
 	switch (iptr->sample_header.vibrato_type)
 	{
-	    case XMInstrumentVibratoType::Sine:
-		{
-		    delta = (int)(sinf( (float)channel.ivibpos * (2 * 3.141592f / 256.0f)) * 64.0f);
-		    break;
-		}
-		case XMInstrumentVibratoType::Square:
-		{
-			delta = 64 - (channel.ivibpos & 128);
-		    break;
-		}
-		case XMInstrumentVibratoType::InverseSawTooth:
-		{
-			delta = (channel.ivibpos & 128) - ((channel.ivibpos + 1) >> 2);
-			break;
-		}
-		case XMInstrumentVibratoType::SawTooth:
-		{
-			delta = ((channel.ivibpos + 1) >> 2) - (channel.ivibpos & 128);
-		    break;
-		}
+	case XMInstrumentVibratoType::Sine:
+	{
+		delta = (int)(sinf((float)channel.ivibpos * (2 * 3.141592f / 256.0f)) * 64.0f);
+		break;
+	}
+	case XMInstrumentVibratoType::Square:
+	{
+		delta = 64 - (channel.ivibpos & 128);
+		break;
+	}
+	case XMInstrumentVibratoType::InverseSawTooth:
+	{
+		delta = (channel.ivibpos & 128) - ((channel.ivibpos + 1) >> 2);
+		break;
+	}
+	case XMInstrumentVibratoType::SawTooth:
+	{
+		delta = ((channel.ivibpos + 1) >> 2) - (channel.ivibpos & 128);
+		break;
+	}
 	}
 
 	delta *= iptr->sample_header.vibrato_depth;
 	if (iptr->sample_header.vibrato_sweep)
-    {
+	{
 		delta = delta * channel.ivibsweeppos / iptr->sample_header.vibrato_sweep;
-    }
-	delta >>=6;
+	}
+	delta >>= 6;
 
 	channel.freqdelta += delta;
 
@@ -135,33 +139,14 @@ static void FMUSIC_XM_InstrumentVibrato(FMUSIC_CHANNEL &channel, const FMUSIC_IN
 #endif	// FMUSIC_XM_INSTRUMENTVIBRATO_ACTIVE
 
 #ifdef FMUSIC_XM_TREMOLO_ACTIVE
-static void FMUSIC_XM_Tremolo(FMUSIC_CHANNEL &channel) noexcept
+static void FMUSIC_XM_Tremolo(FMUSIC_CHANNEL& channel) noexcept
 {
-	switch(channel.wavecontrol_tremolo)
-	{
-	    case WaveControl::Sine:
-		{
-			channel.voldelta = int(sinf((float)channel.tremolopos * (2 * 3.141592f / 64.0f)) * (channel.tremolodepth*4));
-			break;
-		}
-	    case WaveControl::SawTooth:
-		{
-			channel.voldelta = -(channel.tremolopos + 4) * channel.tremolodepth / 63;
-			break;
-		}
-	    case WaveControl::Square:
-		case WaveControl::Random:
-		{
-			channel.voldelta = (channel.tremolopos >= 0)? channel.tremolodepth*4:-channel.tremolodepth*4;							// square
-			break;
-		}
-	}
-
+	channel.voldelta = WaveControlFunction(channel.wavecontrol_tremolo, channel.tremolopos, -channel.tremolodepth);
 	channel.tremolopos += channel.tremolospeed;
 	if (channel.tremolopos > 31)
-    {
-		channel.tremolopos -=64;
-    }
+	{
+		channel.tremolopos -= 64;
+	}
 }
 #endif // FMUSIC_XM_TREMOLO_ACTIVE
 
