@@ -13,8 +13,6 @@ set(PUBLIC_HEADER_FILES
 )
 
 set(PRIVATE_HEADER_FILES
-  ${SRC_DIR}/mixer_clipcopy.h
-  ${SRC_DIR}/mixer_fpu_ramp.h
   ${SRC_DIR}/Music.h
   ${SRC_DIR}/music_formatxm.h
   ${SRC_DIR}/Sound.h
@@ -26,8 +24,6 @@ set(PRIVATE_HEADER_FILES
 set(SRC_FILES
   ${SRC_DIR}/Fmusic.cpp
   ${SRC_DIR}/Fsound.cpp
-  ${SRC_DIR}/mixer_clipcopy.cpp
-  ${SRC_DIR}/mixer_fpu_ramp.cpp
   ${SRC_DIR}/music_formatxm.cpp
   ${SRC_DIR}/system_file.cpp
 )
