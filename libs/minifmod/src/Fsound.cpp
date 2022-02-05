@@ -16,8 +16,6 @@
 
 #include <cstring>
 
-#include "mixer_clipcopy.h"
-#include "mixer_fpu_ramp.h"
 #include "Music.h"
 #include "music_formatxm.h"
 
@@ -36,6 +34,10 @@ static int					FSOUND_BufferSize;			// size of 1 'latency' ms buffer in bytes
 static int					FSOUND_BlockSize;			// LATENCY ms worth of samples
 static int					FSOUND_Software_FillBlock = 0;
 
+constexpr float VolumeFilterTimeConstant = 0.003f; // time constant (RC) of the volume IIR filter
+static float volume_filter_k = 0.0f;
+
+
 struct FSOUND_SoundBlock
 {
 #ifdef WIN32
@@ -49,6 +51,147 @@ static FSOUND_SoundBlock	FSOUND_MixBlock;
 #ifdef WIN32
 static HWAVEOUT			FSOUND_WaveOutHandle;
 #endif
+
+/*
+[API]
+[
+	[DESCRIPTION]
+	Size optimized version of the commented out clipper below
+
+	[PARAMETERS]
+
+	[RETURN_VALUE]
+
+	[REMARKS]
+
+	[SEE_ALSO]
+]
+*/
+static inline void MixerClipCopy_Float32(int16_t* dest, const float* src, size_t len) noexcept
+{
+	assert(src);
+	assert(dest);
+	for (size_t count = 0; count < len << 1; count++)
+	{
+		*dest++ = (int16_t)std::clamp((int)*src++, (int)std::numeric_limits<int16_t>::min(), (int)std::numeric_limits<int16_t>::max());
+	}
+}
+
+/*
+[API]
+[
+	[DESCRIPTION]
+
+	[PARAMETERS]
+
+	[RETURN_VALUE]
+
+	[REMARKS]
+
+	[SEE_ALSO]
+]
+*/
+static inline void Mixer_FPU_FilteredVolume(float* mixptr, int len) noexcept
+{
+	//==============================================================================================
+	// LOOP THROUGH CHANNELS
+	//==============================================================================================
+	for (auto& channel : FSOUND_Channel)
+	{
+		int sample_index = 0;
+
+		//==============================================================================================
+		// LOOP THROUGH CHANNELS
+		//==============================================================================================
+		while (channel.sptr && len > sample_index)
+		{
+
+			float samples_to_mix;
+			if (channel.speeddir == MixDir::Forwards)
+			{
+				samples_to_mix = channel.sptr->header.loop_start + channel.sptr->header.loop_length - channel.mixpos;
+				if (samples_to_mix <= 0)
+				{
+					samples_to_mix = channel.sptr->header.length - channel.mixpos;
+				}
+			}
+			else
+			{
+				samples_to_mix = channel.mixpos - channel.sptr->header.loop_start;
+			}
+			const int samples_to_mix_target = (int)ceil(samples_to_mix / channel.speed); // round up the division
+
+			// =========================================================================================
+			// the following code sets up a mix counter. it sees what will happen first, will the output buffer
+			// end be reached first or will the end of the sample be reached first?
+			// whatever is smallest will be the mixcount.
+			int mix_count = std::min(len - sample_index, samples_to_mix_target);
+
+			float speed = channel.speed;
+
+			if (channel.speeddir != MixDir::Forwards)
+			{
+				speed = -speed;
+			}
+
+			//= SET UP VOLUME MULTIPLIERS ==================================================
+
+			for (int i = 0; i < mix_count; ++i)
+			{
+				const uint32_t mixpos = (uint32_t)channel.mixpos;
+				const float frac = channel.mixpos - mixpos;
+				const float samp1 = channel.sptr->buff[mixpos];
+				const float newsamp = (channel.sptr->buff[mixpos + 1] - samp1) * frac + samp1;
+				mixptr[0 + (sample_index + i) * 2] += channel.filtered_leftvolume * newsamp;
+				mixptr[1 + (sample_index + i) * 2] += channel.filtered_rightvolume * newsamp;
+				channel.filtered_leftvolume += (channel.leftvolume - channel.filtered_leftvolume) * volume_filter_k;
+				channel.filtered_rightvolume += (channel.rightvolume - channel.filtered_rightvolume) * volume_filter_k;
+				channel.mixpos += speed;
+			}
+
+			sample_index += mix_count;
+
+			//=============================================================================================
+			// SWITCH ON LOOP MODE TYPE
+			//=============================================================================================
+			if (mix_count == samples_to_mix_target)
+			{
+				if (channel.sptr->header.loop_mode == XMLoopMode::Normal)
+				{
+					const uint32_t target = channel.sptr->header.loop_start + channel.sptr->header.loop_length;
+					do
+					{
+						channel.mixpos -= channel.sptr->header.loop_length;
+					} while (channel.mixpos >= target);
+				}
+				else if (channel.sptr->header.loop_mode == XMLoopMode::Bidi)
+				{
+					do {
+						if (channel.speeddir != MixDir::Forwards)
+						{
+							//BidiBackwards
+							channel.mixpos = 2 * channel.sptr->header.loop_start - channel.mixpos - 1;
+							channel.speeddir = MixDir::Forwards;
+							if (channel.mixpos < channel.sptr->header.loop_start + channel.sptr->header.loop_length)
+							{
+								break;
+							}
+						}
+						//BidiForward
+						channel.mixpos = 2 * (channel.sptr->header.loop_start + channel.sptr->header.loop_length) - channel.mixpos - 1;
+						channel.speeddir = MixDir::Backwards;
+
+					} while (channel.mixpos < channel.sptr->header.loop_start);
+				}
+				else
+				{
+					channel.mixpos = 0;
+					channel.sptr = nullptr;
+				}
+			}
+		}
+	}
+}
 
 /*
 	[DESCRIPTION]
@@ -94,7 +237,7 @@ void FSOUND_Software_Fill(FMUSIC_MODULE &mod) noexcept
 
             const int SamplesToMix = std::min(mod.mixer_samplesleft, FSOUND_BlockSize - MixedSoFar);
 
-			FSOUND_Mixer_FPU_Ramp(MixPtr, SamplesToMix);
+			Mixer_FPU_FilteredVolume(MixPtr, SamplesToMix);
 
 			MixedSoFar	+= SamplesToMix;
 			MixPtr		+= SamplesToMix*2;
@@ -113,7 +256,7 @@ void FSOUND_Software_Fill(FMUSIC_MODULE &mod) noexcept
 	// ====================================================================================
 	// CLIP AND COPY BLOCK TO OUTPUT BUFFER
 	// ====================================================================================
-    FSOUND_MixerClipCopy_Float32(FSOUND_MixBlock.data + (mixpos << 1), mixbuffer, FSOUND_BlockSize);
+    MixerClipCopy_Float32(FSOUND_MixBlock.data + (mixpos << 1), mixbuffer, FSOUND_BlockSize);
 
 	++FSOUND_Software_FillBlock;
 
