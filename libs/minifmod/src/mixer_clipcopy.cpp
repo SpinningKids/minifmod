@@ -13,6 +13,8 @@
 #include <algorithm>
 #include "mixer_clipcopy.h"
 
+#include <cassert>
+
 /*
 [API]
 [
@@ -24,21 +26,16 @@
 	[RETURN_VALUE]
 
 	[REMARKS]
-	This uses an fadd trick and does 2 float to ints in about 8 cycles.. which is what just 1
-	fistp would take normally.. note this is meant for p5 machines, as ppro has a 1cycle
-	fistp which is faster.
 
 	[SEE_ALSO]
 ]
 */
-void FSOUND_MixerClipCopy_Float32(short* dest, const float* src, int len) noexcept
+void FSOUND_MixerClipCopy_Float32(int16_t* dest, const float* src, size_t len) noexcept
 {
-	if (len <=0 || !dest || !src)
-		return;
-
-	for (int count = 0; count<len<<1; count++)
-	{
-		*dest++ = (short)std::clamp(*src++, -32768.f, 32767.f);
-	}
-
+	assert(src);
+	assert(dest);
+    for (size_t count = 0; count < len << 1; count++)
+    {
+        *dest++ = (int16_t)std::clamp((int) *src++, (int)std::numeric_limits<int16_t>::min(), (int)std::numeric_limits<int16_t>::max());
+    }
 }

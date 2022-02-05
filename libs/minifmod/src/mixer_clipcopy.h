@@ -13,6 +13,6 @@
 #ifndef MIXER_CLIPCOPY_H
 #define MIXER_CLIPCOPY_H
 
-void FSOUND_MixerClipCopy_Float32(short* dest, const float* src, int len) noexcept;
+void FSOUND_MixerClipCopy_Float32(int16_t* dest, const float* src, size_t len) noexcept;
 
 #endif
