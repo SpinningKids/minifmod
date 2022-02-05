@@ -126,8 +126,8 @@ struct FMUSIC_CHANNEL
 	unsigned char	portaup;   			// last porta up value (XM)
 	unsigned char	xtraportadown;		// last porta down value (XM)
 	unsigned char	xtraportaup;  		// last porta up value (XM)
-	unsigned char	volslide;   		// last volume slide value (XM + S3M)
-	unsigned char	panslide;			// pan slide parameter (XM)
+	int				volslide;   		// last volume slide value
+	int				panslide;			// pan slide value
 	unsigned char	retrigx;   			// last retrig volume slide used (XM + S3M)
 	unsigned char	retrigy;   			// last retrig tick count used (XM + S3M)
 
@@ -153,7 +153,8 @@ struct FMUSIC_CHANNEL
 	WaveControl		wavecontrol_tremolo;// waveform type for tremolo (2bits)
 	bool			continue_tremolo;
 
-	unsigned char	finevslup;			// parameter for fine volume slide down
+	unsigned char	finevslup;			// parameter for fine volume slide up
+	unsigned char	finevsldown;		// parameter for fine volume slide down
 	unsigned char	fineportaup;		// parameter for fine porta slide up
 	unsigned char	fineportadown;		// parameter for fine porta slide down
 };
@@ -168,7 +169,7 @@ struct FMUSIC_MODULE final
 	int				mixer_samplespertick;
 
 	int				globalvolume;		// global mod volume
-	unsigned char	globalvsl;			// global mod volume
+	int				globalvsl;			// global mod volume
 	int				tick;				// current mod tick
 	int				speed;				// speed of song in ticks per row
 	uint8_t			row;				// current row in pattern
