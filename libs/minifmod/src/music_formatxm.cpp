@@ -138,18 +138,6 @@ static void FMUSIC_XM_InstrumentVibrato(FMUSIC_CHANNEL& channel, const FMUSIC_IN
 }
 #endif	// FMUSIC_XM_INSTRUMENTVIBRATO_ACTIVE
 
-#ifdef FMUSIC_XM_TREMOLO_ACTIVE
-static void FMUSIC_XM_Tremolo(FMUSIC_CHANNEL& channel) noexcept
-{
-	channel.voldelta = WaveControlFunction(channel.wavecontrol_tremolo, channel.tremolopos, -channel.tremolodepth);
-	channel.tremolopos += channel.tremolospeed;
-	if (channel.tremolopos > 31)
-	{
-		channel.tremolopos -= 64;
-	}
-}
-#endif // FMUSIC_XM_TREMOLO_ACTIVE
-
 /*
 [API]
 [
@@ -524,15 +512,16 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
 		const XMNote& note = row[count];
 		FMUSIC_CHANNEL& channel = FMUSIC_Channel[count];
 
-        unsigned char paramx = note.effect_parameter >> 4;			// get effect param x
-		unsigned char paramy = note.effect_parameter & 0xF;			// get effect param y
+        const unsigned char paramx = note.effect_parameter >> 4;			// get effect param x
+		const unsigned char paramy = note.effect_parameter & 0xF;			// get effect param y
+		const int slide = paramx ? paramx : -paramy;
 
 //			**** FIXME!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
 //		if (LinkedListIsRootNode(cptr, &cptr.vchannelhead))
 //			cptr = &FMUSIC_DummyVirtualChannel; // no channels allocated yet
 //			**** FIXME!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
 
-		signed char porta = (note.effect == FMUSIC_XM_PORTATO || note.effect == FMUSIC_XM_PORTATOVOLSLIDE);
+		bool porta = (note.effect == FMUSIC_XM_PORTATO || note.effect == FMUSIC_XM_PORTATOVOLSLIDE);
 
 		// first store note and instrument number if there was one
 		if (note.sample_index && !porta)							//  bugfix 3.20 (&& !porta)
@@ -540,7 +529,8 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
             channel.inst = note.sample_index-1;						// remember the Instrument #
         }
 
-        if (note.note && note.note != FMUSIC_KEYOFF && !porta) //  bugfix 3.20 (&& !porta)
+        bool valid_note = note.note && note.note != FMUSIC_KEYOFF;
+        if (valid_note && !porta) //  bugfix 3.20 (&& !porta)
         {
             channel.note = note.note-1;						// remember the note
         }
@@ -555,13 +545,13 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
 		{
 			// set up some instrument and sample pointers
 			iptr = &mod.instrument[channel.inst];
-			if (iptr->sample_header.note_sample_number[channel.note] >= 16)
+            if (uint8_t note_sample = iptr->sample_header.note_sample_number[channel.note]; note_sample < 16)
             {
-				sptr = &FMUSIC_DummySample;
+                sptr = &iptr->sample[note_sample];
             }
 			else
             {
-				sptr = &iptr->sample[iptr->sample_header.note_sample_number[channel.note]];
+                sptr = &FMUSIC_DummySample;
             }
 
 			if (!porta)
@@ -582,11 +572,11 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
 		channel.recenteffect  = note.effect;
 
 		channel.voldelta = 0;
-		channel.trigger = false;
+		channel.trigger = valid_note;
 		channel.stop = false;
 
 		//= PROCESS NOTE ===============================================================================
-		if (note.note && note.note != FMUSIC_KEYOFF)
+		if (valid_note)
 		{
 			// get note according to relative note
 			channel.realnote = note.note + sptr->header.relative_note - 1;
@@ -608,8 +598,6 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
             {
                 channel.period = channel.period_target;
             }
-
-            channel.trigger = true;
 		}
 
 		channel.freqdelta	= 0;
@@ -644,12 +632,6 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
 		switch (note.effect)
 		{
 			// not processed on tick 0
-#ifdef FMUSIC_XM_ARPEGGIO_ACTIVE
-			case FMUSIC_XM_ARPEGGIO :
-			{
-				break;
-			}
-#endif
 #ifdef FMUSIC_XM_PORTAUP_ACTIVE
 			case FMUSIC_XM_PORTAUP :
 			{
@@ -686,9 +668,9 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
 			case FMUSIC_XM_PORTATOVOLSLIDE :
 			{
 				channel.portatarget = channel.period_target;
-				if (note.effect_parameter)
+				if (slide)
                 {
-					channel.volslide = note.effect_parameter;
+					channel.volslide = slide;
                 }
 				channel.trigger = false;
 				break;
@@ -712,9 +694,9 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
 #ifdef FMUSIC_XM_VIBRATOVOLSLIDE_ACTIVE
 			case FMUSIC_XM_VIBRATOVOLSLIDE :
 			{
-				if (note.effect_parameter)
+				if (slide)
                 {
-					channel.volslide = note.effect_parameter;
+					channel.volslide = slide;
                 }
 				FMUSIC_XM_Vibrato(channel);
 				break;								// not processed on tick 0
@@ -769,9 +751,9 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
 #ifdef FMUSIC_XM_VOLUMESLIDE_ACTIVE
 			case FMUSIC_XM_VOLUMESLIDE :
 			{
-				if (note.effect_parameter)
+				if (slide)
                 {
-					channel.volslide  = note.effect_parameter;
+					channel.volslide  = slide;
                 }
 				break;
 			}
@@ -921,9 +903,9 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
 					{
 						if (paramy)
                         {
-                            channel.finevslup = paramy;
+                            channel.finevsldown = paramy;
                         }
-                        channel.volume -= channel.finevslup;
+                        channel.volume -= channel.finevsldown;
 						break;
 					}
 #endif
@@ -972,9 +954,9 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
 #ifdef FMUSIC_XM_GLOBALVOLSLIDE_ACTIVE
 			case FMUSIC_XM_GLOBALVOLSLIDE :
 			{
-				if (note.effect_parameter)
+				if (slide)
                 {
-					mod.globalvsl = note.effect_parameter;
+					mod.globalvsl = slide;
                 }
 				break;
 			}
@@ -989,9 +971,9 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
 #ifdef FMUSIC_XM_PANSLIDE_ACTIVE
 			case FMUSIC_XM_PANSLIDE :
 			{
-				if (note.effect_parameter)
+				if (slide)
 				{
-					channel.panslide = note.effect_parameter;
+					channel.panslide = slide;
 				}
 				break;
 			}
@@ -1102,8 +1084,8 @@ static void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod) noexcept
 		}
 
 		unsigned char effect = note.effect;			// grab the effect number
-		unsigned char paramx = note.effect_parameter >> 4;		// grab the effect parameter x
-		unsigned char paramy = note.effect_parameter & 0xF;		// grab the effect parameter y
+		const unsigned char paramx = note.effect_parameter >> 4;		// grab the effect parameter x
+		const unsigned char paramy = note.effect_parameter & 0xF;		// grab the effect parameter y
 
 		channel.voldelta	= 0;				// this is for tremolo / tremor etc
 		channel.freqdelta	= 0;				// this is for vibrato / arpeggio etc
@@ -1253,18 +1235,7 @@ static void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod) noexcept
 
 				FMUSIC_XM_Portamento(channel);
 
-				paramx = channel.volslide >> 4;    // grab the effect parameter x
-				paramy = channel.volslide & 0xF;   // grab the effect parameter y
-
-				// slide up takes precedence over down
-				if (paramx)
-				{
-					channel.volume += paramx;
-				}
-				else
-				{
-					channel.volume -= paramy;
-				}
+				channel.volume += channel.volslide;
 				break;
 			}
 #endif
@@ -1278,43 +1249,26 @@ static void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod) noexcept
 					channel.vibpos -= 64;
                 }
 
-				paramx = channel.volslide >> 4;    // grab the effect parameter x
-				paramy = channel.volslide & 0xF;   // grab the effect parameter y
-
-				// slide up takes precedence over down
-				if (paramx)
-				{
-					channel.volume += paramx;
-				}
-				else
-				{
-					channel.volume -= paramy;
-				}
+				channel.volume += channel.volslide;
 				break;
 			}
 #endif
 #ifdef FMUSIC_XM_TREMOLO_ACTIVE
 			case FMUSIC_XM_TREMOLO :
 			{
-				FMUSIC_XM_Tremolo(channel);
+				channel.voldelta = WaveControlFunction(channel.wavecontrol_tremolo, channel.tremolopos, -channel.tremolodepth);
+				channel.tremolopos += channel.tremolospeed;
+				if (channel.tremolopos > 31)
+				{
+					channel.tremolopos -= 64;
+				}
 				break;
 			}
 #endif
 #ifdef FMUSIC_XM_VOLUMESLIDE_ACTIVE
 			case FMUSIC_XM_VOLUMESLIDE :
 			{
-				paramx = channel.volslide >> 4;    // grab the effect parameter x
-				paramy = channel.volslide & 0xF;   // grab the effect parameter y
-
-				// slide up takes precedence over down
-				if (paramx)
-				{
-					channel.volume += paramx;
-				}
-				else
-				{
-					channel.volume -= paramy;
-				}
+				channel.volume += channel.volslide;
 				break;
 			}
 #endif
@@ -1373,134 +1327,107 @@ static void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod) noexcept
 #ifdef FMUSIC_XM_MULTIRETRIG_ACTIVE
 			case FMUSIC_XM_MULTIRETRIG :
 			{
-				if (!channel.retrigy)
+				if (channel.retrigy && !(mod.tick % channel.retrigy))
                 {
-                    break; // divide by 0 bugfix
-                }
-
-				if (!(mod.tick % channel.retrigy))
-				{
-					if (channel.retrigx)
-					{
-						switch (channel.retrigx)
+                    switch (channel.retrigx)
+                    {
+                        case 0:
 						{
-							case 1:
-							{
-							    channel.volume--;
-							    break;
-							}
-							case 2:
-							{
-							    channel.volume -= 2;
-							    break;
-							}
-							case 3:
-							{
-							    channel.volume -= 4;
-							    break;
-							}
-							case 4:
-							{
-							    channel.volume -= 8;
-							    break;
-							}
-							case 5:
-							{
-							    channel.volume -= 16;
-							    break;
-							}
-							case 6:
-							{
-							    channel.volume = channel.volume * 2 / 3;
-							    break;
-							}
-							case 7:
-							{
-							    channel.volume >>= 1;
-							    break;
-							}
-							case 8:
-							{
-							    // ?
-							    break;
-							}
-							case 9:
-							{
-							    channel.volume++;
-							    break;
-							}
-							case 0xA:
-							{
-							    channel.volume += 2;
-							    break;
-							}
-							case 0xB:
-							{
-							    channel.volume += 4;
-							    break;
-							}
-							case 0xC:
-							{
-							    channel.volume += 8;
-							    break;
-							}
-							case 0xD:
-							{
-							    channel.volume += 16;
-							    break;
-							}
-							case 0xE:
-							{
-							    channel.volume = channel.volume * 3 / 2;
-							    break;
-							}
-							case 0xF:
-							{
-							    channel.volume <<= 1;
-							    break;
-							}
+							break;
 						}
-					}
-					channel.trigger = true;
-				}
-				break;
-			}
+                        case 1:
+                        {
+                            channel.volume--;
+                            break;
+                        }
+                        case 2:
+                        {
+                            channel.volume -= 2;
+                            break;
+                        }
+                        case 3:
+                        {
+                            channel.volume -= 4;
+                            break;
+                        }
+                        case 4:
+                        {
+                            channel.volume -= 8;
+                            break;
+                        }
+                        case 5:
+                        {
+                            channel.volume -= 16;
+                            break;
+                        }
+                        case 6:
+                        {
+                            channel.volume = channel.volume * 2 / 3;
+                            break;
+                        }
+                        case 7:
+                        {
+                            channel.volume >>= 1;
+                            break;
+                        }
+                        case 8:
+                        {
+                            // ?
+                            break;
+                        }
+                        case 9:
+                        {
+                            channel.volume++;
+                            break;
+                        }
+                        case 0xA:
+                        {
+                            channel.volume += 2;
+                            break;
+                        }
+                        case 0xB:
+                        {
+                            channel.volume += 4;
+                            break;
+                        }
+                        case 0xC:
+                        {
+                            channel.volume += 8;
+                            break;
+                        }
+                        case 0xD:
+                        {
+                            channel.volume += 16;
+                            break;
+                        }
+                        case 0xE:
+                        {
+                            channel.volume = channel.volume * 3 / 2;
+                            break;
+                        }
+                        case 0xF:
+                        {
+                            channel.volume <<= 1;
+                            break;
+                        }
+                    }
+                    channel.trigger = true;
+                }
+                break;
+            }
 #endif
 #ifdef FMUSIC_XM_GLOBALVOLSLIDE_ACTIVE
 			case FMUSIC_XM_GLOBALVOLSLIDE :
 			{
-				paramx = mod.globalvsl >> 4;    // grab the effect parameter x
-				paramy = mod.globalvsl & 0xF;   // grab the effect parameter y
-
-				// slide up takes precedence over down
-				if (paramx)
-				{
-					mod.globalvolume = mod.globalvolume + paramx;
-				}
-				else
-				{
-					mod.globalvolume = mod.globalvolume - paramy;
-				}
+				mod.globalvolume += mod.globalvsl;
 				break;
 			}
 #endif
 #ifdef FMUSIC_XM_PANSLIDE_ACTIVE
 			case FMUSIC_XM_PANSLIDE :
 			{
-				paramx = channel.panslide >> 4;    // grab the effect parameter x
-				paramy = channel.panslide & 0xF;   // grab the effect parameter y
-
-				// slide right takes precedence over left
-				if (paramx)
-				{
-					channel.pan += paramx;
-				}
-				else
-				{
-					channel.pan -= paramy;
-				}
-
-				break;
+				channel.pan += channel.panslide;
+    			break;
 			}
 #endif
 #ifdef FMUSIC_XM_TREMOR_ACTIVE
