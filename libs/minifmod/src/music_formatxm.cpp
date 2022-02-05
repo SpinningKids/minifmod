@@ -218,50 +218,51 @@ static void FMUSIC_XM_ProcessVolumeByte(FMUSIC_CHANNEL &channel, unsigned char v
 	}
 	else
 	{
+        int volumey = (volume & 0xF);
 		switch (volume >> 4)
 		{
 			case 0x6:
 			case 0x8:
 			{
-				channel.volume -= (volume & 0xF);
+				channel.volume -= volumey;
 				break;
 			}
 			case 0x7:
 			case 0x9:
 			{
-				channel.volume += (volume & 0xF);
+				channel.volume += volumey;
 				break;
 			}
 			case 0xa :
 			{
-				channel.vibspeed = (volume & 0xF);
+				channel.vibspeed = volumey;
 				break;
 			}
 			case 0xb :
 			{
-				channel.vibdepth = (volume & 0xF);
+				channel.vibdepth = volumey;
 				break;
 			}
 			case 0xc :
 			{
-				channel.pan = (volume & 0xF) << 4;
+				channel.pan = volumey << 4;
 				break;
 			}
 			case 0xd :
 			{
-				channel.pan -= (volume & 0xF);
+				channel.pan -= volumey;
 				break;
 			}
 			case 0xe :
 			{
-				channel.pan += (volume & 0xF);
+				channel.pan += volumey;
 				break;
 			}
 			case 0xf :
 			{
 				if (volume & 0xF)
                 {
-                    channel.portaspeed = (volume & 0xF) << 6;
+                    channel.portaspeed = volumey << 6;
                 }
                 channel.portatarget = channel.period_target;
 				channel.trigger = false;
@@ -799,15 +800,6 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
 			{
 				switch (paramx)
 				{
-					// not processed on tick 0 / unsupported
-					case FMUSIC_XM_RETRIG :
-					case FMUSIC_XM_NOTECUT :
-					case FMUSIC_XM_SETFILTER :
-					case FMUSIC_XM_FUNKREPEAT :
-					case FMUSIC_XM_SETGLISSANDO :
-					{
-						break;
-					}
 #ifdef FMUSIC_XM_FINEPORTAUP_ACTIVE
 					case FMUSIC_XM_FINEPORTAUP :
 					{
@@ -1029,7 +1021,7 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
 		}
 		XM_ProcessCommon(channel, iptr);
 
-	    FMUSIC_XM_UpdateFlags(channel,sptr,mod);
+		FMUSIC_XM_UpdateFlags(channel, sptr, mod);
 	}
  }
 
@@ -1079,7 +1071,8 @@ static void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod) noexcept
 		channel.trigger = false;
 		channel.stop = false;
 
-		#ifdef FMUSIC_XM_VOLUMEBYTE_ACTIVE
+#ifdef FMUSIC_XM_VOLUMEBYTE_ACTIVE
+        int volumey = (note.volume & 0xF);
 		switch (note.volume >> 4)
 		{
 //			case 0x0:
@@ -1091,18 +1084,18 @@ static void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod) noexcept
 //				break;
 			case 0x6:
 			{
-				channel.volume -= (note.volume & 0xF);
+				channel.volume -= volumey;
 				break;
 			}
 			case 0x7 :
 			{
-				channel.volume += (note.volume & 0xF);
+				channel.volume += volumey;
 				break;
 			}
 #ifdef FMUSIC_XM_VIBRATO_ACTIVE
 			case 0xb :
 			{
-				channel.vibdepth = (note.volume & 0xF);
+				channel.vibdepth = volumey;
 
 				FMUSIC_XM_Vibrato(channel);
 
@@ -1116,12 +1109,12 @@ static void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod) noexcept
 #endif
 			case 0xd :
 			{
-				channel.pan -= (note.volume & 0xF);
+				channel.pan -= volumey;
 				break;
 			}
 			case 0xe :
 			{
-				channel.pan += (note.volume & 0xF);
+				channel.pan += volumey;
 				break;
 			}
 #ifdef FMUSIC_XM_PORTATO_ACTIVE
@@ -1195,50 +1188,39 @@ static void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod) noexcept
 				break;
 			}
 #endif
+#if defined(FMUSIC_XM_PORTATOVOLSLIDE_ACTIVE) || defined(FMUSIC_XM_PORTATO_ACTIVE)
+#ifdef FMUSIC_XM_PORTATOVOLSLIDE_ACTIVE
+			case FMUSIC_XM_PORTATOVOLSLIDE:
+				channel.volume += channel.volslide;
+#ifdef FMUSIC_XM_PORTATO_ACTIVE
+				[[fallthrough]];
+#endif
+#endif
 #ifdef FMUSIC_XM_PORTATO_ACTIVE
 			case FMUSIC_XM_PORTATO :
-			{
+#endif
 				channel.period_delta = 0;
 				FMUSIC_XM_Portamento(channel);
 				break;
-			}
+#endif
+#if defined (FMUSIC_XM_VIBRATOVOLSLIDE_ACTIVE) || defined(FMUSIC_XM_VIBRATO_ACTIVE)
+#ifdef FMUSIC_XM_VIBRATOVOLSLIDE_ACTIVE
+			case FMUSIC_XM_VIBRATOVOLSLIDE:
+				channel.volume += channel.volslide;
+#ifdef FMUSIC_XM_VIBRATO_ACTIVE
+				[[fallthrough]];
+#endif
 #endif
 #ifdef FMUSIC_XM_VIBRATO_ACTIVE
-			case FMUSIC_XM_VIBRATO :
-			{
-				FMUSIC_XM_Vibrato(channel);
+			case FMUSIC_XM_VIBRATO:
+#endif
+    		    FMUSIC_XM_Vibrato(channel);
 				channel.vibpos += channel.vibspeed;
 				if (channel.vibpos > 31)
-                {
+				{
 					channel.vibpos -= 64;
-                }
+				}
 				break;
-			}
-#endif
-#ifdef FMUSIC_XM_PORTATOVOLSLIDE_ACTIVE
-			case FMUSIC_XM_PORTATOVOLSLIDE :
-			{
-				channel.period_delta = 0;
-
-				FMUSIC_XM_Portamento(channel);
-
-				channel.volume += channel.volslide;
-				break;
-			}
-#endif
-#ifdef FMUSIC_XM_VIBRATOVOLSLIDE_ACTIVE
-			case FMUSIC_XM_VIBRATOVOLSLIDE :
-			{
-				FMUSIC_XM_Vibrato(channel);
-				channel.vibpos += channel.vibspeed;
-				if (channel.vibpos > 31)
-                {
-					channel.vibpos -= 64;
-                }
-
-				channel.volume += channel.volslide;
-				break;
-			}
 #endif
 #ifdef FMUSIC_XM_TREMOLO_ACTIVE
 			case FMUSIC_XM_TREMOLO :
@@ -1579,10 +1561,10 @@ std::unique_ptr<FMUSIC_MODULE> FMUSIC_LoadXM(void* fp, SAMPLELOADCALLBACK sample
 		{
 			FSOUND_File_Read(&iptr->sample_header, sizeof(iptr->sample_header), fp);
 
-			iptr->volume_envelope.count = (iptr->sample_header.volume_envelope_count < 2 || !(iptr->sample_header.volume_envelope_flags & XMEnvelopeFlagsOn)) ? 0 : iptr->sample_header.volume_envelope_count;
-			iptr->pan_envelope.count = (iptr->sample_header.pan_envelope_count < 2 || !(iptr->sample_header.pan_envelope_flags & XMEnvelopeFlagsOn)) ? 0 : iptr->sample_header.pan_envelope_count;
-			auto adjust_envelope = [](EnvelopePoints& e, const XMEnvelopePoint(&original_points)[12], int offset, float scale)
+			auto adjust_envelope = [](uint8_t count, const XMEnvelopePoint(&original_points)[12], int offset, float scale, uint8_t loop_start_index, uint8_t loop_end_index, uint8_t sustain_index, XMEnvelopeFlags flags)
 			{
+				EnvelopePoints e;
+				e.count = (count < 2 || !(flags & XMEnvelopeFlagsOn)) ? 0 : count;
 				for (int i = 0; i < e.count; ++i)
 				{
 					e.envelope[i].position = original_points[i].position;
@@ -1595,9 +1577,10 @@ std::unique_ptr<FMUSIC_MODULE> FMUSIC_LoadXM(void* fp, SAMPLELOADCALLBACK sample
 					}
 				}
 				e.envelope[e.count - 1].delta = 0;
+				return e;
 			};
-			adjust_envelope(iptr->volume_envelope, iptr->sample_header.volume_envelope, 0, 64);
-			adjust_envelope(iptr->pan_envelope, iptr->sample_header.pan_envelope, 32, 32);
+			iptr->volume_envelope = adjust_envelope(iptr->sample_header.volume_envelope_count, iptr->sample_header.volume_envelope, 0, 64, iptr->sample_header.volume_loop_start_index, iptr->sample_header.volume_loop_end_index, iptr->sample_header.volume_sustain_index, iptr->sample_header.volume_envelope_flags);
+			iptr->pan_envelope = adjust_envelope(iptr->sample_header.pan_envelope_count, iptr->sample_header.pan_envelope, 32, 32, iptr->sample_header.pan_loop_start_index, iptr->sample_header.pan_loop_end_index, iptr->sample_header.pan_sustain_index, iptr->sample_header.pan_envelope_flags);
 
 			// seek to first sample
 			FSOUND_File_Seek(fp, firstsampleoffset, SEEK_SET);
