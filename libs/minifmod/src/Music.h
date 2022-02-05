@@ -96,13 +96,13 @@ struct FMUSIC_CHANNEL
 	bool			stop;
 
 	FSOUND_CHANNEL	*cptr;				// pointer to FSOUND system mixing channel
-	FSOUND_SAMPLE	*sptr;				// pointer to FSOUND system sample
+	const FSOUND_SAMPLE	*sptr;				// pointer to FSOUND system sample
 
 	int				period;				// current mod frequency period for this channel
 	int				volume;				// current mod volume for this channel
 	int				pan;				// current mod pan for this channel
 	int				voldelta;			// delta for volume commands.. tremolo/tremor etc
-	int				freqdelta;			// delta for frequency commands.. vibrato/arpeggio etc
+	int				period_delta;		// delta for frequency commands.. vibrato/arpeggio etc
 
 	int				envvolpos;			// envelope position - stopped if >= to the number of volume points
 	EnvelopePoint   envvol;				// tick, fracvalue and fracdelta for volume envelope
@@ -157,6 +157,7 @@ struct FMUSIC_CHANNEL
 	unsigned char	finevsldown;		// parameter for fine volume slide down
 	unsigned char	fineportaup;		// parameter for fine porta slide up
 	unsigned char	fineportadown;		// parameter for fine porta slide down
+    int				finetune;
 };
 
 // Song type - contains info on song
@@ -189,8 +190,6 @@ extern FMUSIC_CHANNEL			FMUSIC_Channel[];		// channel array for this song
 extern FMUSIC_TIMMEINFO *		FMUSIC_TimeInfo;
 
 //= FUNCTION DECLARATIONS ====================================================================
-
-#define FMUSIC_PERIOD2HZ(_per) (14317056L / (_per))
 
 // private (internal functions)
 void	FMUSIC_SetBPM(FMUSIC_MODULE &mod, int bpm) noexcept;
