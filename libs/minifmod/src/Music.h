@@ -105,10 +105,10 @@ struct FMUSIC_CHANNEL
 	int				period_delta;		// delta for frequency commands.. vibrato/arpeggio etc
 
 	int				envvolpos;			// envelope position - stopped if >= to the number of volume points
-	EnvelopePoint   envvol;				// tick, fracvalue and fracdelta for volume envelope
+	float			envvolvalue;		// value for volume envelope
 
 	int				envpanpos;			// envelope position - stopped if >= to the number of pan points
-	EnvelopePoint   envpan;				// tick, fracvalue and fracdelta for pan envelope
+	float			envpanvalue;		// value for pan envelope
 
 	int				fadeoutvol;			// volume fade out
 	int				ivibpos;   			// instrument vibrato position
