@@ -25,7 +25,15 @@
 
 // Frequency = 8363*2^((6*12*16*4 - Period) / (12*16*4));
 
-#define FMUSIC_XMLINEARPERIOD2HZ(_per) ( (int)(8363.0f*powf(2.0f, ((6.0f*12.0f*16.0f*4.0f - (_per)) / (float)(12*16*4)))) )
+static inline int FMUSIC_XMLINEARPERIOD2HZ(int per)
+{
+	return (int)(8363.0f * powf(2.0f, (6.0f * 12.0f * 16.0f * 4.0f - per) / (float)(12 * 16 * 4)));
+}
+
+static inline int FMUSIC_PERIOD2HZ(int period)
+{
+	return 14317456L / period;
+}
 
 /*
 [API]
@@ -53,19 +61,19 @@ int WaveControlFunction(WaveControl wave_control, int position, int depth)
 {
 	switch (wave_control)
 	{
-	case WaveControl::Sine:
-	{
-		return -int(sinf((float)position * (2 * 3.141592f / 64.0f)) * depth * 4);
-	}
-	case WaveControl::SawTooth:
-	{
-		return -(position * 8 + 4) * depth / 63;
-	}
-	case WaveControl::Square:
-	case WaveControl::Random:
-	{
-		return (position >= 0) ? -depth * 4 : depth * 4;							// square
-	}
+	    case WaveControl::Sine:
+	    {
+		    return -int(sinf((float)position * (2 * 3.141592f / 64.0f)) * depth * 4);
+	    }
+	    case WaveControl::SawTooth:
+	    {
+		    return -(position * 8 + 4) * depth / 63;
+	    }
+	    case WaveControl::Square:
+	    case WaveControl::Random:
+	    {
+		    return (position >= 0) ? -depth * 4 : depth * 4;							// square
+	    }
 	}
 
 }
@@ -91,7 +99,7 @@ int WaveControlFunction(WaveControl wave_control, int position, int depth)
 #if defined(FMUSIC_XM_VIBRATO_ACTIVE) || defined(FMUSIC_XM_VIBRATOVOLSLIDE_ACTIVE)
 static void FMUSIC_XM_Vibrato(FMUSIC_CHANNEL& channel) noexcept
 {
-	channel.freqdelta = WaveControlFunction(channel.wavecontrol_vibrato, channel.vibpos, channel.vibdepth * 2);
+	channel.period_delta = WaveControlFunction(channel.wavecontrol_vibrato, channel.vibpos, channel.vibdepth * 2);
 }
 #endif // defined(FMUSIC_XM_VIBRATO_ACTIVE) || defined(FMUSIC_XM_VIBRATOVOLSLIDE_ACTIVE)
 
@@ -102,26 +110,26 @@ static void FMUSIC_XM_InstrumentVibrato(FMUSIC_CHANNEL& channel, const FMUSIC_IN
 
 	switch (iptr->sample_header.vibrato_type)
 	{
-	case XMInstrumentVibratoType::Sine:
-	{
-		delta = (int)(sinf((float)channel.ivibpos * (2 * 3.141592f / 256.0f)) * 64.0f);
-		break;
-	}
-	case XMInstrumentVibratoType::Square:
-	{
-		delta = 64 - (channel.ivibpos & 128);
-		break;
-	}
-	case XMInstrumentVibratoType::InverseSawTooth:
-	{
-		delta = (channel.ivibpos & 128) - ((channel.ivibpos + 1) >> 2);
-		break;
-	}
-	case XMInstrumentVibratoType::SawTooth:
-	{
-		delta = ((channel.ivibpos + 1) >> 2) - (channel.ivibpos & 128);
-		break;
-	}
+	    case XMInstrumentVibratoType::Sine:
+	    {
+		    delta = (int)(sinf((float)channel.ivibpos * (2 * 3.141592f / 256.0f)) * 64.0f);
+		    break;
+	    }
+	    case XMInstrumentVibratoType::Square:
+	    {
+		    delta = 64 - (channel.ivibpos & 128);
+		    break;
+	    }
+	    case XMInstrumentVibratoType::InverseSawTooth:
+	    {
+		    delta = (channel.ivibpos & 128) - ((channel.ivibpos + 1) >> 2);
+		    break;
+	    }
+	    case XMInstrumentVibratoType::SawTooth:
+	    {
+		    delta = ((channel.ivibpos + 1) >> 2) - (channel.ivibpos & 128);
+		    break;
+	    }
 	}
 
 	delta *= iptr->sample_header.vibrato_depth;
@@ -131,7 +139,7 @@ static void FMUSIC_XM_InstrumentVibrato(FMUSIC_CHANNEL& channel, const FMUSIC_IN
 	}
 	delta >>= 6;
 
-	channel.freqdelta += delta;
+	channel.period_delta += delta;
 
 	channel.ivibsweeppos = std::min(channel.ivibsweeppos + 1, int(iptr->sample_header.vibrato_sweep));
 	channel.ivibpos = (channel.ivibpos + iptr->sample_header.vibrato_rate) & 255;
@@ -278,21 +286,26 @@ static void FMUSIC_XM_ProcessVolumeByte(FMUSIC_CHANNEL &channel, unsigned char v
 ]
 */
 #ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
+static int GetAmigaPeriod(int note)
+{
+	return (int)(powf(2.0f, (float)(132 - note) / 12.0f) * 13.375f);
+}
+
 static int FMUSIC_XM_GetAmigaPeriod(int note, int finetune) noexcept
 {
-    int period = (int)(powf(2.0f, (float)(132 - note) / 12.0f) * 13.375f);
+	int period = GetAmigaPeriod(note);
 
 	// interpolate for finer tuning
 	if (finetune < 0 && note)
 	{
-		int diff = period - (int)(powf(2.0f, (float)(132-(note-1)) / 12.0f) * 13.375f);
+		int diff = period - GetAmigaPeriod(note - 1);
 		diff *= abs(finetune);
 		diff /= 128;
 		period -= diff;
 	}
 	else
 	{
-		int diff = (int)(powf(2.0f, (float)(132-(note+1)) / 12.0f) * 13.375f) - period;
+		int diff = GetAmigaPeriod(note + 1) - period;
 		diff *= finetune;
 		diff /= 128;
 		period += diff;
@@ -345,7 +358,7 @@ static void FMUSIC_XM_Tremor(FMUSIC_CHANNEL &channel) noexcept
 	[SEE_ALSO]
 ]
 */
-static void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL &channel, FSOUND_SAMPLE *sptr, FMUSIC_MODULE &mod) noexcept
+static void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL &channel, const FSOUND_SAMPLE *sptr, FMUSIC_MODULE &mod) noexcept
 {
     FSOUND_CHANNEL *ccptr = channel.cptr;
 
@@ -408,13 +421,13 @@ static void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL &channel, FSOUND_SAMPLE *sptr, 
 		ccptr->leftvolume  = high_precision_volume * high_precision_pan;
 		ccptr->rightvolume = high_precision_volume * (255 - high_precision_pan);
 	}
-	if ((channel.period + channel.freqdelta) != 0)
+	if ((channel.period + channel.period_delta) != 0)
 	{
 		int freq = std::max(
 			(mod.header.flags & FMUSIC_XMFLAGS_LINEARFREQUENCY)
-			    ? FMUSIC_XMLINEARPERIOD2HZ(channel.period + channel.freqdelta)
-			    : FMUSIC_PERIOD2HZ(channel.period + channel.freqdelta),
-			100l);
+			    ? FMUSIC_XMLINEARPERIOD2HZ(channel.period + channel.period_delta)
+			    : FMUSIC_PERIOD2HZ(channel.period + channel.period_delta),
+			100);
 
     	ccptr->speed = float(freq) / FSOUND_MixRate;
 	}
@@ -426,7 +439,7 @@ static void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL &channel, FSOUND_SAMPLE *sptr, 
 	}
 }
 
-static void FMUSIC_XM_Resetcptr(FMUSIC_CHANNEL& channel, FSOUND_SAMPLE* sptr) noexcept
+static void FMUSIC_XM_Resetcptr(FMUSIC_CHANNEL& channel, const FSOUND_SAMPLE* sptr) noexcept
 {
 	channel.volume = (int)sptr->header.default_volume;
 	channel.pan = sptr->header.default_panning;
@@ -458,7 +471,7 @@ static void FMUSIC_XM_Resetcptr(FMUSIC_CHANNEL& channel, FSOUND_SAMPLE* sptr) no
 	channel.tremorpos = 0;								// retrigger tremor count
 }
 
-static void XM_ProcessCommon(FMUSIC_CHANNEL& channel, FMUSIC_INSTRUMENT* iptr) noexcept
+static void XM_ProcessCommon(FMUSIC_CHANNEL& channel, const FMUSIC_INSTRUMENT* iptr) noexcept
 {
 	//= PROCESS ENVELOPES ==========================================================================
 #ifdef FMUSIC_XM_VOLUMEENVELOPE_ACTIVE
@@ -506,9 +519,6 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
 	// Loop through each channel in the row until we have finished
 	for (int count = 0; count<mod.header.channels_count; count++)
 	{
-        FMUSIC_INSTRUMENT		*iptr;
-		FSOUND_SAMPLE			*sptr;
-
 		const XMNote& note = row[count];
 		FMUSIC_CHANNEL& channel = FMUSIC_Channel[count];
 
@@ -535,29 +545,21 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
             channel.note = note.note-1;						// remember the note
         }
 
-        if (channel.inst >= (int)mod.header.instruments_count)
-		{
-			iptr = &FMUSIC_DummyInstrument;
-			sptr = &FMUSIC_DummySample;
-			sptr->buff = nullptr;
-		}
-		else
-		{
-			// set up some instrument and sample pointers
-			iptr = &mod.instrument[channel.inst];
-            if (uint8_t note_sample = iptr->sample_header.note_sample_number[channel.note]; note_sample < 16)
-            {
-                sptr = &iptr->sample[note_sample];
-            }
-			else
-            {
-                sptr = &FMUSIC_DummySample;
-            }
+		bool valid_instrument = channel.inst < (int)mod.header.instruments_count;
+		const FMUSIC_INSTRUMENT* iptr = valid_instrument ? &mod.instrument[channel.inst] : &FMUSIC_DummyInstrument;
 
-			if (!porta)
-            {
-				channel.sptr = sptr;
-		    }
+		uint8_t note_sample = valid_instrument ? iptr->sample_header.note_sample_number[channel.note] : 16;
+
+		const FSOUND_SAMPLE* sptr = (note_sample < 16) ? &iptr->sample[note_sample] : &FMUSIC_DummySample;
+
+		if (valid_note) {
+			channel.finetune = sptr->header.finetune;
+		}
+
+
+		if (!porta)
+		{
+			channel.sptr = sptr;
 		}
 
 		int oldvolume = channel.volume;
@@ -584,12 +586,12 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
 			// get period according to realnote and finetune
 			if (mod.header.flags & FMUSIC_XMFLAGS_LINEARFREQUENCY)
 			{
-				channel.period_target = (10*12*16*4) - (channel.realnote*16*4) - (sptr->header.finetune / 2);
+				channel.period_target = (10*12*16*4) - (channel.realnote*16*4) - (channel.finetune / 2);
 			}
 			else
 			{
 #ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
-				channel.period_target = FMUSIC_XM_GetAmigaPeriod(channel.realnote, sptr->header.finetune);
+				channel.period_target = FMUSIC_XM_GetAmigaPeriod(channel.realnote, channel.finetune);
 #endif
 			}
 
@@ -600,7 +602,7 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
             }
 		}
 
-		channel.freqdelta	= 0;
+		channel.period_delta	= 0;
 
 		//= PROCESS INSTRUMENT NUMBER ==================================================================
 		if (note.sample_index)
@@ -628,7 +630,6 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
 		}
 
 		//= PROCESS TICK 0 EFFECTS =====================================================================
-#if  1
 		switch (note.effect)
 		{
 			// not processed on tick 0
@@ -841,9 +842,9 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
 					}
 #endif
 #ifdef FMUSIC_XM_SETFINETUNE_ACTIVE
-					case FMUSIC_XM_SETFINETUNE :
+					case FMUSIC_XM_SETFINETUNE:
 					{
-						sptr->header.finetune = paramy;
+						channel.finetune += paramy;
 						break;
 					}
 #endif
@@ -1004,28 +1005,31 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
 #ifdef FMUSIC_XM_EXTRAFINEPORTA_ACTIVE
 			case FMUSIC_XM_EXTRAFINEPORTA :
 			{
-
-				if (paramx == 1)
+				switch(paramx)
 				{
-					if (paramy)
-                    {
-						channel.xtraportaup = paramy;
-                    }
-					channel.period -= channel.xtraportaup;
-				}
-				else if (paramx == 2)
-				{
-					if (paramy)
-                    {
-						channel.xtraportadown = paramy;
-                    }
-					channel.period += channel.xtraportadown;
+				    case 1:
+				    {
+						if (paramy)
+						{
+							channel.xtraportaup = paramy;
+						}
+						channel.period -= channel.xtraportaup;
+						break;
+				    }
+					case 2:
+					{
+						if (paramy)
+						{
+							channel.xtraportadown = paramy;
+						}
+						channel.period += channel.xtraportadown;
+						break;
+					}
 				}
 				break;
 			}
 #endif
 		}
-#endif
 		XM_ProcessCommon(channel, iptr);
 
 	    FMUSIC_XM_UpdateFlags(channel,sptr,mod);
@@ -1052,8 +1056,6 @@ static void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod) noexcept
 
 	for (int count = 0; count<mod.header.channels_count; count++)
 	{
-        FMUSIC_INSTRUMENT		*iptr;
-		FSOUND_SAMPLE			*sptr;
 		const XMNote& note = row[count];
         FMUSIC_CHANNEL& channel = FMUSIC_Channel[count];
 
@@ -1064,31 +1066,19 @@ static void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod) noexcept
 //			cptr = &FMUSIC_DummyVirtualChannel; // no channels allocated yet
 //			**** FIXME!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
 
-		if (channel.inst >= (int)mod.header.instruments_count)
-		{
-			iptr = &FMUSIC_DummyInstrument;
-			sptr = &FMUSIC_DummySample;
-			sptr->buff = nullptr;
-		}
-		else
-		{
-			iptr = &mod.instrument[channel.inst];
-			if (uint8_t note_sample = iptr->sample_header.note_sample_number[channel.note]; note_sample < 16)
-            {
-                sptr = &iptr->sample[note_sample];
-            }
-			else
-            {
-                sptr = &FMUSIC_DummySample;
-            }
-		}
+		bool valid_instrument = channel.inst < (int)mod.header.instruments_count;
+		const FMUSIC_INSTRUMENT* iptr = valid_instrument ? &mod.instrument[channel.inst] : &FMUSIC_DummyInstrument;
+
+		uint8_t note_sample = valid_instrument ? iptr->sample_header.note_sample_number[channel.note] : 16; // samble must be invalid if instrument is invalid
+
+		const FSOUND_SAMPLE* sptr = (note_sample < 16) ? &iptr->sample[note_sample] : &FMUSIC_DummySample;
 
 		unsigned char effect = note.effect;			// grab the effect number
 		const unsigned char paramx = note.effect_parameter >> 4;		// grab the effect parameter x
 		const unsigned char paramy = note.effect_parameter & 0xF;		// grab the effect parameter y
 
 		channel.voldelta	= 0;				// this is for tremolo / tremor etc
-		channel.freqdelta	= 0;				// this is for vibrato / arpeggio etc
+		channel.period_delta	= 0;				// this is for vibrato / arpeggio etc
 		channel.trigger = false;
 		channel.stop = false;
 
@@ -1161,13 +1151,13 @@ static void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod) noexcept
 						{
 						    if (mod.header.flags & FMUSIC_XMFLAGS_LINEARFREQUENCY)
                             {
-                                channel.freqdelta = paramx << 6;
+                                channel.period_delta = paramx << 6;
                             }
 #ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
 						    else
                             {
-                                channel.freqdelta = FMUSIC_XM_GetAmigaPeriod(channel.realnote+paramx, sptr->header.finetune) -
-                                    FMUSIC_XM_GetAmigaPeriod(channel.realnote, sptr->header.finetune);
+                                channel.period_delta = FMUSIC_XM_GetAmigaPeriod(channel.realnote+paramx, channel.finetune) -
+                                    FMUSIC_XM_GetAmigaPeriod(channel.realnote, channel.finetune);
                             }
 #endif
 						    break;
@@ -1176,13 +1166,13 @@ static void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod) noexcept
 						{
 						    if (mod.header.flags & FMUSIC_XMFLAGS_LINEARFREQUENCY)
                             {
-                                channel.freqdelta = paramy << 6;
+                                channel.period_delta = paramy << 6;
                             }
 #ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
 						    else
                             {
-                                channel.freqdelta = FMUSIC_XM_GetAmigaPeriod(channel.realnote+paramy, sptr->header.finetune) -
-                                    FMUSIC_XM_GetAmigaPeriod(channel.realnote, sptr->header.finetune);
+                                channel.period_delta = FMUSIC_XM_GetAmigaPeriod(channel.realnote+paramy, channel.finetune) -
+                                    FMUSIC_XM_GetAmigaPeriod(channel.realnote, channel.finetune);
                             }
 #endif
 						    break;
@@ -1195,7 +1185,7 @@ static void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod) noexcept
 #ifdef FMUSIC_XM_PORTAUP_ACTIVE
 			case FMUSIC_XM_PORTAUP :
 			{
-				channel.freqdelta = 0;
+				channel.period_delta = 0;
 				channel.period = std::max(channel.period - (channel.portaup << 2), 56); // subtract period and stop at B#8
 				break;
 			}
@@ -1203,7 +1193,7 @@ static void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod) noexcept
 #ifdef FMUSIC_XM_PORTADOWN_ACTIVE
 			case FMUSIC_XM_PORTADOWN :
 			{
-				channel.freqdelta = 0;
+				channel.period_delta = 0;
 				channel.period += channel.portadown << 2; // subtract period
 				break;
 			}
@@ -1211,7 +1201,7 @@ static void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod) noexcept
 #ifdef FMUSIC_XM_PORTATO_ACTIVE
 			case FMUSIC_XM_PORTATO :
 			{
-				channel.freqdelta = 0;
+				channel.period_delta = 0;
 				FMUSIC_XM_Portamento(channel);
 				break;
 			}
@@ -1231,7 +1221,7 @@ static void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod) noexcept
 #ifdef FMUSIC_XM_PORTATOVOLSLIDE_ACTIVE
 			case FMUSIC_XM_PORTATOVOLSLIDE :
 			{
-				channel.freqdelta = 0;
+				channel.period_delta = 0;
 
 				FMUSIC_XM_Portamento(channel);
 
@@ -1520,6 +1510,8 @@ void FMUSIC_UpdateXM(FMUSIC_MODULE &mod) noexcept
 */
 std::unique_ptr<FMUSIC_MODULE> FMUSIC_LoadXM(void* fp, SAMPLELOADCALLBACK sampleloadcallback)
 {
+	// make sure DummySample is correctly initialized here.
+	FMUSIC_DummySample.buff = nullptr;
 	auto mod = std::make_unique<FMUSIC_MODULE>();
 
     FSOUND_File_Seek(fp, 0, SEEK_SET);

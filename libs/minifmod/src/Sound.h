@@ -55,7 +55,7 @@ struct FSOUND_CHANNEL
 	int				index;			// position in channel pool.
 	unsigned int 	sampleoffset; 	// sample offset (sample starts playing from here).
 
-	FSOUND_SAMPLE	*sptr;			// currently playing sample
+	const FSOUND_SAMPLE	*sptr;			// currently playing sample
 
 	// software mixer stuff
 	float			leftvolume;     // mixing information. adjusted volume for left channel (panning involved)
