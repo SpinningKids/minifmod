@@ -6,10 +6,16 @@ cmake_minimum_required (VERSION 3.8)
 project ("minifmod")
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-	if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
-		add_definitions("/O1i /FAs /GL /EHs- /GS- /GR- /d2noftol3")
-		SET(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} /MAP:out.map")
-	endif()
+	add_compile_options(
+		"$<$<CONFIG:RELEASE>:/O1i>"
+		"$<$<CONFIG:RELEASE>:/FAs>"
+		"$<$<CONFIG:RELEASE>:/GL>"
+		"/EHs-"
+		"$<$<CONFIG:RELEASE>:/GS->"
+		"$<$<CONFIG:RELEASE>:/GR->"
+		"/d2noftol3"
+	)
+	add_link_options("/MAP:out.map")
 endif()
 
 # Include sub-projects.
