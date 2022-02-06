@@ -734,7 +734,7 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
 #ifdef FMUSIC_XM_SETFINETUNE_ACTIVE
 					case FMUSIC_XM_SETFINETUNE:
 					{
-						channel.finetune += paramy;
+						channel.finetune = paramy;
 						break;
 					}
 #endif
