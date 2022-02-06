@@ -49,7 +49,7 @@ struct FSOUND_SoundBlock
 static FSOUND_SoundBlock	FSOUND_MixBlock;
 
 #ifdef WIN32
-static HWAVEOUT			FSOUND_WaveOutHandle;
+static HWAVEOUT			FSOUND_WaveOutHandle = nullptr;
 #endif
 
 /*
@@ -444,11 +444,12 @@ bool FSOUND_Init(int mixrate, int vcmmode) noexcept
 float FSOUND_TimeFromSamples() noexcept
 {
 #ifdef WIN32
-	MMTIME mmtime;
-	mmtime.wType = TIME_SAMPLES;
-	waveOutGetPosition(FSOUND_WaveOutHandle, &mmtime, sizeof(mmtime));
-	return mmtime.u.sample / (float)FSOUND_MixRate;
-#else
-	return 0;
+	if (FSOUND_WaveOutHandle) {
+		MMTIME mmtime;
+		mmtime.wType = TIME_SAMPLES;
+		waveOutGetPosition(FSOUND_WaveOutHandle, &mmtime, sizeof(mmtime));
+		return mmtime.u.sample / (float)FSOUND_MixRate;
+	}
 #endif
+	return 0;
 }
