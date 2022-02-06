@@ -20,8 +20,6 @@
 
 FMUSIC_CHANNEL		FMUSIC_Channel[32];		// channel array for this song
 FMUSIC_TIMMEINFO *	FMUSIC_TimeInfo;
-FSOUND_SAMPLE		FMUSIC_DummySample; // initialization taken out due to size.. should be ok.
-FMUSIC_INSTRUMENT	FMUSIC_DummyInstrument;
 
 static std::thread	Software_Thread;
 
@@ -74,7 +72,7 @@ FMUSIC_MODULE * FMUSIC_LoadSong(const char *name, SAMPLELOADCALLBACK sampleloadc
     if (void* fp = FSOUND_File_Open(name))
     {
         // create a mod instance
-        std::unique_ptr<FMUSIC_MODULE> mod = FMUSIC_LoadXM(fp, sampleloadcallback);
+        std::unique_ptr<FMUSIC_MODULE> mod = XMLoad(fp, sampleloadcallback);
         FSOUND_File_Close(fp);
         return mod.release();
     }

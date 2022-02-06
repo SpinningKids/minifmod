@@ -13,7 +13,9 @@
 #ifndef MUSIC_H_
 #define MUSIC_H_
 
+#include <algorithm>
 #include <cassert>
+#include <cmath>
 
 #include <minifmod/minifmod.h>
 #include "Sound.h"
@@ -22,29 +24,29 @@
 #define FMUSIC_KEYOFF						97
 
 // pattern data type
-class FMUSIC_PATTERN
+class Pattern
 {
-	int		rows_;
+	size_t size_;
 	XMNote data_[256][32];
 public:
-	FMUSIC_PATTERN() noexcept : rows_{ 64 }, data_{} {}
+	Pattern() noexcept : size_{ 64 }, data_{} {}
 
-    [[nodiscard]] int rows() const noexcept { return rows_; }
-	void set_rows(int rows)
+    [[nodiscard]] size_t size() const noexcept { return size_; }
+	void resize(size_t size)
 	{
-		assert(rows <= 256);
-	    rows_ = rows;
+		assert(size <= 256);
+	    size_ = size;
 	}
 
-	[[nodiscard]] auto row(int row) const noexcept -> decltype(data_[row])
+	[[nodiscard]] auto operator[](size_t row) const noexcept -> decltype(data_[row])
 	{
-		assert(row < rows_);
+		assert(row < size_);
 		return data_[row];
 	}
 
-	[[nodiscard]] auto row(int row) noexcept -> decltype(data_[row])
+	[[nodiscard]] auto operator[](size_t row) noexcept -> decltype(data_[row])
 	{
-		assert(row < rows_);
+		assert(row < size_);
 		return data_[row];
 	}
 };
@@ -70,13 +72,13 @@ struct EnvelopePoints
 };
 
 // Multi sample extended instrument
-struct FMUSIC_INSTRUMENT final
+struct Instrument final
 {
 	XMInstrumentHeader			header;
 	XMInstrumentSampleHeader	sample_header;
 	EnvelopePoints				volume_envelope;
 	EnvelopePoints				pan_envelope;
-	FSOUND_SAMPLE				sample[16];		// 16 samples per instrument
+	Sample						sample[16];		// 16 samples per instrument
 };
 
 enum class WaveControl : uint8_t
@@ -85,6 +87,82 @@ enum class WaveControl : uint8_t
 	SawTooth,
 	Square,
 	Random,
+};
+
+class LFO final
+{
+	WaveControl wave_control_;
+	bool continue_;
+	int position_;
+	int speed_;
+	int depth_;
+public:
+
+	void setup(int speed, int depth)
+	{
+		if (speed) {
+			speed_ = speed;
+		}
+		if (depth)
+		{
+			depth_ = depth * 4;
+		}
+	}
+
+	void setFlags(uint8_t flags)
+	{
+		wave_control_ = (WaveControl)(flags & 3);
+		continue_ = (flags & 4) != 0;
+	}
+
+	void reset()
+	{
+		if (!continue_)
+		{
+			position_ = 0;
+		}
+	}
+
+	void update()
+	{
+		position_ += speed_;
+		while (position_ > 31)
+		{
+			position_ -= 64;
+		}
+	}
+
+	[[nodiscard]] int operator () () const
+	{
+		switch (wave_control_)
+		{
+		case WaveControl::Sine:
+			return -int(sinf((float)position_ * (2 * 3.141592f / 64.0f)) * depth_);
+		case WaveControl::SawTooth:
+			return -(position_ * 2 + 1) * depth_ / 63;
+		default:
+		//case WaveControl::Square:
+		//case WaveControl::Random:
+			return (position_ >= 0) ? -depth_ : depth_ ; // square
+		}
+	}
+};
+
+class Portamento
+{
+	int target_;
+	int speed_;
+public:
+	void setup(int target, int speed = 0)
+	{
+		if (speed) speed_ = speed;
+		target_ = target;
+	}
+	int operator ()(int period) noexcept
+	{
+		return std::clamp(target_, period - speed_, period + speed_);
+	}
+
 };
 
 // Channel type - contains information on a mod channel
@@ -96,7 +174,7 @@ struct FMUSIC_CHANNEL
 	bool			stop;
 
 	FSOUND_CHANNEL	*cptr;				// pointer to FSOUND system mixing channel
-	const FSOUND_SAMPLE	*sptr;				// pointer to FSOUND system sample
+	const Sample	*sptr;				// pointer to FSOUND system sample
 
 	int				period;				// current mod frequency period for this channel
 	int				volume;				// current mod volume for this channel
@@ -131,27 +209,16 @@ struct FMUSIC_CHANNEL
 	unsigned char	retrigx;   			// last retrig volume slide used (XM + S3M)
 	unsigned char	retrigy;   			// last retrig tick count used (XM + S3M)
 
-	int				portatarget; 		// note to porta to
-	int				portaspeed;			// porta speed
+	Portamento		portamento;			// note to porta to and speed
 
-	signed char		vibpos;   			// vibrato position
-	unsigned char	vibspeed;  			// vibrato speed
-	unsigned char	vibdepth;  			// vibrato depth
-
-	signed char		tremolopos;   		// tremolo position
-	unsigned char  	tremolospeed; 		// tremolo speed
-	unsigned char  	tremolodepth; 		// tremolo depth
+	LFO				vibrato;			// Vibrato LFO
+	LFO				tremolo;			// Tremolo LFO
 
 	unsigned char	tremorpos; 			// tremor position (XM + S3M)
 	unsigned char 	tremoron;   		// remembered parameters for tremor (XM + S3M)
 	unsigned char 	tremoroff;   		// remembered parameters for tremor (XM + S3M)
  	int				patlooprow;
  	int 			patloopno;  		// pattern loop variables for effect  E6x
-
-	WaveControl 	wavecontrol_vibrato;// waveform type for vibrato (2bits)
-	bool			continue_vibrato;
-	WaveControl		wavecontrol_tremolo;// waveform type for tremolo (2bits)
-	bool			continue_tremolo;
 
 	unsigned char	finevslup;			// parameter for fine volume slide up
 	unsigned char	finevsldown;		// parameter for fine volume slide down
@@ -164,28 +231,25 @@ struct FMUSIC_CHANNEL
 struct FMUSIC_MODULE final
 {
 	XMHeader	header;
-	FMUSIC_PATTERN		pattern[256];	// patterns array for this song
-	FMUSIC_INSTRUMENT	instrument[128];	// instrument array for this song (not used in MOD/S3M)
-	int				mixer_samplesleft;
-	int				mixer_samplespertick;
+	Pattern		pattern[256];		// patterns array for this song
+	Instrument	instrument[128];	// instrument array for this song (not used in MOD/S3M)
+	int			mixer_samplesleft;
+	int			mixer_samplespertick;
 
-	int				globalvolume;		// global mod volume
-	int				globalvsl;			// global mod volume
-	int				tick;				// current mod tick
-	int				speed;				// speed of song in ticks per row
-	uint8_t			row;				// current row in pattern
-	uint8_t			order;				// current song order position
-	int				patterndelay;		// pattern delay counter
-	int				nextrow;			// current row in pattern
-	int				nextorder;			// current song order position
-	int				time_ms;			// time passed in seconds since song started
+	int			globalvolume;		// global mod volume
+	int			globalvsl;			// global mod volume
+	int			tick;				// current mod tick
+	int			speed;				// speed of song in ticks per row
+	uint8_t		row;				// current row in pattern
+	uint8_t		order;				// current song order position
+	int			patterndelay;		// pattern delay counter
+	int			nextrow;			// current row in pattern
+	int			nextorder;			// current song order position
+	int			time_ms;			// time passed in seconds since song started
 };
 
 
 //= VARIABLE EXTERNS ========================================================================
-extern FSOUND_SAMPLE			FMUSIC_DummySample;
-extern FSOUND_CHANNEL			FMUSIC_DummyChannel;
-extern FMUSIC_INSTRUMENT		FMUSIC_DummyInstrument;
 extern FMUSIC_CHANNEL			FMUSIC_Channel[];		// channel array for this song
 extern FMUSIC_TIMMEINFO *		FMUSIC_TimeInfo;
 
