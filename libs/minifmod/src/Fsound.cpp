@@ -425,6 +425,7 @@ void FSOUND_Software_DoubleBufferThread(FMUSIC_MODULE *mod) noexcept
 	waveOutReset(FSOUND_WaveOutHandle);
 
 	waveOutClose(FSOUND_WaveOutHandle);
+	FSOUND_WaveOutHandle = nullptr;
 #endif
 	if (FMUSIC_TimeInfo)
 	{
