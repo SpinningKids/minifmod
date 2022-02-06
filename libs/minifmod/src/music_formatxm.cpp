@@ -325,7 +325,7 @@ static void XMUpdateFlags(FMUSIC_CHANNEL &channel, const Sample *sptr, FMUSIC_MO
 		    ccptr->sampleoffset = 0;
 		}
 
-		ccptr->mixpos  = ccptr->sampleoffset;
+		ccptr->mixpos = (float)ccptr->sampleoffset;
 		ccptr->speeddir  = MixDir::Forwards;
 		ccptr->sampleoffset = 0;	// reset it (in case other samples come in and get corrupted etc)
 
