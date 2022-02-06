@@ -142,6 +142,7 @@ static void XMProcessEnvelope(int &position, float &value, const EnvelopePoints&
 #ifdef FMUSIC_XM_VOLUMEBYTE_ACTIVE
 static void FMUSIC_XM_ProcessVolumeByte(FMUSIC_CHANNEL &channel, unsigned char volume) noexcept
 {
+	// NOTE: Having this if makes code actually smaller than using the switch.
 	if (volume >= 0x10 && volume <= 0x50)
 	{
 		channel.volume = volume-0x10;
@@ -684,7 +685,7 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
 			case FMUSIC_XM_PATTERNBREAK :
 			{
                 mod.nextrow = (paramx*10) + paramy;
-				if (mod.nextrow > 63)
+				if (mod.nextrow > 63) // NOTE: This seems odd, as the pattern might be longer than 64
                 {
 					mod.nextrow = 0;
                 }
@@ -719,6 +720,13 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
 							channel.fineportadown = paramy;
                         }
 						channel.period += (channel.fineportadown << 2);
+						break;
+					}
+#endif
+#ifdef FMUSIC_XM_GLISSANDO_ACTIVE
+				    case FMUSIC_XM_GLISSANDO:
+					{
+					    // not implemented
 						break;
 					}
 #endif
@@ -1025,42 +1033,30 @@ static void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod) noexcept
 #ifdef FMUSIC_XM_ARPEGGIO_ACTIVE
 			case FMUSIC_XM_ARPEGGIO :
 			{
-				if (note.effect_parameter > 0)
+				int v;
+				switch (mod.tick % 3)
 				{
-					switch (mod.tick % 3)
-					{
-						case 1:
-						{
-						    if (mod.header.flags & FMUSIC_XMFLAGS_LINEARFREQUENCY)
-                            {
-                                channel.period_delta = paramx << 6;
-                            }
-#ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
-						    else
-                            {
-                                channel.period_delta = FMUSIC_XM_GetAmigaPeriod(channel.realnote+paramx, channel.finetune) -
-                                    FMUSIC_XM_GetAmigaPeriod(channel.realnote, channel.finetune);
-                            }
-#endif
-						    break;
-						}
-						case 2:
-						{
-						    if (mod.header.flags & FMUSIC_XMFLAGS_LINEARFREQUENCY)
-                            {
-                                channel.period_delta = paramy << 6;
-                            }
-#ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
-						    else
-                            {
-                                channel.period_delta = FMUSIC_XM_GetAmigaPeriod(channel.realnote+paramy, channel.finetune) -
-                                    FMUSIC_XM_GetAmigaPeriod(channel.realnote, channel.finetune);
-                            }
-#endif
-						    break;
-						}
-					}
+				case 0:
+					v = 0;
+					break;
+				case 1:
+					v = paramx;
+					break;
+				case 2:
+					v = paramy;
+					break;
 				}
+    			if (mod.header.flags & FMUSIC_XMFLAGS_LINEARFREQUENCY)
+                {
+                    channel.period_delta = v << 6;
+                }
+#ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
+				else
+                {
+                    channel.period_delta = FMUSIC_XM_GetAmigaPeriod(channel.realnote+v, channel.finetune) -
+                        FMUSIC_XM_GetAmigaPeriod(channel.realnote, channel.finetune);
+                }
+#endif
 				break;
 			}
 #endif
