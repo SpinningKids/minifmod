@@ -12,6 +12,7 @@
 
 #include "Music.h"
 
+#include <cstring>
 #include <thread>
 
 #include <minifmod/minifmod.h>

@@ -15,6 +15,7 @@
 #include "Sound.h"
 
 #include <cstring>
+#include <thread>
 
 #include "Music.h"
 #include "music_formatxm.h"
@@ -378,12 +379,16 @@ void FSOUND_Software_DoubleBufferThread(FMUSIC_MODULE *mod) noexcept
 
 	while (!Software_Thread_Exit)
 	{
-        MMTIME	mmt;
+#ifdef WIN32
+		MMTIME	mmt;
 
 		mmt.wType = TIME_BYTES;
 		waveOutGetPosition(FSOUND_WaveOutHandle, &mmt, sizeof(MMTIME));
 
 		const int cursorpos = (mmt.u.cb >> 2) % FSOUND_BufferSize;
+#else
+		const int cursorpos = 0;
+#endif
 		const int cursorblock = cursorpos / FSOUND_BlockSize;
 
 		while (FSOUND_Software_FillBlock != cursorblock)
@@ -397,7 +402,11 @@ void FSOUND_Software_DoubleBufferThread(FMUSIC_MODULE *mod) noexcept
             }
 		}
 
+#ifdef WIN32
 		Sleep(5);
+#else
+		std::this_thread::sleep_for(std::chrono::milliseconds(5));
+#endif
 	}
 
 	// remove the output mixbuffer
