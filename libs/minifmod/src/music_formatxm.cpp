@@ -23,88 +23,23 @@
 #include "system_file.h"
 #include "xmeffects.h"
 
+static Sample DummySample; // initialization taken out due to size.. should be ok.
+static Instrument DummyInstrument;
+
 // Frequency = 8363*2^((6*12*16*4 - Period) / (12*16*4));
 
-static inline int FMUSIC_XMLINEARPERIOD2HZ(int per)
+static inline int XMLinearPeriod2Frequency(int per)
 {
 	return (int)(8363.0f * powf(2.0f, (6.0f * 12.0f * 16.0f * 4.0f - per) / (float)(12 * 16 * 4)));
 }
 
-static inline int FMUSIC_PERIOD2HZ(int period)
+static inline int Period2Frequency(int period)
 {
 	return 14317456L / period;
 }
 
-/*
-[API]
-[
-	[DESCRIPTION]
-
-	[PARAMETERS]
-
-	[RETURN_VALUE]
-
-	[REMARKS]
-
-	[SEE_ALSO]
-]
-*/
-#if defined(FMUSIC_XM_PORTATO_ACTIVE) || defined(FMUSIC_XM_PORTATOVOLSLIDE_ACTIVE)
-static void FMUSIC_XM_Portamento(FMUSIC_CHANNEL& channel) noexcept
-{
-	channel.period = std::clamp(channel.portatarget, channel.period - channel.portaspeed, channel.period + channel.portaspeed);
-}
-#endif // FMUSIC_XM_PORTATO_ACTIVE
-
-#if defined(FMUSIC_XM_VIBRATO_ACTIVE) || defined(FMUSIC_XM_VIBRATOVOLSLIDE_ACTIVE) || defined(FMUSIC_XM_TREMOLO_ACTIVE)
-int WaveControlFunction(WaveControl wave_control, int position, int depth)
-{
-	switch (wave_control)
-	{
-	    case WaveControl::Sine:
-	    {
-		    return -int(sinf((float)position * (2 * 3.141592f / 64.0f)) * depth * 4);
-	    }
-	    case WaveControl::SawTooth:
-	    {
-		    return -(position * 8 + 4) * depth / 63;
-	    }
-	    case WaveControl::Square:
-	    case WaveControl::Random:
-	    {
-		    return (position >= 0) ? -depth * 4 : depth * 4;							// square
-	    }
-	}
-
-}
-#endif
-
-/*
-[API]
-[
-	[DESCRIPTION]
-	to carry out a vibrato at a certain depth and speed
-
-	[PARAMETERS]
-	track - the track number to do the vibrato too
-
-	[RETURN_VALUE]
-
-	[REMARKS]
-	AND'ing temp with 31 removes the sign bit giving the abs value
-
-	[SEE_ALSO]
-]
-*/
-#if defined(FMUSIC_XM_VIBRATO_ACTIVE) || defined(FMUSIC_XM_VIBRATOVOLSLIDE_ACTIVE)
-static void FMUSIC_XM_Vibrato(FMUSIC_CHANNEL& channel) noexcept
-{
-	channel.period_delta = WaveControlFunction(channel.wavecontrol_vibrato, channel.vibpos, channel.vibdepth * 2);
-}
-#endif // defined(FMUSIC_XM_VIBRATO_ACTIVE) || defined(FMUSIC_XM_VIBRATOVOLSLIDE_ACTIVE)
-
 #ifdef FMUSIC_XM_INSTRUMENTVIBRATO_ACTIVE
-static void FMUSIC_XM_InstrumentVibrato(FMUSIC_CHANNEL& channel, const FMUSIC_INSTRUMENT* iptr) noexcept
+static void XMInstrumentVibrato(FMUSIC_CHANNEL& channel, const Instrument* iptr) noexcept
 {
 	int delta;
 
@@ -161,7 +96,7 @@ static void FMUSIC_XM_InstrumentVibrato(FMUSIC_CHANNEL& channel, const FMUSIC_IN
 ]
 */
 #if defined(FMUSIC_XM_VOLUMEENVELOPE_ACTIVE) || defined(FMUSIC_XM_PANENVELOPE_ACTIVE)
-static void XM_ProcessEnvelope(int &position, float &value, const EnvelopePoints& envelope, XMEnvelopeFlags flags, unsigned char loop_start_index, unsigned char loop_end_index, unsigned char sustain_index, bool keyoff) noexcept
+static void XMProcessEnvelope(int &position, float &value, const EnvelopePoints& envelope, XMEnvelopeFlags flags, unsigned char loop_start_index, unsigned char loop_end_index, unsigned char sustain_index, bool keyoff) noexcept
 {
 	if (envelope.count > 0)
     {
@@ -230,12 +165,12 @@ static void FMUSIC_XM_ProcessVolumeByte(FMUSIC_CHANNEL &channel, unsigned char v
 			}
 			case 0xa :
 			{
-				channel.vibspeed = volumey;
+				channel.vibrato.setup(volumey, 0); // TODO: Check if it's in the correct range (0-15)
 				break;
 			}
 			case 0xb :
 			{
-				channel.vibdepth = volumey;
+				channel.vibrato.setup(0, volumey*2); // TODO: Check if it's in the correct range (0-15)
 				break;
 			}
 			case 0xc :
@@ -255,11 +190,7 @@ static void FMUSIC_XM_ProcessVolumeByte(FMUSIC_CHANNEL &channel, unsigned char v
 			}
 			case 0xf :
 			{
-				if (volume & 0xF)
-                {
-                    channel.portaspeed = volumey << 6;
-                }
-                channel.portatarget = channel.period_target;
+				channel.portamento.setup(channel.period_target, volumey << 6);
 				channel.trigger = false;
 				break;
 			}
@@ -355,7 +286,7 @@ static void FMUSIC_XM_Tremor(FMUSIC_CHANNEL &channel) noexcept
 	[SEE_ALSO]
 ]
 */
-static void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL &channel, const FSOUND_SAMPLE *sptr, FMUSIC_MODULE &mod) noexcept
+static void XMUpdateFlags(FMUSIC_CHANNEL &channel, const Sample *sptr, FMUSIC_MODULE &mod) noexcept
 {
     FSOUND_CHANNEL *ccptr = channel.cptr;
 
@@ -422,8 +353,8 @@ static void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL &channel, const FSOUND_SAMPLE *
 	{
 		int freq = std::max(
 			(mod.header.flags & FMUSIC_XMFLAGS_LINEARFREQUENCY)
-			    ? FMUSIC_XMLINEARPERIOD2HZ(channel.period + channel.period_delta)
-			    : FMUSIC_PERIOD2HZ(channel.period + channel.period_delta),
+			    ? XMLinearPeriod2Frequency(channel.period + channel.period_delta)
+			    : Period2Frequency(channel.period + channel.period_delta),
 			100);
 
     	ccptr->speed = float(freq) / FSOUND_MixRate;
@@ -436,7 +367,7 @@ static void FMUSIC_XM_UpdateFlags(FMUSIC_CHANNEL &channel, const FSOUND_SAMPLE *
 	}
 }
 
-static void FMUSIC_XM_Resetcptr(FMUSIC_CHANNEL& channel, const FSOUND_SAMPLE* sptr) noexcept
+static void FMUSIC_XM_Resetcptr(FMUSIC_CHANNEL& channel, const Sample* sptr) noexcept
 {
 	channel.volume = (int)sptr->header.default_volume;
 	channel.pan = sptr->header.default_panning;
@@ -452,26 +383,20 @@ static void FMUSIC_XM_Resetcptr(FMUSIC_CHANNEL& channel, const FSOUND_SAMPLE* sp
 	channel.ivibpos = 0;
 
 	// retrigger tremolo and vibrato waveforms
-	if (!channel.continue_vibrato)
-	{
-		channel.vibpos = 0;
-	}
-	if (!channel.continue_tremolo)
-	{
-		channel.tremolopos = 0;
-	}
+	channel.vibrato.reset();
+	channel.tremolo.reset();
 
-	channel.tremorpos = 0;								// retrigger tremor count
+    channel.tremorpos = 0;								// retrigger tremor count
 }
 
-static void XM_ProcessCommon(FMUSIC_CHANNEL& channel, const FMUSIC_INSTRUMENT* iptr) noexcept
+static void XMProcessCommon(FMUSIC_CHANNEL& channel, const Instrument* iptr) noexcept
 {
 	//= PROCESS ENVELOPES ==========================================================================
 #ifdef FMUSIC_XM_VOLUMEENVELOPE_ACTIVE
-	XM_ProcessEnvelope(channel.envvolpos, channel.envvolvalue, iptr->volume_envelope, iptr->sample_header.volume_envelope_flags, iptr->sample_header.volume_loop_start_index, iptr->sample_header.volume_loop_end_index, iptr->sample_header.volume_sustain_index, channel.keyoff);
+	XMProcessEnvelope(channel.envvolpos, channel.envvolvalue, iptr->volume_envelope, iptr->sample_header.volume_envelope_flags, iptr->sample_header.volume_loop_start_index, iptr->sample_header.volume_loop_end_index, iptr->sample_header.volume_sustain_index, channel.keyoff);
 #endif
 #ifdef FMUSIC_XM_PANENVELOPE_ACTIVE
-	XM_ProcessEnvelope(channel.envpanpos, channel.envpanvalue, iptr->pan_envelope, iptr->sample_header.pan_envelope_flags, iptr->sample_header.pan_loop_start_index, iptr->sample_header.pan_loop_end_index, iptr->sample_header.pan_sustain_index, channel.keyoff);
+	XMProcessEnvelope(channel.envpanpos, channel.envpanvalue, iptr->pan_envelope, iptr->sample_header.pan_envelope_flags, iptr->sample_header.pan_loop_start_index, iptr->sample_header.pan_loop_end_index, iptr->sample_header.pan_sustain_index, channel.keyoff);
 #endif
 	//= PROCESS VOLUME FADEOUT =====================================================================
     if (channel.keyoff)
@@ -480,7 +405,7 @@ static void XM_ProcessCommon(FMUSIC_CHANNEL& channel, const FMUSIC_INSTRUMENT* i
     }
 	//= INSTRUMENT VIBRATO ============================================================================
 #ifdef FMUSIC_XM_INSTRUMENTVIBRATO_ACTIVE
-	FMUSIC_XM_InstrumentVibrato(channel, iptr);	// this gets added to previous freqdeltas
+	XMInstrumentVibrato(channel, iptr);	// this gets added to previous freqdeltas
 #endif
 }
 
@@ -507,7 +432,7 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
 
 	// Point our note pointer to the correct pattern buffer, and to the
 	// correct offset in this buffer indicated by row and number of channels
-	const auto &row = mod.pattern[mod.header.pattern_order[mod.order]].row(mod.row);
+	const auto &row = mod.pattern[mod.header.pattern_order[mod.order]][mod.row];
 
 	// Loop through each channel in the row until we have finished
 	for (int count = 0; count<mod.header.channels_count; count++)
@@ -539,11 +464,11 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
         }
 
 		bool valid_instrument = channel.inst < (int)mod.header.instruments_count;
-		const FMUSIC_INSTRUMENT* iptr = valid_instrument ? &mod.instrument[channel.inst] : &FMUSIC_DummyInstrument;
+		const Instrument* iptr = valid_instrument ? &mod.instrument[channel.inst] : &DummyInstrument;
 
 		uint8_t note_sample = valid_instrument ? iptr->sample_header.note_sample_number[channel.note] : 16;
 
-		const FSOUND_SAMPLE* sptr = (note_sample < 16) ? &iptr->sample[note_sample] : &FMUSIC_DummySample;
+		const Sample* sptr = (note_sample < 16) ? &iptr->sample[note_sample] : &DummySample;
 
 		if (valid_note) {
 			channel.finetune = sptr->header.finetune;
@@ -649,11 +574,7 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
 #ifdef FMUSIC_XM_PORTATO_ACTIVE
 			case FMUSIC_XM_PORTATO :
 			{
-				if (note.effect_parameter)
-                {
-					channel.portaspeed = note.effect_parameter << 2;
-                }
-				channel.portatarget = channel.period_target;
+				channel.portamento.setup(channel.period_target, note.effect_parameter << 2);
 				channel.trigger = false;
 				break;
 			}
@@ -661,7 +582,7 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
 #ifdef FMUSIC_XM_PORTATOVOLSLIDE_ACTIVE
 			case FMUSIC_XM_PORTATOVOLSLIDE :
 			{
-				channel.portatarget = channel.period_target;
+				channel.portamento.setup(channel.period_target);
 				if (slide)
                 {
 					channel.volslide = slide;
@@ -673,15 +594,8 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
 #ifdef FMUSIC_XM_VIBRATO_ACTIVE
 			case FMUSIC_XM_VIBRATO :
 			{
-				if (paramx)
-                {
-					channel.vibspeed = paramx;
-                }
-				if (paramy)
-                {
-					channel.vibdepth = paramy;
-                }
-				FMUSIC_XM_Vibrato(channel);
+				channel.vibrato.setup(paramx, paramy*2); // TODO: Check if it's in the correct range (0-15)
+				channel.period_delta = channel.vibrato();
 				break;
 			}
 #endif
@@ -692,21 +606,14 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
                 {
 					channel.volslide = slide;
                 }
-				FMUSIC_XM_Vibrato(channel);
+				channel.period_delta = channel.vibrato();
 				break;								// not processed on tick 0
 			}
 #endif
 #ifdef FMUSIC_XM_TREMOLO_ACTIVE
 			case FMUSIC_XM_TREMOLO :
 			{
-				if (paramx)
-                {
-					channel.tremolospeed = paramx;
-                }
-				if (paramy)
-                {
-					channel.tremolodepth = paramy;
-                }
+				channel.tremolo.setup(paramx, -paramy);
 				break;
 			}
 #endif
@@ -820,8 +727,7 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
 #ifdef FMUSIC_XM_SETVIBRATOWAVE_ACTIVE
 					case FMUSIC_XM_SETVIBRATOWAVE :
 					{
-						channel.wavecontrol_vibrato = (WaveControl)(paramy & 3);
-						channel.continue_vibrato = (paramy & 4) != 0;
+						channel.vibrato.setFlags(paramy);
 						break;
 					}
 #endif
@@ -860,8 +766,7 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
 #ifdef FMUSIC_XM_SETTREMOLOWAVE_ACTIVE
 					case FMUSIC_XM_SETTREMOLOWAVE :
 					{
-						channel.wavecontrol_tremolo = (WaveControl)(paramy & 3);
-						channel.continue_tremolo = (paramy & 4) != 0;
+						channel.tremolo.setFlags(paramy);
 						break;
 					}
 #endif
@@ -1014,9 +919,9 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
 			}
 #endif
 		}
-		XM_ProcessCommon(channel, iptr);
+		XMProcessCommon(channel, iptr);
 
-		FMUSIC_XM_UpdateFlags(channel, sptr, mod);
+		XMUpdateFlags(channel, sptr, mod);
 	}
  }
 
@@ -1036,7 +941,7 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
 */
 static void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod) noexcept
 {
-    const auto& row = mod.pattern[mod.header.pattern_order[mod.order]].row(mod.row);
+    const auto& row = mod.pattern[mod.header.pattern_order[mod.order]][mod.row];
 
 	for (int count = 0; count<mod.header.channels_count; count++)
 	{
@@ -1051,11 +956,11 @@ static void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod) noexcept
 //			**** FIXME!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
 
 		bool valid_instrument = channel.inst < (int)mod.header.instruments_count;
-		const FMUSIC_INSTRUMENT* iptr = valid_instrument ? &mod.instrument[channel.inst] : &FMUSIC_DummyInstrument;
+		const Instrument* iptr = valid_instrument ? &mod.instrument[channel.inst] : &DummyInstrument;
 
 		uint8_t note_sample = valid_instrument ? iptr->sample_header.note_sample_number[channel.note] : 16; // samble must be invalid if instrument is invalid
 
-		const FSOUND_SAMPLE* sptr = (note_sample < 16) ? &iptr->sample[note_sample] : &FMUSIC_DummySample;
+		const Sample* sptr = (note_sample < 16) ? &iptr->sample[note_sample] : &DummySample;
 
 		unsigned char effect = note.effect;			// grab the effect number
 		const unsigned char paramx = note.effect_parameter >> 4;		// grab the effect parameter x
@@ -1090,15 +995,9 @@ static void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod) noexcept
 #ifdef FMUSIC_XM_VIBRATO_ACTIVE
 			case 0xb :
 			{
-				channel.vibdepth = volumey;
-
-				FMUSIC_XM_Vibrato(channel);
-
-				channel.vibpos += channel.vibspeed;
-				if (channel.vibpos > 31)
-                {
-					channel.vibpos -= 64;
-                }
+				channel.vibrato.setup(0, volumey * 2); // TODO: Check if it's in the correct range (0-15)
+				channel.period_delta = channel.vibrato();
+				channel.vibrato.update();
 				break;
 			}
 #endif
@@ -1115,7 +1014,7 @@ static void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod) noexcept
 #ifdef FMUSIC_XM_PORTATO_ACTIVE
 			case 0xf :
 			{
-				FMUSIC_XM_Portamento(channel);
+				channel.period = channel.portamento(channel.period);
 				break;
 			}
 #endif
@@ -1195,7 +1094,7 @@ static void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod) noexcept
 			case FMUSIC_XM_PORTATO :
 #endif
 				channel.period_delta = 0;
-				FMUSIC_XM_Portamento(channel);
+				channel.period = channel.portamento(channel.period);
 				break;
 #endif
 #if defined (FMUSIC_XM_VIBRATOVOLSLIDE_ACTIVE) || defined(FMUSIC_XM_VIBRATO_ACTIVE)
@@ -1209,23 +1108,15 @@ static void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod) noexcept
 #ifdef FMUSIC_XM_VIBRATO_ACTIVE
 			case FMUSIC_XM_VIBRATO:
 #endif
-    		    FMUSIC_XM_Vibrato(channel);
-				channel.vibpos += channel.vibspeed;
-				if (channel.vibpos > 31)
-				{
-					channel.vibpos -= 64;
-				}
+				channel.period_delta = channel.vibrato();
+				channel.vibrato.update();
 				break;
 #endif
 #ifdef FMUSIC_XM_TREMOLO_ACTIVE
 			case FMUSIC_XM_TREMOLO :
 			{
-				channel.voldelta = WaveControlFunction(channel.wavecontrol_tremolo, channel.tremolopos, -channel.tremolodepth);
-				channel.tremolopos += channel.tremolospeed;
-				if (channel.tremolopos > 31)
-				{
-					channel.tremolopos -= 64;
-				}
+				channel.voldelta = channel.tremolo();
+				channel.tremolo.update();
 				break;
 			}
 #endif
@@ -1403,9 +1294,9 @@ static void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod) noexcept
 #endif
 		}
 
-		XM_ProcessCommon(channel, iptr);
+		XMProcessCommon(channel, iptr);
 
-		FMUSIC_XM_UpdateFlags(channel, sptr,mod);
+		XMUpdateFlags(channel, sptr,mod);
 	}
 }
 
@@ -1423,7 +1314,7 @@ static void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod) noexcept
 	[SEE_ALSO]
 ]
 */
-void FMUSIC_UpdateXM(FMUSIC_MODULE &mod) noexcept
+void XMTick(FMUSIC_MODULE &mod) noexcept
 {
 	if (mod.tick == 0)									// new note
 	{
@@ -1443,7 +1334,7 @@ void FMUSIC_UpdateXM(FMUSIC_MODULE &mod) noexcept
 		if (mod.nextrow == -1)
 		{
 			mod.nextrow = mod.row+1;
-			if (mod.nextrow >= mod.pattern[mod.header.pattern_order[mod.order]].rows())	// if end of pattern
+			if (mod.nextrow >= mod.pattern[mod.header.pattern_order[mod.order]].size())	// if end of pattern TODO: Fix signed/unsigned comparison
 			{
 				mod.nextorder = mod.order+1;			// so increment the order
 				if (mod.nextorder >= (int)mod.header.song_length)
@@ -1482,10 +1373,10 @@ void FMUSIC_UpdateXM(FMUSIC_MODULE &mod) noexcept
 	[SEE_ALSO]
 ]
 */
-std::unique_ptr<FMUSIC_MODULE> FMUSIC_LoadXM(void* fp, SAMPLELOADCALLBACK sampleloadcallback)
+std::unique_ptr<FMUSIC_MODULE> XMLoad(void* fp, SAMPLELOADCALLBACK sampleloadcallback)
 {
 	// make sure DummySample is correctly initialized here.
-	FMUSIC_DummySample.buff = nullptr;
+	DummySample.buff = nullptr;
 	auto mod = std::make_unique<FMUSIC_MODULE>();
 
     FSOUND_File_Seek(fp, 0, SEEK_SET);
@@ -1500,13 +1391,14 @@ std::unique_ptr<FMUSIC_MODULE> FMUSIC_LoadXM(void* fp, SAMPLELOADCALLBACK sample
 		XMPatternHeader header;
 		FSOUND_File_Read(&header, sizeof(header), fp);
 
-	    mod->pattern[count].set_rows(header.rows);
+        Pattern& pattern = mod->pattern[count];
+	    pattern.resize(header.rows);
 
 		if (header.packed_pattern_data_size > 0)
 		{
 			for (int row = 0; row < header.rows; ++row)
 			{
-				auto &current_row = mod->pattern[count].row(row);
+				auto &current_row = pattern[row];
 
 				for (int count2 = 0; count2 < mod->header.channels_count; count2++)
 				{
@@ -1544,7 +1436,7 @@ std::unique_ptr<FMUSIC_MODULE> FMUSIC_LoadXM(void* fp, SAMPLELOADCALLBACK sample
 	for (uint16_t count = 0; count < mod->header.instruments_count; ++count)
 	{
         // point a pointer to that particular instrument
-		FMUSIC_INSTRUMENT* iptr = &mod->instrument[count];
+		Instrument* iptr = &mod->instrument[count];
 
 		int firstsampleoffset = FSOUND_File_Tell(fp);
 		FSOUND_File_Read(&iptr->header, sizeof(iptr->header), fp);				// instrument size
@@ -1556,7 +1448,7 @@ std::unique_ptr<FMUSIC_MODULE> FMUSIC_LoadXM(void* fp, SAMPLELOADCALLBACK sample
 		{
 			FSOUND_File_Read(&iptr->sample_header, sizeof(iptr->sample_header), fp);
 
-			auto adjust_envelope = [](uint8_t count, const XMEnvelopePoint(&original_points)[12], int offset, float scale, uint8_t loop_start_index, uint8_t loop_end_index, uint8_t sustain_index, XMEnvelopeFlags flags)
+			auto adjust_envelope = [](uint8_t count, const XMEnvelopePoint(&original_points)[12], int offset, float scale, XMEnvelopeFlags flags)
 			{
 				EnvelopePoints e;
 				e.count = (count < 2 || !(flags & XMEnvelopeFlagsOn)) ? 0 : count;
@@ -1574,14 +1466,14 @@ std::unique_ptr<FMUSIC_MODULE> FMUSIC_LoadXM(void* fp, SAMPLELOADCALLBACK sample
 				e.envelope[e.count - 1].delta = 0;
 				return e;
 			};
-			iptr->volume_envelope = adjust_envelope(iptr->sample_header.volume_envelope_count, iptr->sample_header.volume_envelope, 0, 64, iptr->sample_header.volume_loop_start_index, iptr->sample_header.volume_loop_end_index, iptr->sample_header.volume_sustain_index, iptr->sample_header.volume_envelope_flags);
-			iptr->pan_envelope = adjust_envelope(iptr->sample_header.pan_envelope_count, iptr->sample_header.pan_envelope, 32, 32, iptr->sample_header.pan_loop_start_index, iptr->sample_header.pan_loop_end_index, iptr->sample_header.pan_sustain_index, iptr->sample_header.pan_envelope_flags);
+			iptr->volume_envelope = adjust_envelope(iptr->sample_header.volume_envelope_count, iptr->sample_header.volume_envelope, 0, 64, iptr->sample_header.volume_envelope_flags);
+			iptr->pan_envelope = adjust_envelope(iptr->sample_header.pan_envelope_count, iptr->sample_header.pan_envelope, 32, 32, iptr->sample_header.pan_envelope_flags);
 
 			// seek to first sample
 			FSOUND_File_Seek(fp, firstsampleoffset, SEEK_SET);
 			for (unsigned int count2 = 0; count2 < iptr->header.samples_count; count2++)
 			{
-				FSOUND_SAMPLE* sptr = &iptr->sample[count2];
+				Sample* sptr = &iptr->sample[count2];
 
 				FSOUND_File_Read(&sptr->header, sizeof(sptr->header), fp);
 
@@ -1605,7 +1497,7 @@ std::unique_ptr<FMUSIC_MODULE> FMUSIC_LoadXM(void* fp, SAMPLELOADCALLBACK sample
 			// Load sample data
 			for (unsigned int count2 = 0; count2 < iptr->header.samples_count; count2++)
 			{
-				FSOUND_SAMPLE	*sptr = &iptr->sample[count2];
+				Sample	*sptr = &iptr->sample[count2];
 				//unsigned int	samplelenbytes = sptr->header.length * sptr->bits / 8;
 
 			    //= ALLOCATE MEMORY FOR THE SAMPLE BUFFER ==============================================

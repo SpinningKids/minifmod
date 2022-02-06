@@ -28,21 +28,13 @@ enum class MixDir
 // ==============================================================================================
 
 // Sample type - contains info on sample
-struct FSOUND_SAMPLE final
+struct Sample final
 {
-	int16_t		 	*buff;			// pointer to sound data
-
 	XMSampleHeader header;
 
-	// music stuff
-	unsigned char 	globalvol;    	// sample global volume (scalar)
-	int				middlec;      	// finetuning adjustment to make for music samples.. relative to 8363hz
-	unsigned int 	susloopbegin;  	// sample loop start
-	unsigned int 	susloopend;    	// sample loop length
-	unsigned char 	vibspeed;		// vibrato speed 0-64
-	unsigned char	vibdepth;		// vibrato depth 0-64
+	int16_t		 	*buff;			// pointer to sound data
 
-	~FSOUND_SAMPLE()
+	~Sample()
     {
 		delete[] buff;
 	}
@@ -54,7 +46,7 @@ struct FSOUND_CHANNEL
 	int				index;			// position in channel pool.
 	unsigned int 	sampleoffset; 	// sample offset (sample starts playing from here).
 
-	const FSOUND_SAMPLE	*sptr;			// currently playing sample
+	const Sample	*sptr;			// currently playing sample
 
 	// software mixer stuff
 	float			leftvolume;     // mixing information. adjusted volume for left channel (panning involved)

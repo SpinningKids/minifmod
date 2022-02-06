@@ -80,7 +80,7 @@ enum FMUSIC_XMCOMMANDSSPECIAL
 
 #define FMUSIC_XMFLAGS_LINEARFREQUENCY		1
 
-std::unique_ptr<FMUSIC_MODULE> FMUSIC_LoadXM(void *fp, SAMPLELOADCALLBACK sampleloadcallback);
-void FMUSIC_UpdateXM(FMUSIC_MODULE& mod) noexcept;
+std::unique_ptr<FMUSIC_MODULE> XMLoad(void *fp, SAMPLELOADCALLBACK sampleloadcallback);
+void XMTick(FMUSIC_MODULE& mod) noexcept;
 
 #endif

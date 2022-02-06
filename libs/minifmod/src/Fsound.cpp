@@ -231,7 +231,7 @@ void FSOUND_Software_Fill(FMUSIC_MODULE &mod) noexcept
 		{
 			if (!mod.mixer_samplesleft)
 			{
-				FMUSIC_UpdateXM(mod);	// update new mod tick
+				XMTick(mod);	// update new mod tick
 				mod.mixer_samplesleft = mod.mixer_samplespertick;
 			}
 
@@ -327,7 +327,7 @@ void FSOUND_Software_DoubleBufferThread(FMUSIC_MODULE *mod) noexcept
 		pcmwf.nAvgBytesPerSec = pcmwf.nSamplesPerSec * pcmwf.nBlockAlign;
 		pcmwf.cbSize = 0;
 
-		if (UINT hr = waveOutOpen(&FSOUND_WaveOutHandle, WAVE_MAPPER, &pcmwf, 0, 0, 0))
+		if (waveOutOpen(&FSOUND_WaveOutHandle, WAVE_MAPPER, &pcmwf, 0, 0, 0))
 		{
 			Software_Thread_Exit = true;
 			return;
