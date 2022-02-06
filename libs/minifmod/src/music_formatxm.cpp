@@ -551,6 +551,10 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
 		switch (note.effect)
 		{
 			// not processed on tick 0
+		    //#ifdef FMUSIC_XM_ARPEGGIO_ACTIVE
+		    //case FMUSIC_XM_ARPEGGIO:
+			//    break;
+            //#endif
 #ifdef FMUSIC_XM_PORTAUP_ACTIVE
 			case FMUSIC_XM_PORTAUP :
 			{
@@ -664,10 +668,7 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
 			{
 				mod.nextorder = note.effect_parameter;
 				mod.nextrow = 0;
-				if (mod.nextorder >= (int)mod.header.song_length)
-                {
-					mod.nextorder=0;
-                }
+				mod.nextorder %= (int)mod.header.song_length;
 				jumpflag = true;
 				break;
 			}
@@ -691,10 +692,7 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
                 {
 					mod.nextorder = mod.order+1;
                 }
-				if (mod.nextorder >= (int)mod.header.song_length)
-                {
-					mod.nextorder=0;
-                }
+				mod.nextorder %= (int)mod.header.song_length;
 				break;
 			}
 #endif
