@@ -1,10 +1,10 @@
 # minifmod
 
-MiniFMOD 1.8.0-pre CMake source code release
+MiniFMOD 1.9.9-pre C++ version
 
 Copyright Firelight Technologies, 1999-2003.
 
-CMake adaption by Pan/SpinningKids 2022
+CMake adaption and heavy refactoring/cleanup/rewrite by Pan/SpinningKids 2022
 
 DOCUMENTATION 
 ==============
@@ -67,6 +67,30 @@ Hi's go out to sulphur, gaffer, Nix, gyr, zoon, pheon, and gay russian aktion.
 
 Revision History.
 ------------------
+
+Version 1.99.99 (WIP as of 2022/02/09 Pan/SK)
+-----------
+- Conversion to C++
+    - Adoption of selected parts of the standard library (std::thread, std::min, std::max, std::clamp)
+    - General abuse of max/min/clamp, in particular for volume fadeout.
+    - Careful adoption of modern C++ features
+    - Improved type safety
+
+- Several size optimizations (some performance downgrades, but hey, it's 2022)
+    - More floating point processing (volume, pan, mixing, ramps, ...)
+    - Simplified load function (to be improved - target is to avoid load entirely, and just reassign pointers into memory-mapped XM file)
+    - Changed volume ramps to filtered volume processing (simpler&smaller code, a bit heavier on the FPU)
+    - Split vibrato and tremolo structures, created structures, and centralized handling
+    - Centralized envelope control, volume/pan clamping, vibrato and tremolo.
+- Features
+    - More precise volume processing
+    - Reintroduces FSOUND_Init (to be able to change the mixing frequency)
+    - #ifdef'ed out windows-specific lines (TODO: finalize linux version)
+- Bugfixes:
+    - volume slide won't trigger volume update
+    - sampleoffset was never transmitted from FMUSIC_Channel to FSOUND_Channel (probably a transient bug)
+    - jumping out of the loop with sampleoffset will result in negative samples_to_mix (probably a transient bug)
+    - E5x changed finetune permanently rather than per-note
 
 Version 1.8.0 (2022/01/15 Pan/SK)
 -----------
