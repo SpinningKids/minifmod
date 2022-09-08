@@ -23,9 +23,6 @@
 #include "system_file.h"
 #include "xmeffects.h"
 
-static Sample DummySample; // initialization taken out due to size.. should be ok.
-static Instrument DummyInstrument;
-
 // Frequency = 8363*2^((6*12*16*4 - Period) / (12*16*4));
 
 static inline int XMLinearPeriod2Frequency(int per)
@@ -39,11 +36,11 @@ static inline int Period2Frequency(int period)
 }
 
 #ifdef FMUSIC_XM_INSTRUMENTVIBRATO_ACTIVE
-static void XMInstrumentVibrato(FMUSIC_CHANNEL& channel, const Instrument* iptr) noexcept
+static void XMInstrumentVibrato(FMUSIC_CHANNEL& channel, const Instrument& instrument) noexcept
 {
 	int delta;
 
-	switch (iptr->sample_header.vibrato_type)
+	switch (instrument.sample_header.vibrato_type)
 	{
 	    case XMInstrumentVibratoType::Sine:
 	    {
@@ -67,17 +64,17 @@ static void XMInstrumentVibrato(FMUSIC_CHANNEL& channel, const Instrument* iptr)
 	    }
 	}
 
-	delta *= iptr->sample_header.vibrato_depth;
-	if (iptr->sample_header.vibrato_sweep)
+	delta *= instrument.sample_header.vibrato_depth;
+	if (instrument.sample_header.vibrato_sweep)
 	{
-		delta = delta * channel.ivibsweeppos / iptr->sample_header.vibrato_sweep;
+		delta = delta * channel.ivibsweeppos / instrument.sample_header.vibrato_sweep;
 	}
 	delta >>= 6;
 
 	channel.period_delta += delta;
 
-	channel.ivibsweeppos = std::min(channel.ivibsweeppos + 1, int(iptr->sample_header.vibrato_sweep));
-	channel.ivibpos = (channel.ivibpos + iptr->sample_header.vibrato_rate) & 255;
+	channel.ivibsweeppos = std::min(channel.ivibsweeppos + 1, int(instrument.sample_header.vibrato_sweep));
+	channel.ivibpos = (channel.ivibpos + instrument.sample_header.vibrato_rate) & 255;
 }
 #endif	// FMUSIC_XM_INSTRUMENTVIBRATO_ACTIVE
 
@@ -287,7 +284,7 @@ static void FMUSIC_XM_Tremor(FMUSIC_CHANNEL &channel) noexcept
 	[SEE_ALSO]
 ]
 */
-static void XMUpdateFlags(FMUSIC_CHANNEL &channel, const Sample *sptr, FMUSIC_MODULE &mod) noexcept
+static void XMUpdateFlags(FMUSIC_CHANNEL &channel, const Sample &sample, FMUSIC_MODULE &mod) noexcept
 {
     FSOUND_CHANNEL *ccptr = channel.cptr;
 
@@ -316,12 +313,12 @@ static void XMUpdateFlags(FMUSIC_CHANNEL &channel, const Sample *sptr, FMUSIC_MO
 			channel.cptr = ccptr;
 		}
 
-        ccptr->sptr = sptr;
+        ccptr->sptr = &sample;
 
 		//==========================================================================================
 		// START THE SOUND!
 		//==========================================================================================
-		if (ccptr->sampleoffset >= sptr->header.loop_start + sptr->header.loop_length)
+		if (ccptr->sampleoffset >= sample.header.loop_start + sample.header.loop_length)
 		{
 		    ccptr->sampleoffset = 0;
 		}
@@ -368,10 +365,10 @@ static void XMUpdateFlags(FMUSIC_CHANNEL &channel, const Sample *sptr, FMUSIC_MO
 	}
 }
 
-static void FMUSIC_XM_Resetcptr(FMUSIC_CHANNEL& channel, const Sample* sptr) noexcept
+static void FMUSIC_XM_Resetcptr(FMUSIC_CHANNEL& channel, const Sample& sample) noexcept
 {
-	channel.volume = (int)sptr->header.default_volume;
-	channel.pan = sptr->header.default_panning;
+	channel.volume = (int)sample.header.default_volume;
+	channel.pan = sample.header.default_panning;
 	channel.envvolpos = 0;
 	channel.envvolvalue = 1.0;
 
@@ -390,23 +387,23 @@ static void FMUSIC_XM_Resetcptr(FMUSIC_CHANNEL& channel, const Sample* sptr) noe
     channel.tremorpos = 0;								// retrigger tremor count
 }
 
-static void XMProcessCommon(FMUSIC_CHANNEL& channel, const Instrument* iptr) noexcept
+static void XMProcessCommon(FMUSIC_CHANNEL& channel, const Instrument& instrument) noexcept
 {
 	//= PROCESS ENVELOPES ==========================================================================
 #ifdef FMUSIC_XM_VOLUMEENVELOPE_ACTIVE
-	XMProcessEnvelope(channel.envvolpos, channel.envvolvalue, iptr->volume_envelope, iptr->sample_header.volume_envelope_flags, iptr->sample_header.volume_loop_start_index, iptr->sample_header.volume_loop_end_index, iptr->sample_header.volume_sustain_index, channel.keyoff);
+	XMProcessEnvelope(channel.envvolpos, channel.envvolvalue, instrument.volume_envelope, instrument.sample_header.volume_envelope_flags, instrument.sample_header.volume_loop_start_index, instrument.sample_header.volume_loop_end_index, instrument.sample_header.volume_sustain_index, channel.keyoff);
 #endif
 #ifdef FMUSIC_XM_PANENVELOPE_ACTIVE
-	XMProcessEnvelope(channel.envpanpos, channel.envpanvalue, iptr->pan_envelope, iptr->sample_header.pan_envelope_flags, iptr->sample_header.pan_loop_start_index, iptr->sample_header.pan_loop_end_index, iptr->sample_header.pan_sustain_index, channel.keyoff);
+	XMProcessEnvelope(channel.envpanpos, channel.envpanvalue, instrument.pan_envelope, instrument.sample_header.pan_envelope_flags, instrument.sample_header.pan_loop_start_index, instrument.sample_header.pan_loop_end_index, instrument.sample_header.pan_sustain_index, channel.keyoff);
 #endif
 	//= PROCESS VOLUME FADEOUT =====================================================================
     if (channel.keyoff)
     {
-        channel.fadeoutvol = std::max(channel.fadeoutvol - iptr->sample_header.volume_fadeout, 0);
+        channel.fadeoutvol = std::max(channel.fadeoutvol - instrument.sample_header.volume_fadeout, 0);
     }
 	//= INSTRUMENT VIBRATO ============================================================================
 #ifdef FMUSIC_XM_INSTRUMENTVIBRATO_ACTIVE
-	XMInstrumentVibrato(channel, iptr);	// this gets added to previous freqdeltas
+	XMInstrumentVibrato(channel, instrument);	// this gets added to previous freqdeltas
 #endif
 }
 
@@ -464,21 +461,23 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
             channel.note = note.note-1;						// remember the note
         }
 
-		bool valid_instrument = channel.inst < (int)mod.header.instruments_count;
-		const Instrument* iptr = valid_instrument ? &mod.instrument[channel.inst] : &DummyInstrument;
+		assert(channel.inst < (int)mod.header.instruments_count);
+		const Instrument& instrument = mod.instrument[channel.inst];
 
-		uint8_t note_sample = valid_instrument ? iptr->sample_header.note_sample_number[channel.note] : 16;
+		uint8_t note_sample = instrument.sample_header.note_sample_number[channel.note];
 
-		const Sample* sptr = (note_sample < 16) ? &iptr->sample[note_sample] : &DummySample;
+		assert(note_sample < 16);
+
+		const Sample& sample = instrument.sample[note_sample];
 
 		if (valid_note) {
-			channel.finetune = sptr->header.finetune;
+			channel.finetune = sample.header.finetune;
 		}
 
 
 		if (!porta)
 		{
-			channel.sptr = sptr;
+			channel.sptr = &sample;
 		}
 
 		int oldvolume = channel.volume;
@@ -500,7 +499,7 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
 		if (valid_note)
 		{
 			// get note according to relative note
-			channel.realnote = note.note + sptr->header.relative_note - 1;
+			channel.realnote = note.note + sample.header.relative_note - 1;
 
 			// get period according to realnote and finetune
 			if (mod.header.flags & FMUSIC_XMFLAGS_LINEARFREQUENCY)
@@ -526,7 +525,7 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
 		//= PROCESS INSTRUMENT NUMBER ==================================================================
 		if (note.sample_index)
         {
-            FMUSIC_XM_Resetcptr(channel,sptr);
+            FMUSIC_XM_Resetcptr(channel, sample);
         }
 
         //= PROCESS VOLUME BYTE ========================================================================
@@ -543,7 +542,7 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
             channel.keyoff = true;
         }
 
-		if (iptr->volume_envelope.count == 0 && channel.keyoff)
+		if (instrument.volume_envelope.count == 0 && channel.keyoff)
 		{
 			channel.envvolvalue = 0;
 		}
@@ -641,7 +640,7 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
                 {
                     unsigned int offset = (int)(channel.sampleoffset) << 8;
 
-                    if (offset >= sptr->header.loop_start + sptr->header.loop_length)
+                    if (offset >= sample.header.loop_start + sample.header.loop_length)
                     {
 						channel.trigger = false;
 						channel.stop = true;
@@ -925,9 +924,9 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE &mod) noexcept
 			}
 #endif
 		}
-		XMProcessCommon(channel, iptr);
+		XMProcessCommon(channel, instrument);
 
-		XMUpdateFlags(channel, sptr, mod);
+		XMUpdateFlags(channel, sample, mod);
 	}
  }
 
@@ -961,12 +960,13 @@ static void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod) noexcept
 //			cptr = &FMUSIC_DummyVirtualChannel; // no channels allocated yet
 //			**** FIXME!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
 
-		bool valid_instrument = channel.inst < (int)mod.header.instruments_count;
-		const Instrument* iptr = valid_instrument ? &mod.instrument[channel.inst] : &DummyInstrument;
+		assert(channel.inst < (int)mod.header.instruments_count);
+		const Instrument& instrument = mod.instrument[channel.inst];
 
-		uint8_t note_sample = valid_instrument ? iptr->sample_header.note_sample_number[channel.note] : 16; // samble must be invalid if instrument is invalid
+		uint8_t note_sample = instrument.sample_header.note_sample_number[channel.note]; // samble must be invalid if instrument is invalid
 
-		const Sample* sptr = (note_sample < 16) ? &iptr->sample[note_sample] : &DummySample;
+		assert(note_sample < 16);
+		const Sample& sample = instrument.sample[note_sample];
 
 		unsigned char effect = note.effect;			// grab the effect number
 		const unsigned char paramx = note.effect_parameter >> 4;		// grab the effect parameter x
@@ -1152,7 +1152,7 @@ static void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod) noexcept
 						if (mod.tick == paramy)
 						{
 							//= PROCESS INSTRUMENT NUMBER ==================================================================
-							FMUSIC_XM_Resetcptr(channel,sptr);
+							FMUSIC_XM_Resetcptr(channel, sample);
 
 							channel.period = channel.period_target;
 #ifdef FMUSIC_XM_VOLUMEBYTE_ACTIVE
@@ -1288,9 +1288,9 @@ static void FMUSIC_UpdateXMEffects(FMUSIC_MODULE &mod) noexcept
 #endif
 		}
 
-		XMProcessCommon(channel, iptr);
+		XMProcessCommon(channel, instrument);
 
-		XMUpdateFlags(channel, sptr,mod);
+		XMUpdateFlags(channel, sample,mod);
 	}
 }
 
@@ -1370,7 +1370,6 @@ void XMTick(FMUSIC_MODULE &mod) noexcept
 std::unique_ptr<FMUSIC_MODULE> XMLoad(void* fp, SAMPLELOADCALLBACK sampleloadcallback)
 {
 	// make sure DummySample is correctly initialized here.
-	DummySample.buff = nullptr;
 	auto mod = std::make_unique<FMUSIC_MODULE>();
 
     FSOUND_File_Seek(fp, 0, SEEK_SET);
@@ -1430,17 +1429,17 @@ std::unique_ptr<FMUSIC_MODULE> XMLoad(void* fp, SAMPLELOADCALLBACK sampleloadcal
 	for (uint16_t count = 0; count < mod->header.instruments_count; ++count)
 	{
         // point a pointer to that particular instrument
-		Instrument* iptr = &mod->instrument[count];
+		Instrument& instrument = mod->instrument[count];
 
 		int firstsampleoffset = FSOUND_File_Tell(fp);
-		FSOUND_File_Read(&iptr->header, sizeof(iptr->header), fp);				// instrument size
-		firstsampleoffset += iptr->header.header_size;
+		FSOUND_File_Read(&instrument.header, sizeof(instrument.header), fp);				// instrument size
+		firstsampleoffset += instrument.header.header_size;
 
 		assert(iptr->header.samples_count <= 16);
 
-		if (iptr->header.samples_count > 0)
+		if (instrument.header.samples_count > 0)
 		{
-			FSOUND_File_Read(&iptr->sample_header, sizeof(iptr->sample_header), fp);
+			FSOUND_File_Read(&instrument.sample_header, sizeof(instrument.sample_header), fp);
 
 			auto adjust_envelope = [](uint8_t count, const XMEnvelopePoint(&original_points)[12], int offset, float scale, XMEnvelopeFlags flags)
 			{
@@ -1460,86 +1459,86 @@ std::unique_ptr<FMUSIC_MODULE> XMLoad(void* fp, SAMPLELOADCALLBACK sampleloadcal
 				e.envelope[e.count - 1].delta = 0;
 				return e;
 			};
-			iptr->volume_envelope = adjust_envelope(iptr->sample_header.volume_envelope_count, iptr->sample_header.volume_envelope, 0, 64, iptr->sample_header.volume_envelope_flags);
-			iptr->pan_envelope = adjust_envelope(iptr->sample_header.pan_envelope_count, iptr->sample_header.pan_envelope, 32, 32, iptr->sample_header.pan_envelope_flags);
+			instrument.volume_envelope = adjust_envelope(instrument.sample_header.volume_envelope_count, instrument.sample_header.volume_envelope, 0, 64, instrument.sample_header.volume_envelope_flags);
+			instrument.pan_envelope = adjust_envelope(instrument.sample_header.pan_envelope_count, instrument.sample_header.pan_envelope, 32, 32, instrument.sample_header.pan_envelope_flags);
 
 			// seek to first sample
 			FSOUND_File_Seek(fp, firstsampleoffset, SEEK_SET);
-			for (unsigned int count2 = 0; count2 < iptr->header.samples_count; count2++)
+			for (unsigned int count2 = 0; count2 < instrument.header.samples_count; count2++)
 			{
-				Sample* sptr = &iptr->sample[count2];
+				Sample& sample = instrument.sample[count2];
 
-				FSOUND_File_Read(&sptr->header, sizeof(sptr->header), fp);
+				FSOUND_File_Read(&sample.header, sizeof(sample.header), fp);
 
 			    // type of sample
-				if (sptr->header.bits16)
+				if (sample.header.bits16)
 				{
-					sptr->header.length /= 2;
-					sptr->header.loop_start /= 2;
-					sptr->header.loop_length /= 2;
+					sample.header.length /= 2;
+					sample.header.loop_start /= 2;
+					sample.header.loop_length /= 2;
 				}
 
-				if ((sptr->header.loop_mode == XMLoopMode::Off) || (sptr->header.length == 0))
+				if ((sample.header.loop_mode == XMLoopMode::Off) || (sample.header.length == 0))
 				{
-					sptr->header.loop_start = 0;
-					sptr->header.loop_length = sptr->header.length;
-					sptr->header.loop_mode = XMLoopMode::Off;
+					sample.header.loop_start = 0;
+					sample.header.loop_length = sample.header.length;
+					sample.header.loop_mode = XMLoopMode::Off;
 				}
 
 			}
 
 			// Load sample data
-			for (unsigned int count2 = 0; count2 < iptr->header.samples_count; count2++)
+			for (unsigned int count2 = 0; count2 < instrument.header.samples_count; count2++)
 			{
-				Sample	*sptr = &iptr->sample[count2];
-				//unsigned int	samplelenbytes = sptr->header.length * sptr->bits / 8;
+				Sample& sample = instrument.sample[count2];
+				//unsigned int	samplelenbytes = sample.header.length * sample.bits / 8;
 
 			    //= ALLOCATE MEMORY FOR THE SAMPLE BUFFER ==============================================
 
-				if (sptr->header.length)
+				if (sample.header.length)
 				{
-					sptr->buff = new short[sptr->header.length + 8];
+					sample.buff = new short[sample.header.length + 8];
 
 					if (sampleloadcallback)
 					{
-						sampleloadcallback(sptr->buff, sptr->header.length, count, count2);
-						FSOUND_File_Seek(fp, sptr->header.length*(sptr->header.bits16?2:1), SEEK_CUR);
+						sampleloadcallback(sample.buff, sample.header.length, count, count2);
+						FSOUND_File_Seek(fp, sample.header.length*(sample.header.bits16?2:1), SEEK_CUR);
 					}
 					else
                     {
-						if (sptr->header.bits16)
+						if (sample.header.bits16)
 						{
-							FSOUND_File_Read(sptr->buff, sptr->header.length*sizeof(short), fp);
+							FSOUND_File_Read(sample.buff, sample.header.length*sizeof(short), fp);
 						}
 						else
 						{
-							int8_t *buff = new int8_t[sptr->header.length + 8];
-							FSOUND_File_Read(buff, sptr->header.length, fp);
-							for (uint32_t count3 = 0; count3 < sptr->header.length; count3++)
+							int8_t *buff = new int8_t[sample.header.length + 8];
+							FSOUND_File_Read(buff, sample.header.length, fp);
+							for (uint32_t count3 = 0; count3 < sample.header.length; count3++)
 							{
-								sptr->buff[count3] = int16_t(buff[count3]) << 8;
+								sample.buff[count3] = int16_t(buff[count3]) << 8;
 							}
 
-							sptr->header.bits16 = true;
+							sample.header.bits16 = true;
 							delete[] buff;
 						}
 
 						// DO DELTA CONVERSION
 						int oldval = 0;
-						for (uint32_t count3 = 0; count3 < sptr->header.length; count3++)
+						for (uint32_t count3 = 0; count3 < sample.header.length; count3++)
 						{
-                            sptr->buff[count3] = oldval = (short)(sptr->buff[count3] + oldval);
+							sample.buff[count3] = oldval = (short)(sample.buff[count3] + oldval);
 						}
 					}
 
 					// BUGFIX 1.3 - removed click for end of non looping sample (also size optimized a bit)
-					if (sptr->header.loop_mode == XMLoopMode::Bidi)
+					if (sample.header.loop_mode == XMLoopMode::Bidi)
 					{
-						sptr->buff[sptr->header.loop_start+sptr->header.loop_length] = sptr->buff[sptr->header.loop_start+sptr->header.loop_length-1];// fix it
+						sample.buff[sample.header.loop_start+ sample.header.loop_length] = sample.buff[sample.header.loop_start+ sample.header.loop_length-1];// fix it
 					}
-					else if (sptr->header.loop_mode == XMLoopMode::Normal)
+					else if (sample.header.loop_mode == XMLoopMode::Normal)
 					{
-						sptr->buff[sptr->header.loop_start+sptr->header.loop_length] = sptr->buff[sptr->header.loop_start];// fix it
+						sample.buff[sample.header.loop_start+ sample.header.loop_length] = sample.buff[sample.header.loop_start];// fix it
 					}
 				}
 			}
