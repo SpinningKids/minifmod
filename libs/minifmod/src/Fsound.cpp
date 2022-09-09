@@ -72,7 +72,7 @@ static inline void MixerClipCopy_Float32(int16_t* dest, const float* src, size_t
 {
 	assert(src);
 	assert(dest);
-	for (size_t count = 0; count < len << 1; count++)
+	for (size_t i = 0; i < len << 1; i++)
 	{
 		*dest++ = (int16_t)std::clamp((int)*src++, (int)std::numeric_limits<int16_t>::min(), (int)std::numeric_limits<int16_t>::max());
 	}
@@ -141,8 +141,8 @@ static inline void Mixer_FPU_FilteredVolume(float* mixptr, int len) noexcept
 			{
 				const uint32_t mixpos = (uint32_t)channel.mixpos;
 				const float frac = channel.mixpos - mixpos;
-				const float samp1 = channel.sptr->buff[mixpos];
-				const float newsamp = (channel.sptr->buff[mixpos + 1] - samp1) * frac + samp1;
+				const float samp1 = channel.sptr->buff.get()[mixpos];
+				const float newsamp = (channel.sptr->buff.get()[mixpos + 1] - samp1) * frac + samp1;
 				mixptr[0 + (sample_index + i) * 2] += channel.filtered_leftvolume * newsamp;
 				mixptr[1 + (sample_index + i) * 2] += channel.filtered_rightvolume * newsamp;
 				channel.filtered_leftvolume += (channel.leftvolume - channel.filtered_leftvolume) * volume_filter_k;
@@ -304,10 +304,10 @@ void FSOUND_Software_DoubleBufferThread(FMUSIC_MODULE *mod) noexcept
 	// SET UP CHANNELS
 	// ========================================================================================================
 
-	for (int count = 0; count < 64; count++)
+	for (int channel_index = 0; channel_index < 64; channel_index++)
 	{
-		FSOUND_Channel[count].index = count;
-		FSOUND_Channel[count].speed = 1.0f;
+		FSOUND_Channel[channel_index].index = channel_index;
+		FSOUND_Channel[channel_index].speed = 1.0f;
 	}
 
 	// ========================================================================================================

@@ -14,6 +14,7 @@
 #define SOUND_H_
 
 #include <cstdint>
+#include <memory>
 
 #include "xmfile.h"
 
@@ -32,12 +33,7 @@ struct Sample final
 {
 	XMSampleHeader header;
 
-	int16_t		 	*buff;			// pointer to sound data
-
-	~Sample()
-    {
-		delete[] buff;
-	}
+	std::unique_ptr<int16_t[]> buff;			// pointer to sound data
 };
 
 // Channel type - contains information on a mixing channel

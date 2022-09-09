@@ -217,25 +217,14 @@ static int GetAmigaPeriod(int note)
 	return (int)(powf(2.0f, (float)(132 - note) / 12.0f) * 13.375f);
 }
 
-static int FMUSIC_XM_GetAmigaPeriod(int note, int finetune) noexcept
+static int FMUSIC_XM_GetAmigaPeriod(int note, int8_t fine_tune) noexcept
 {
 	int period = GetAmigaPeriod(note);
 
 	// interpolate for finer tuning
-	if (finetune < 0 && note)
-	{
-		int diff = period - GetAmigaPeriod(note - 1);
-		diff *= abs(finetune);
-		diff /= 128;
-		period -= diff;
-	}
-	else
-	{
-		int diff = GetAmigaPeriod(note + 1) - period;
-		diff *= finetune;
-		diff /= 128;
-		period += diff;
-	}
+	int direction = (fine_tune > 0) ? 1 : -1;
+
+    period += direction * ((GetAmigaPeriod(note + direction) - period) * fine_tune / 128);
 
 	return period;
 }
@@ -423,29 +412,27 @@ static void XMProcessCommon(FMUSIC_CHANNEL& channel, const Instrument& instrumen
 */
 static void FMUSIC_UpdateXMNote(FMUSIC_MODULE& mod) noexcept
 {
-	bool jumpflag = false;
+	bool pattern_jump = false;
 
-	mod.nextorder = -1;
-	mod.nextrow = -1;
+    // process any rows commands to set the next order/row
+	mod.order = mod.nextorder;
+	mod.row = mod.nextrow;
+
+	bool row_set = false;
 
 	// Point our note pointer to the correct pattern buffer, and to the
 	// correct offset in this buffer indicated by row and number of channels
 	const auto& row = mod.pattern[mod.header.pattern_order[mod.order]][mod.row];
 
 	// Loop through each channel in the row until we have finished
-	for (int count = 0; count < mod.header.channels_count; count++)
+	for (int channel_index = 0; channel_index < mod.header.channels_count; channel_index++)
 	{
-		const XMNote& note = row[count];
-		FMUSIC_CHANNEL& channel = FMUSIC_Channel[count];
+		const XMNote& note = row[channel_index];
+		FMUSIC_CHANNEL& channel = FMUSIC_Channel[channel_index];
 
 		const unsigned char paramx = note.effect_parameter >> 4;			// get effect param x
 		const unsigned char paramy = note.effect_parameter & 0xF;			// get effect param y
 		const int slide = paramx ? paramx : -paramy;
-
-		//			**** FIXME!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-		//		if (LinkedListIsRootNode(cptr, &cptr.vchannelhead))
-		//			cptr = &FMUSIC_DummyVirtualChannel; // no channels allocated yet
-		//			**** FIXME!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
 
 		bool porta = (note.effect == FMUSIC_XM_PORTATO || note.effect == FMUSIC_XM_PORTATOVOLSLIDE);
 		bool valid_note = note.note && note.note != FMUSIC_KEYOFF;
@@ -473,7 +460,7 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE& mod) noexcept
 		const Sample& sample = instrument.sample[note_sample];
 
 		if (valid_note) {
-			channel.finetune = sample.header.finetune;
+			channel.fine_tune = sample.header.fine_tune;
 		}
 		
 		if (!porta)
@@ -503,15 +490,15 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE& mod) noexcept
 			// get note according to relative note
 			channel.realnote = note.note + sample.header.relative_note - 1;
 
-			// get period according to realnote and finetune
+			// get period according to realnote and fine_tune
 			if (mod.header.flags & FMUSIC_XMFLAGS_LINEARFREQUENCY)
 			{
-				channel.period_target = (10 * 12 * 16 * 4) - (channel.realnote * 16 * 4) - (channel.finetune / 2);
+				channel.period_target = (10 * 12 * 16 * 4) - (channel.realnote * 16 * 4) - (channel.fine_tune / 2);
 			}
 			else
 			{
 #ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
-				channel.period_target = FMUSIC_XM_GetAmigaPeriod(channel.realnote, channel.finetune);
+				channel.period_target = FMUSIC_XM_GetAmigaPeriod(channel.realnote, channel.fine_tune);
 #endif
 			}
 
@@ -662,10 +649,10 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE& mod) noexcept
 #ifdef FMUSIC_XM_PATTERNJUMP_ACTIVE
 		case FMUSIC_XM_PATTERNJUMP: // --- 00 B00 : --- 00 D63 , should put us at ord=0, row=63
 		{
-			mod.nextorder = note.effect_parameter;
+			mod.nextorder = note.effect_parameter % mod.header.song_length;
 			mod.nextrow = 0;
-			mod.nextorder %= (int)mod.header.song_length;
-			jumpflag = true;
+			pattern_jump = true;
+			row_set = true;
 			break;
 		}
 #endif
@@ -684,11 +671,11 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE& mod) noexcept
 			{
 				mod.nextrow = 0;
 			}
-			if (!jumpflag)
+			if (!pattern_jump)
 			{
-				mod.nextorder = mod.order + 1;
+				mod.nextorder = (mod.order + 1) % mod.header.song_length;
 			}
-			mod.nextorder %= (int)mod.header.song_length;
+			row_set = true;
 			break;
 		}
 #endif
@@ -736,7 +723,7 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE& mod) noexcept
 #ifdef FMUSIC_XM_SETFINETUNE_ACTIVE
 			case FMUSIC_XM_SETFINETUNE:
 			{
-				channel.finetune = paramy;
+				channel.fine_tune = paramy;
 				break;
 			}
 #endif
@@ -749,7 +736,7 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE& mod) noexcept
 				}
 				else
 				{
-					if (!channel.patloopno)
+					if (channel.patloopno > 0)
 					{
 						channel.patloopno = paramy;
 					}
@@ -760,6 +747,8 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE& mod) noexcept
 					if (channel.patloopno)
 					{
 						mod.nextrow = channel.patlooprow;
+						//mod.nextorder = mod.order; // This is not needed, as we initially set mod.order = mod.nextorder;
+						row_set = true;
 					}
 				}
 				break;
@@ -925,6 +914,21 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE& mod) noexcept
 		XMProcessCommon(channel, instrument);
 
 		XMUpdateFlags(channel, sample, mod);
+
+		// if there were no row commands
+		if (!row_set)
+		{
+			mod.nextrow = mod.row + 1;
+			if (mod.nextrow >= mod.pattern[mod.header.pattern_order[mod.order]].size())	// if end of pattern TODO: Fix signed/unsigned comparison
+			{
+				mod.nextorder = mod.order + 1;			// so increment the order
+				if (mod.nextorder >= (int)mod.header.song_length)
+				{
+					mod.nextorder = (int)mod.header.restart_position;
+				}
+				mod.nextrow = 0;						// start at top of pattn
+			}
+		}
 	}
 }
 
@@ -949,20 +953,13 @@ static void FMUSIC_UpdateXMEffects(FMUSIC_MODULE& mod) noexcept
 	const auto& row = mod.pattern[mod.header.pattern_order[mod.order]][mod.row];
 
 	// Loop through each channel in the row until we have finished
-	for (int count = 0; count < mod.header.channels_count; count++)
+	for (int channel_index = 0; channel_index < mod.header.channels_count; channel_index++)
 	{
-		const XMNote& note = row[count];
-		FMUSIC_CHANNEL& channel = FMUSIC_Channel[count];
+		const XMNote& note = row[channel_index];
+		FMUSIC_CHANNEL& channel = FMUSIC_Channel[channel_index];
 
 		const unsigned char paramx = note.effect_parameter >> 4;			// get effect param x
 		const unsigned char paramy = note.effect_parameter & 0xF;			// get effect param y
-
-		//			**** FIXME!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-		//		cptr = LinkedListNextNode(&cptr.vchannelhead);
-		//
-		//		if (LinkedListIsRootNode(cptr, &cptr.vchannelhead))
-		//			cptr = &FMUSIC_DummyVirtualChannel; // no channels allocated yet
-		//			**** FIXME!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
 
 		assert(channel.inst < (int)mod.header.instruments_count);
 		const Instrument& instrument = mod.instrument[channel.inst];
@@ -1054,8 +1051,8 @@ static void FMUSIC_UpdateXMEffects(FMUSIC_MODULE& mod) noexcept
 #ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
 			else
 			{
-				channel.period_delta = FMUSIC_XM_GetAmigaPeriod(channel.realnote + v, channel.finetune) -
-					FMUSIC_XM_GetAmigaPeriod(channel.realnote, channel.finetune);
+				channel.period_delta = FMUSIC_XM_GetAmigaPeriod(channel.realnote + v, channel.fine_tune) -
+					FMUSIC_XM_GetAmigaPeriod(channel.realnote, channel.fine_tune);
 			}
 #endif
 			break;
@@ -1313,32 +1310,7 @@ void XMTick(FMUSIC_MODULE &mod) noexcept
 {
 	if (mod.tick == 0)									// new note
 	{
-		// process any rows commands to set the next order/row
-		if (mod.nextorder >= 0)
-        {
-			mod.order = mod.nextorder;
-        }
-		if (mod.nextrow >= 0)
-        {
-			mod.row = mod.nextrow;
-        }
-
 		FMUSIC_UpdateXMNote(mod);					// Update and play the note
-
-		// if there were no row commands
-		if (mod.nextrow == -1)
-		{
-			mod.nextrow = mod.row+1;
-			if (mod.nextrow >= mod.pattern[mod.header.pattern_order[mod.order]].size())	// if end of pattern TODO: Fix signed/unsigned comparison
-			{
-				mod.nextorder = mod.order+1;			// so increment the order
-				if (mod.nextorder >= (int)mod.header.song_length)
-                {
-					mod.nextorder = (int)mod.header.restart_position;
-                }
-				mod.nextrow = 0;						// start at top of pattn
-			}
-		}
 	}
 	else
     {
@@ -1380,46 +1352,44 @@ std::unique_ptr<FMUSIC_MODULE> XMLoad(void* fp, SAMPLELOADCALLBACK sampleloadcal
     FSOUND_File_Seek(fp, 60L+mod->header.header_size, SEEK_SET);
 
 	// unpack and read patterns
-	for (int count=0; count < mod->header.patterns_count; count++)
+	for (uint16_t pattern_index=0; pattern_index < mod->header.patterns_count; pattern_index++)
 	{
 		XMPatternHeader header;
 		FSOUND_File_Read(&header, sizeof(header), fp);
 
-        Pattern& pattern = mod->pattern[count];
+        Pattern& pattern = mod->pattern[pattern_index];
 	    pattern.resize(header.rows);
 
 		if (header.packed_pattern_data_size > 0)
 		{
-			for (int row = 0; row < header.rows; ++row)
+			for (uint16_t row = 0; row < header.rows; ++row)
 			{
 				auto &current_row = pattern[row];
 
-				for (int count2 = 0; count2 < mod->header.channels_count; count2++)
+				for (uint16_t channel_index = 0; channel_index < mod->header.channels_count; channel_index++)
 				{
                     unsigned char dat;
 
-					XMNote* nptr = &current_row[count2];
+					XMNote& note = current_row[channel_index];
 
 					FSOUND_File_Read(&dat, 1, fp);
 					if (dat & 0x80)
 					{
-						if (dat & 1)  FSOUND_File_Read(&nptr->note, 1, fp);
-						if (dat & 2)  FSOUND_File_Read(&nptr->sample_index, 1, fp);
-						if (dat & 4)  FSOUND_File_Read(&nptr->volume, 1, fp);
-						if (dat & 8)  FSOUND_File_Read(&nptr->effect, 1, fp);
-						if (dat & 16) FSOUND_File_Read(&nptr->effect_parameter, 1, fp);
+						if (dat & 1)  FSOUND_File_Read(&note.note, 1, fp);
+						if (dat & 2)  FSOUND_File_Read(&note.sample_index, 1, fp);
+						if (dat & 4)  FSOUND_File_Read(&note.volume, 1, fp);
+						if (dat & 8)  FSOUND_File_Read(&note.effect, 1, fp);
+						if (dat & 16) FSOUND_File_Read(&note.effect_parameter, 1, fp);
 					}
 					else
 					{
-						nptr->note = dat;
-
-						FSOUND_File_Read(((char*)nptr)+1, sizeof(XMNote) - 1, fp);
-
+						note.note = dat;
+						FSOUND_File_Read(((char*)&note) + 1, sizeof(XMNote) - 1, fp);
 					}
 
-					if (nptr->sample_index > 0x80)
+					if (note.sample_index > 0x80)
 					{
-						nptr->sample_index = 0;
+						note.sample_index = 0;
 					}
 				}
 			}
@@ -1427,14 +1397,14 @@ std::unique_ptr<FMUSIC_MODULE> XMLoad(void* fp, SAMPLELOADCALLBACK sampleloadcal
 	}
 
 	// load instrument information
-	for (uint16_t count = 0; count < mod->header.instruments_count; ++count)
+	for (uint16_t instrument_index = 0; instrument_index < mod->header.instruments_count; ++instrument_index)
 	{
         // point a pointer to that particular instrument
-		Instrument& instrument = mod->instrument[count];
+		Instrument& instrument = mod->instrument[instrument_index];
 
-		int firstsampleoffset = FSOUND_File_Tell(fp);
+		int first_sample_offset = FSOUND_File_Tell(fp);
 		FSOUND_File_Read(&instrument.header, sizeof(instrument.header), fp);				// instrument size
-		firstsampleoffset += instrument.header.header_size;
+		first_sample_offset += instrument.header.header_size;
 
 		assert(instrument.header.samples_count <= 16);
 
@@ -1446,7 +1416,7 @@ std::unique_ptr<FMUSIC_MODULE> XMLoad(void* fp, SAMPLELOADCALLBACK sampleloadcal
 			{
 				EnvelopePoints e;
 				e.count = (count < 2 || !(flags & XMEnvelopeFlagsOn)) ? 0 : count;
-				for (int i = 0; i < e.count; ++i)
+				for (uint8_t i = 0; i < e.count; ++i)
 				{
 					e.envelope[i].position = original_points[i].position;
 					e.envelope[i].value = (original_points[i].value - offset) / scale;
@@ -1457,17 +1427,19 @@ std::unique_ptr<FMUSIC_MODULE> XMLoad(void* fp, SAMPLELOADCALLBACK sampleloadcal
 						e.envelope[i - 1].delta = tickdiff ? (e.envelope[i].value - e.envelope[i - 1].value) / tickdiff : 0;
 					}
 				}
-				e.envelope[e.count - 1].delta = 0;
+				if (e.count) {
+					e.envelope[e.count - 1].delta = 0.f;
+				}
 				return e;
 			};
 			instrument.volume_envelope = adjust_envelope(instrument.sample_header.volume_envelope_count, instrument.sample_header.volume_envelope, 0, 64, instrument.sample_header.volume_envelope_flags);
 			instrument.pan_envelope = adjust_envelope(instrument.sample_header.pan_envelope_count, instrument.sample_header.pan_envelope, 32, 32, instrument.sample_header.pan_envelope_flags);
 
 			// seek to first sample
-			FSOUND_File_Seek(fp, firstsampleoffset, SEEK_SET);
-			for (unsigned int count2 = 0; count2 < instrument.header.samples_count; count2++)
+			FSOUND_File_Seek(fp, first_sample_offset, SEEK_SET);
+			for (unsigned int sample_index = 0; sample_index < instrument.header.samples_count; sample_index++)
 			{
-				Sample& sample = instrument.sample[count2];
+				Sample& sample = instrument.sample[sample_index];
 
 				FSOUND_File_Read(&sample.header, sizeof(sample.header), fp);
 
@@ -1489,35 +1461,35 @@ std::unique_ptr<FMUSIC_MODULE> XMLoad(void* fp, SAMPLELOADCALLBACK sampleloadcal
 			}
 
 			// Load sample data
-			for (unsigned int count2 = 0; count2 < instrument.header.samples_count; count2++)
+			for (unsigned int sample_index = 0; sample_index < instrument.header.samples_count; sample_index++)
 			{
-				Sample& sample = instrument.sample[count2];
+				Sample& sample = instrument.sample[sample_index];
 				//unsigned int	samplelenbytes = sample.header.length * sample.bits / 8;
 
 			    //= ALLOCATE MEMORY FOR THE SAMPLE BUFFER ==============================================
 
 				if (sample.header.length)
 				{
-					sample.buff = new short[sample.header.length + 8];
+					sample.buff = std::make_unique<int16_t[]>(sample.header.length + 8);
 
 					if (sampleloadcallback)
 					{
-						sampleloadcallback(sample.buff, sample.header.length, count, count2);
+						sampleloadcallback(sample.buff.get(), sample.header.length, instrument_index, sample_index);
 						FSOUND_File_Seek(fp, sample.header.length*(sample.header.bits16?2:1), SEEK_CUR);
 					}
 					else
                     {
 						if (sample.header.bits16)
 						{
-							FSOUND_File_Read(sample.buff, sample.header.length*sizeof(short), fp);
+							FSOUND_File_Read(sample.buff.get(), sample.header.length*sizeof(short), fp);
 						}
 						else
 						{
 							int8_t *buff = new int8_t[sample.header.length + 8];
 							FSOUND_File_Read(buff, sample.header.length, fp);
-							for (uint32_t count3 = 0; count3 < sample.header.length; count3++)
+							for (uint32_t i = 0; i < sample.header.length; i++)
 							{
-								sample.buff[count3] = int16_t(buff[count3]) << 8;
+								sample.buff[i] = static_cast<int16_t>(buff[i] << 8);
 							}
 
 							sample.header.bits16 = true;
@@ -1525,10 +1497,10 @@ std::unique_ptr<FMUSIC_MODULE> XMLoad(void* fp, SAMPLELOADCALLBACK sampleloadcal
 						}
 
 						// DO DELTA CONVERSION
-						int oldval = 0;
-						for (uint32_t count3 = 0; count3 < sample.header.length; count3++)
+						int16_t previous_value = 0;
+						for (uint32_t i = 0; i < sample.header.length; i++)
 						{
-							sample.buff[count3] = oldval = (short)(sample.buff[count3] + oldval);
+							sample.buff[i] = previous_value = static_cast<int16_t>(sample.buff[i] + previous_value);
 						}
 					}
 
@@ -1546,7 +1518,7 @@ std::unique_ptr<FMUSIC_MODULE> XMLoad(void* fp, SAMPLELOADCALLBACK sampleloadcal
 		}
 		else
 		{
-			FSOUND_File_Seek(fp, firstsampleoffset, SEEK_SET);
+			FSOUND_File_Seek(fp, first_sample_offset, SEEK_SET);
 		}
 	}
 	return mod;
