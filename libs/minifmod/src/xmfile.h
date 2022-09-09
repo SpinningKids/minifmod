@@ -14,7 +14,7 @@ struct XMHeader
 	char		tracker_name[20];
 	uint16_t	tracker_version;
 	uint32_t	header_size;
-	uint16_t	song_length;
+	uint16_t	song_length; // < 256
 	uint16_t	restart_position;
 	uint16_t	channels_count;
 	uint16_t	patterns_count; // < 256
@@ -39,11 +39,11 @@ static_assert(sizeof(XMPatternHeader) == 9);
 
 struct XMNote
 {
-	unsigned char	note;				// note to play at     (0-133) 132=none,133=keyoff
-	unsigned char	sample_index;		// sample being played (0-99)
-	unsigned char	volume;				// volume column value (0-64)  255=no volume
-	unsigned char	effect;				// effect number       (0-1Ah)
-	unsigned char	effect_parameter;	// effect parameter    (0-255)
+	uint8_t note;				// note to play at     (0-133) 132=none,133=keyoff
+	uint8_t sample_index;		// sample being played (0-99)
+	uint8_t volume;				// volume column value (0-64)  255=no volume
+	uint8_t effect;				// effect number       (0-1Ah)
+	uint8_t effect_parameter;	// effect parameter    (0-255)
 };
 
 static_assert(sizeof(XMNote) == 5);
@@ -119,7 +119,7 @@ struct XMSampleHeader
 	uint32_t	loop_start;
 	uint32_t	loop_length;
 	uint8_t		default_volume;
-	int8_t		finetune;
+	int8_t		fine_tune;
 	XMLoopMode	loop_mode : 2;
 	uint8_t		skip_bits_1 : 2;
 	bool		bits16 : 1;

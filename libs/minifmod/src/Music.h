@@ -217,14 +217,14 @@ struct FMUSIC_CHANNEL
 	unsigned char	tremorpos; 			// tremor position (XM + S3M)
 	unsigned char 	tremoron;   		// remembered parameters for tremor (XM + S3M)
 	unsigned char 	tremoroff;   		// remembered parameters for tremor (XM + S3M)
- 	int				patlooprow;
- 	int 			patloopno;  		// pattern loop variables for effect  E6x
+ 	uint8_t			patlooprow;
+	uint8_t 		patloopno;  		// pattern loop variables for effect  E6x
 
-	unsigned char	finevslup;			// parameter for fine volume slide up
-	unsigned char	finevsldown;		// parameter for fine volume slide down
-	unsigned char	fineportaup;		// parameter for fine porta slide up
-	unsigned char	fineportadown;		// parameter for fine porta slide down
-    int				finetune;
+	uint8_t			finevslup;			// parameter for fine volume slide up
+	uint8_t			finevsldown;		// parameter for fine volume slide down
+	uint8_t			fineportaup;		// parameter for fine porta slide up
+	uint8_t			fineportadown;		// parameter for fine porta slide down
+	int8_t			fine_tune;
 };
 
 // Song type - contains info on song
@@ -243,8 +243,8 @@ struct FMUSIC_MODULE final
 	uint8_t		row;				// current row in pattern
 	uint8_t		order;				// current song order position
 	int			patterndelay;		// pattern delay counter
-	int			nextrow;			// current row in pattern
-	int			nextorder;			// current song order position
+	uint8_t		nextrow;			// current row in pattern
+	uint8_t		nextorder;			// current song order position
 	int			time_ms;			// time passed in seconds since song started
 };
 
