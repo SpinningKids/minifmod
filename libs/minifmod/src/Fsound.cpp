@@ -72,7 +72,7 @@ static inline void MixerClipCopy_Float32(int16_t* dest, const float* src, size_t
 {
 	assert(src);
 	assert(dest);
-	for (size_t i = 0; i < len << 1; i++)
+	for (size_t i = 0; i < len * 2; i++)
 	{
 		*dest++ = (int16_t)std::clamp((int)*src++, (int)std::numeric_limits<int16_t>::min(), (int)std::numeric_limits<int16_t>::max());
 	}
@@ -210,13 +210,13 @@ void FSOUND_Software_Fill(FMUSIC_MODULE &mod) noexcept
     const int mixpos = FSOUND_Software_FillBlock * FSOUND_BlockSize;
 	const int totalblocks = FSOUND_BufferSize / FSOUND_BlockSize;
 
-	float * const mixbuffer = FSOUND_MixBuffer + (mixpos << 1);
+	float * const mixbuffer = FSOUND_MixBuffer + mixpos * 2;
 
 	//==============================================================================
 	// MIXBUFFER CLEAR
 	//==============================================================================
 
-	memset(mixbuffer, 0, FSOUND_BlockSize << 3);
+	memset(mixbuffer, 0, FSOUND_BlockSize * 8);
 
 	//==============================================================================
 	// UPDATE MUSIC
@@ -257,7 +257,7 @@ void FSOUND_Software_Fill(FMUSIC_MODULE &mod) noexcept
 	// ====================================================================================
 	// CLIP AND COPY BLOCK TO OUTPUT BUFFER
 	// ====================================================================================
-    MixerClipCopy_Float32(FSOUND_MixBlock.data + (mixpos << 1), mixbuffer, FSOUND_BlockSize);
+    MixerClipCopy_Float32(FSOUND_MixBlock.data + mixpos * 2, mixbuffer, FSOUND_BlockSize);
 
 	++FSOUND_Software_FillBlock;
 
@@ -288,7 +288,7 @@ void FSOUND_Software_DoubleBufferThread(FMUSIC_MODULE *mod) noexcept
 
 	FSOUND_BlockSize = ((FSOUND_MixRate * FSOUND_LATENCY / 1000) + 3) & 0xFFFFFFFC;	// Number of *samples*
 	FSOUND_BufferSize = FSOUND_BlockSize * (FSOUND_BufferSizeMs / FSOUND_LATENCY);	// make it perfectly divisible by granularity
-	FSOUND_BufferSize <<= 1;	// double buffer
+	FSOUND_BufferSize *= 2;	// double buffer
 
 	volume_filter_k = 1.f / (1.f + FSOUND_MixRate * VolumeFilterTimeConstant);
 	int totalblocks = FSOUND_BufferSize / FSOUND_BlockSize;
@@ -385,7 +385,7 @@ void FSOUND_Software_DoubleBufferThread(FMUSIC_MODULE *mod) noexcept
 		mmt.wType = TIME_BYTES;
 		waveOutGetPosition(FSOUND_WaveOutHandle, &mmt, sizeof(MMTIME));
 
-		const int cursorpos = (mmt.u.cb >> 2) % FSOUND_BufferSize;
+		const int cursorpos = (mmt.u.cb / 4) % FSOUND_BufferSize;
 #else
 		const int cursorpos = 0;
 #endif
