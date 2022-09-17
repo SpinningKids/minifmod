@@ -196,7 +196,7 @@ struct FMUSIC_CHANNEL
 	unsigned char	inst;				// last instrument set in channel
 	unsigned char  	realnote;  			// last realnote set in channel
 	int				period_target;		// last period set in channel
-	unsigned char	recenteffect;		// previous row's effect.. used to correct tremolo volume
+	uint8_t			recenteffect;		// previous row's effect.. used to correct tremolo volume
 
 	unsigned int	sampleoffset;		// sample offset for this channel in SAMPLES
 

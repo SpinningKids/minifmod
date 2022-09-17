@@ -54,12 +54,12 @@ static void XMInstrumentVibrato(FMUSIC_CHANNEL& channel, const Instrument& instr
 	    }
 	    case XMInstrumentVibratoType::InverseSawTooth:
 	    {
-		    delta = (channel.ivibpos & 128) - ((channel.ivibpos + 1) >> 2);
+		    delta = (channel.ivibpos & 128) - ((channel.ivibpos + 1) / 4);
 		    break;
 	    }
 	    case XMInstrumentVibratoType::SawTooth:
 	    {
-		    delta = ((channel.ivibpos + 1) >> 2) - (channel.ivibpos & 128);
+		    delta = ((channel.ivibpos + 1) / 4) - (channel.ivibpos & 128);
 		    break;
 	    }
 	}
@@ -69,7 +69,7 @@ static void XMInstrumentVibrato(FMUSIC_CHANNEL& channel, const Instrument& instr
 	{
 		delta = delta * channel.ivibsweeppos / instrument.sample_header.vibrato_sweep;
 	}
-	delta >>= 6;
+	delta /= 64;
 
 	channel.period_delta += delta;
 
@@ -173,7 +173,7 @@ static void FMUSIC_XM_ProcessVolumeByte(FMUSIC_CHANNEL &channel, unsigned char v
 			}
 			case 0xc :
 			{
-				channel.pan = volumey << 4;
+				channel.pan = volumey * 16;
 				break;
 			}
 			case 0xd :
@@ -188,7 +188,7 @@ static void FMUSIC_XM_ProcessVolumeByte(FMUSIC_CHANNEL &channel, unsigned char v
 			}
 			case 0xf :
 			{
-				channel.portamento.setup(channel.period_target, volumey << 6);
+				channel.portamento.setup(channel.period_target, volumey * 64);
 				channel.trigger = false;
 				break;
 			}
@@ -275,67 +275,55 @@ static void FMUSIC_XM_Tremor(FMUSIC_CHANNEL &channel) noexcept
 */
 static void XMUpdateFlags(FMUSIC_CHANNEL &channel, const Sample &sample, FMUSIC_MODULE &mod) noexcept
 {
-    FSOUND_CHANNEL *ccptr = channel.cptr;
-
-    int channel_number = ccptr->index;
+    FSOUND_CHANNEL &sound_channel = *channel.cptr;
 
 	if (channel.trigger)
 	{
-		//==========================================================================================
-		// ALLOCATE A CHANNEL
-		//==========================================================================================
-		ccptr = &FSOUND_Channel[channel_number];
-
 		// this swaps between channels to avoid sounds cutting each other off and causing a click
-        if (ccptr->sptr != nullptr)
+        if (sound_channel.sptr != nullptr)
         {
-			channel_number ^= 32;
+			int phaseout_sound_channel_number = sound_channel.index + 32;
+			FSOUND_CHANNEL& phaseout_sound_channel = FSOUND_Channel[phaseout_sound_channel_number];
+			phaseout_sound_channel = sound_channel;
+			phaseout_sound_channel.index = phaseout_sound_channel_number;
 
-            memcpy(&FSOUND_Channel[channel_number], ccptr, sizeof(FSOUND_CHANNEL));
-            FSOUND_Channel[channel_number].index = channel_number; // oops dont want its index
+            // this will cause the copy of the old channel to ramp out nicely.
+			phaseout_sound_channel.leftvolume  = 0;
+			phaseout_sound_channel.rightvolume = 0;
+        }
 
-            // this will cause the old channel to ramp out nicely.
-		    ccptr->leftvolume  = 0;
-		    ccptr->rightvolume = 0;
-
-			ccptr = &FSOUND_Channel[channel_number];
-			channel.cptr = ccptr;
-		}
-
-        ccptr->sptr = &sample;
+        sound_channel.sptr = &sample;
 
 		//==========================================================================================
 		// START THE SOUND!
 		//==========================================================================================
-		if (ccptr->sampleoffset >= sample.header.loop_start + sample.header.loop_length)
+		if (sound_channel.sampleoffset >= sample.header.loop_start + sample.header.loop_length)
 		{
-		    ccptr->sampleoffset = 0;
+		    sound_channel.sampleoffset = 0;
 		}
 
-		ccptr->mixpos = (float)ccptr->sampleoffset;
-		ccptr->speeddir  = MixDir::Forwards;
-		ccptr->sampleoffset = 0;	// reset it (in case other samples come in and get corrupted etc)
+		sound_channel.mixpos = (float)sound_channel.sampleoffset;
+		sound_channel.speeddir  = MixDir::Forwards;
+		sound_channel.sampleoffset = 0;	// reset it (in case other samples come in and get corrupted etc)
 
 		// volume ramping
-		ccptr->filtered_leftvolume	= 0;
-		ccptr->filtered_rightvolume	= 0;
+		sound_channel.filtered_leftvolume	= 0;
+		sound_channel.filtered_rightvolume	= 0;
 	}
 
-	{
-		mod.globalvolume = std::clamp(mod.globalvolume, 0, 64);
-		channel.volume = std::clamp(channel.volume, 0, 64);
-		channel.voldelta = std::clamp(channel.voldelta, -channel.volume, 64 - channel.volume);
-		channel.pan = std::clamp(channel.pan, 0, 255);
+	mod.globalvolume = std::clamp(mod.globalvolume, 0, 64);
+	channel.volume = std::clamp(channel.volume, 0, 64);
+	channel.voldelta = std::clamp(channel.voldelta, -channel.volume, 64 - channel.volume);
+	channel.pan = std::clamp(channel.pan, 0, 255);
 
-        float high_precision_pan = std::clamp(channel.pan+ channel.envpanvalue * (128 - abs(channel.pan - 128)), 0.0f, 255.0f); // 255
+    float high_precision_pan = std::clamp(channel.pan+ channel.envpanvalue * (128 - abs(channel.pan - 128)), 0.0f, 255.0f); // 255
 
-		constexpr float norm = 1.0f/ 68451041280.0f; // 2^27 (volume normalization) * 255.0 (pan scale) (*2 for safety?!?)
+	constexpr float norm = 1.0f/ 68451041280.0f; // 2^27 (volume normalization) * 255.0 (pan scale) (*2 for safety?!?)
 
-		float high_precision_volume = (channel.volume + channel.voldelta) * channel.fadeoutvol * mod.globalvolume * channel.envvolvalue * norm;
+	float high_precision_volume = (channel.volume + channel.voldelta) * channel.fadeoutvol * mod.globalvolume * channel.envvolvalue * norm;
 
-		ccptr->leftvolume  = high_precision_volume * high_precision_pan;
-		ccptr->rightvolume = high_precision_volume * (255 - high_precision_pan);
-	}
+	sound_channel.leftvolume  = high_precision_volume * high_precision_pan;
+	sound_channel.rightvolume = high_precision_volume * (255 - high_precision_pan);
 	if ((channel.period + channel.period_delta) != 0)
 	{
 		int freq = std::max(
@@ -344,13 +332,13 @@ static void XMUpdateFlags(FMUSIC_CHANNEL &channel, const Sample &sample, FMUSIC_
 			    : Period2Frequency(channel.period + channel.period_delta),
 			100);
 
-    	ccptr->speed = float(freq) / FSOUND_MixRate;
+    	sound_channel.speed = float(freq) / FSOUND_MixRate;
 	}
 	if (channel.stop)
 	{
-		ccptr->mixpos = 0;
+		sound_channel.mixpos = 0;
 //		ccptr->sptr = nullptr;
-		ccptr->sampleoffset = 0;	// if this channel gets stolen it will be safe
+		sound_channel.sampleoffset = 0;	// if this channel gets stolen it will be safe
 	}
 }
 
@@ -422,7 +410,8 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE& mod) noexcept
 
 	// Point our note pointer to the correct pattern buffer, and to the
 	// correct offset in this buffer indicated by row and number of channels
-	const auto& row = mod.pattern[mod.header.pattern_order[mod.order]][mod.row];
+	const auto& pattern = mod.pattern[mod.header.pattern_order[mod.order]];
+	const auto& row = pattern[mod.row];
 
 	// Loop through each channel in the row until we have finished
 	for (int channel_index = 0; channel_index < mod.header.channels_count; channel_index++)
@@ -561,7 +550,7 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE& mod) noexcept
 #ifdef FMUSIC_XM_PORTATO_ACTIVE
 		case FMUSIC_XM_PORTATO:
 		{
-			channel.portamento.setup(channel.period_target, note.effect_parameter << 2);
+			channel.portamento.setup(channel.period_target, note.effect_parameter * 4);
 			channel.trigger = false;
 			break;
 		}
@@ -621,7 +610,7 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE& mod) noexcept
 
 			if (channel.cptr)
 			{
-				unsigned int offset = (int)(channel.sampleoffset) << 8;
+				unsigned int offset = channel.sampleoffset * 256;
 
 				if (offset >= sample.header.loop_start + sample.header.loop_length)
 				{
@@ -691,7 +680,7 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE& mod) noexcept
 				{
 					channel.fineportaup = paramy;
 				}
-				channel.period -= (channel.fineportaup << 2);
+				channel.period -= channel.fineportaup * 4;
 				break;
 			}
 #endif
@@ -702,7 +691,7 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE& mod) noexcept
 				{
 					channel.fineportadown = paramy;
 				}
-				channel.period += (channel.fineportadown << 2);
+				channel.period += channel.fineportadown * 4;
 				break;
 			}
 #endif
@@ -764,7 +753,7 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE& mod) noexcept
 #ifdef FMUSIC_XM_SETPANPOSITION16_ACTIVE
 			case FMUSIC_XM_SETPANPOSITION16:
 			{
-				channel.pan = paramy << 4;
+				channel.pan = paramy * 16;
 				break;
 			}
 #endif
@@ -918,16 +907,22 @@ static void FMUSIC_UpdateXMNote(FMUSIC_MODULE& mod) noexcept
 		// if there were no row commands
 		if (!row_set)
 		{
-			mod.nextrow = mod.row + 1;
-			if (mod.nextrow >= mod.pattern[mod.header.pattern_order[mod.order]].size())	// if end of pattern TODO: Fix signed/unsigned comparison
+			if (mod.row + 1 < pattern.size())	// if end of pattern TODO: Fix signed/unsigned comparison
 			{
-				mod.nextorder = mod.order + 1;			// so increment the order
-				if (mod.nextorder >= (int)mod.header.song_length)
-				{
-					mod.nextorder = (int)mod.header.restart_position;
-				}
+                mod.nextrow = mod.row + 1;
+            }
+			else
+			{
 				mod.nextrow = 0;						// start at top of pattn
-			}
+				if (mod.order + 1 < mod.header.song_length)
+                {
+                    mod.nextorder = mod.order + 1;
+                }
+                else
+                {
+                    mod.nextorder = mod.header.restart_position; // so increment the order
+                }
+            }
 		}
 	}
 }
@@ -950,7 +945,8 @@ static void FMUSIC_UpdateXMEffects(FMUSIC_MODULE& mod) noexcept
 {
 	// Point our note pointer to the correct pattern buffer, and to the
 	// correct offset in this buffer indicated by row and number of channels
-	const auto& row = mod.pattern[mod.header.pattern_order[mod.order]][mod.row];
+	const auto& pattern = mod.pattern[mod.header.pattern_order[mod.order]];
+	const auto& row = pattern[mod.row];
 
 	// Loop through each channel in the row until we have finished
 	for (int channel_index = 0; channel_index < mod.header.channels_count; channel_index++)
@@ -1046,7 +1042,7 @@ static void FMUSIC_UpdateXMEffects(FMUSIC_MODULE& mod) noexcept
 			}
 			if (mod.header.flags & FMUSIC_XMFLAGS_LINEARFREQUENCY)
 			{
-				channel.period_delta = v << 6;
+				channel.period_delta = v * 64;
 			}
 #ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
 			else
@@ -1062,7 +1058,7 @@ static void FMUSIC_UpdateXMEffects(FMUSIC_MODULE& mod) noexcept
 		case FMUSIC_XM_PORTAUP:
 		{
 			channel.period_delta = 0;
-			channel.period = std::max(channel.period - (channel.portaup << 2), 56); // subtract period and stop at B#8
+			channel.period = std::max(channel.period - (channel.portaup * 4), 56); // subtract period and stop at B#8
 			break;
 		}
 #endif
@@ -1070,7 +1066,7 @@ static void FMUSIC_UpdateXMEffects(FMUSIC_MODULE& mod) noexcept
 		case FMUSIC_XM_PORTADOWN:
 		{
 			channel.period_delta = 0;
-			channel.period += channel.portadown << 2; // subtract period
+			channel.period += channel.portadown * 4; // subtract period
 			break;
 		}
 #endif
@@ -1161,10 +1157,6 @@ static void FMUSIC_UpdateXMEffects(FMUSIC_MODULE& mod) noexcept
 #endif
 					channel.trigger = true;
 				}
-				else
-				{
-					channel.trigger = true;
-				}
 				break;
 			}
 #endif
@@ -1228,7 +1220,7 @@ static void FMUSIC_UpdateXMEffects(FMUSIC_MODULE& mod) noexcept
 				}
 				case 7:
 				{
-					channel.volume >>= 1;
+					channel.volume /= 2;
 					break;
 				}
 				case 8:
@@ -1268,7 +1260,7 @@ static void FMUSIC_UpdateXMEffects(FMUSIC_MODULE& mod) noexcept
 				}
 				case 0xF:
 				{
-					channel.volume <<= 1;
+					channel.volume *= 2;
 					break;
 				}
 				}
@@ -1349,7 +1341,7 @@ std::unique_ptr<FMUSIC_MODULE> XMLoad(void* fp, SAMPLELOADCALLBACK sampleloadcal
 	FSOUND_File_Read(&mod->header, sizeof(mod->header), fp);
 
 	// seek to patterndata
-    FSOUND_File_Seek(fp, 60L+mod->header.header_size, SEEK_SET);
+    FSOUND_File_Seek(fp, 60+mod->header.header_size, SEEK_SET);
 
 	// unpack and read patterns
 	for (uint16_t pattern_index=0; pattern_index < mod->header.patterns_count; pattern_index++)
@@ -1489,7 +1481,7 @@ std::unique_ptr<FMUSIC_MODULE> XMLoad(void* fp, SAMPLELOADCALLBACK sampleloadcal
 							FSOUND_File_Read(buff, sample.header.length, fp);
 							for (uint32_t i = 0; i < sample.header.length; i++)
 							{
-								sample.buff[i] = static_cast<int16_t>(buff[i] << 8);
+								sample.buff[i] = static_cast<int16_t>(buff[i] * 256);
 							}
 
 							sample.header.bits16 = true;
