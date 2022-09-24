@@ -1,0 +1,68 @@
+/******************************************************************************/
+/* MiniFMOD public source code release.                                       */
+/* This source is provided as-is.  Firelight Technologies will not support    */
+/* or answer questions about the source provided.                             */
+/* MiniFMOD Sourcecode is copyright (c) Firelight Technologies, 2000-2004.    */
+/* MiniFMOD Sourcecode is in no way representative of FMOD 3 source.          */
+/* Firelight Technologies is a registered company.                            */
+/* This source must not be redistributed without this notice.                 */
+/******************************************************************************/
+/* C++ conversion and (heavy) refactoring by Pan/SpinningKids, 2022           */
+/******************************************************************************/
+
+#pragma once
+
+#include <algorithm>
+#include <cstdint>
+
+#include <minifmod/minifmod.h>
+
+#include "channel.h"
+#include "instrument.h"
+#include "pattern.h"
+#include "system_file.h"
+#include "xmfile.h"
+#include "Sound.h"
+
+inline FMUSIC_CHANNEL			FMUSIC_Channel[32]{};		// channel array for this song
+
+// Song type - contains info on song
+struct FMUSIC_MODULE final
+{
+	XMHeader	header_;
+	Pattern		pattern_[256];		// patterns array for this song
+	Instrument	instrument_[128];	// instrument array for this song (not used in MOD/S3M)
+	int			mixer_samplesleft;
+	int			mixer_samplespertick;
+
+	int			globalvolume;		// global mod volume
+	int			globalvsl;			// global mod volume
+	int			tick_;				// current mod tick
+	int			speed;				// speed of song in ticks per row
+	uint8_t		row_;				// current row in pattern
+	uint8_t		order;				// current song order position
+	int			patterndelay;		// pattern delay counter
+	uint8_t		nextrow;			// current row in pattern
+	uint8_t		nextorder;			// current song order position
+	int			time_ms;			// time passed in seconds since song started
+
+
+	FMUSIC_MODULE(const minifmod::FileAccess& fileAccess, void* fp, SAMPLELOADCALLBACK sampleloadcallback);
+	void tick() noexcept;
+
+	void setBPM(int bpm) noexcept
+	{
+		// number of samples
+		mixer_samplespertick = FSOUND_MixRate * 5 / (bpm * 2);
+	}
+
+	void clampGlobalVolume() noexcept
+	{
+		globalvolume = std::clamp(globalvolume, 0, 64);
+	}
+
+	void reset() noexcept;
+private:
+	void updateNote() noexcept;
+	void updateEffects() noexcept;
+};

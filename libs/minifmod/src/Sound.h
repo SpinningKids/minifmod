@@ -13,10 +13,7 @@
 #ifndef SOUND_H_
 #define SOUND_H_
 
-#include <cstdint>
-#include <memory>
-
-#include "xmfile.h"
+#include "sample.h"
 
 enum class MixDir
 {
@@ -27,14 +24,6 @@ enum class MixDir
 // ==============================================================================================
 // STRUCTURE DEFINITIONS
 // ==============================================================================================
-
-// Sample type - contains info on sample
-struct Sample final
-{
-	XMSampleHeader header;
-
-	std::unique_ptr<int16_t[]> buff;			// pointer to sound data
-};
 
 // Channel type - contains information on a mixing channel
 struct FSOUND_CHANNEL

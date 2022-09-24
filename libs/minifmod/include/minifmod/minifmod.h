@@ -18,7 +18,14 @@
 #ifndef MINIFMOD_H_
 #define MINIFMOD_H_
 
-#include <cstddef>
+#include <stddef.h>
+
+#ifdef __cplusplus
+extern "C" {
+#define MINIFMOD_NOEXCEPT noexcept
+#else
+#define MINIFMOD_NOEXCEPT
+#endif
 
 //===============================================================================================
 //= DEFINITIONS
@@ -34,7 +41,7 @@ struct FMUSIC_MODULE;
 // ==================================
 // Initialization / Global functions.
 // ==================================
-typedef void (*SAMPLELOADCALLBACK)(short *buff, std::size_t length_samples, int instno, int sampno);
+typedef void (*SAMPLELOADCALLBACK)(short *buff, size_t length_samples, int instno, int sampno);
 typedef void (*FMUSIC_CALLBACK)(FMUSIC_MODULE *mod, unsigned char param);
 
 // this must be called before FSOUND_Init!
@@ -43,8 +50,8 @@ void FSOUND_File_SetCallbacks(void*         (*OpenCallback)(const char *name),
                               int			(*ReadCallback)(void *buffer, int size, void* handle),
                               void			(*SeekCallback)(void* handle, int pos, int mode),
                               int			(*TellCallback)(void* handle)) noexcept;
-bool FSOUND_Init(int mixrate, int vcmmode = 0) noexcept;
-float FSOUND_TimeFromSamples() noexcept;
+bool FSOUND_Init(int mixrate, int vcmmode = 0) MINIFMOD_NOEXCEPT;
+float FSOUND_TimeFromSamples() MINIFMOD_NOEXCEPT;
 
 // =============================================================================================
 // FMUSIC API
@@ -61,8 +68,12 @@ void    		FMUSIC_StopSong();
 // Runtime song information.
 // =========================
 
-unsigned char	FMUSIC_GetOrder() noexcept;
-unsigned char	FMUSIC_GetRow() noexcept;
-unsigned int	FMUSIC_GetTime() noexcept;
+unsigned char	FMUSIC_GetOrder() MINIFMOD_NOEXCEPT;
+unsigned char	FMUSIC_GetRow() MINIFMOD_NOEXCEPT;
+unsigned int	FMUSIC_GetTime() MINIFMOD_NOEXCEPT;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

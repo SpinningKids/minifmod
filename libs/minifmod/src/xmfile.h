@@ -6,6 +6,8 @@
 #pragma pack(push)
 #pragma pack(1)
 
+constexpr uint16_t FMUSIC_XMFLAGS_LINEARFREQUENCY = 1;
+
 struct XMHeader
 {
 	char		header[17];
@@ -37,12 +39,72 @@ struct XMPatternHeader
 
 static_assert(sizeof(XMPatternHeader) == 9);
 
+enum class XMEffect : uint8_t
+{
+	ARPEGGIO,
+	PORTAUP,
+	PORTADOWN,
+	PORTATO,
+	VIBRATO,
+	PORTATOVOLSLIDE,
+	VIBRATOVOLSLIDE,
+	TREMOLO,
+	SETPANPOSITION,
+	SETSAMPLEOFFSET,
+	VOLUMESLIDE,
+	PATTERNJUMP,
+	SETVOLUME,
+	PATTERNBREAK,
+	SPECIAL,
+	SETSPEED,
+	SETGLOBALVOLUME,
+	GLOBALVOLSLIDE,
+	I,
+	J,
+	KEYOFF,
+	SETENVELOPEPOS,
+	M,
+	N,
+	O,
+	PANSLIDE,
+	Q,
+	MULTIRETRIG,
+	S,
+	TREMOR,
+	U,
+	V,
+	W,
+	EXTRAFINEPORTA,
+	Y,
+	Z,
+};
+
+enum class XMSpecialEffect
+{
+	SETFILTER,
+	FINEPORTAUP,
+	FINEPORTADOWN,
+	SETGLISSANDO,
+	SETVIBRATOWAVE,
+	SETFINETUNE,
+	PATTERNLOOP,
+	SETTREMOLOWAVE,
+	SETPANPOSITION16,
+	RETRIG,
+	FINEVOLUMESLIDEUP,
+	FINEVOLUMESLIDEDOWN,
+	NOTECUT,
+	NOTEDELAY,
+	PATTERNDELAY,
+	FUNKREPEAT,
+};
+
 struct XMNote
 {
 	uint8_t note;				// note to play at     (0-133) 132=none,133=keyoff
 	uint8_t sample_index;		// sample being played (0-99)
 	uint8_t volume;				// volume column value (0-64)  255=no volume
-	uint8_t effect;				// effect number       (0-1Ah)
+	XMEffect effect;			// effect number       (0-1Ah)
 	uint8_t effect_parameter;	// effect parameter    (0-255)
 };
 

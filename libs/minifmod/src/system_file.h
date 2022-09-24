@@ -13,10 +13,23 @@
 #ifndef SYSTEM_FILE_H_
 #define SYSTEM_FILE_H_
 
-inline void*    (*FSOUND_File_Open)(const char *name);
-inline void	    (*FSOUND_File_Close)(void* handle);
-inline int	    (*FSOUND_File_Read)(void *buffer, int size, void* handle);
-inline void	    (*FSOUND_File_Seek)(void* handle, int pos, int mode);
-inline int	    (*FSOUND_File_Tell)(void* handle);
+namespace minifmod {
+    using FFileOpen = void* (const char* name);
+    using FFileClose = void(void* handle);
+    using FFileRead = int(void* buffer, int size, void* handle);
+    using FFileSeek = void(void* handle, int pos, int mode);
+    using FFileTell = int(void* handle);
+
+    struct FileAccess
+    {
+        FFileOpen* open;
+        FFileClose* close;
+        FFileRead* read;
+        FFileSeek* seek;
+        FFileTell* tell;
+    };
+}
+
+inline minifmod::FileAccess FSOUND_File;
 
 #endif
