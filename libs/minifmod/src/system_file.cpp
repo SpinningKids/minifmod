@@ -10,6 +10,7 @@
 /* This source must not be redistributed without this notice.                 */
 /******************************************************************************/
 
+#include <minifmod/minifmod.h>
 #include "system_file.h"
 
 /*
@@ -90,9 +91,9 @@
 */
 void FSOUND_File_SetCallbacks(void* (*OpenCallback)(const char* name), void	(*CloseCallback)(void* handle), int (*ReadCallback)(void* buffer, int size, void* handle), void (*SeekCallback)(void*, int pos, int mode), int (*TellCallback)(void* handle)) noexcept
 {
-	FSOUND_File_Open = OpenCallback;
-	FSOUND_File_Close = CloseCallback;
-	FSOUND_File_Read = ReadCallback;
-	FSOUND_File_Seek = SeekCallback;
-	FSOUND_File_Tell = TellCallback;
+	FSOUND_File.open = OpenCallback;
+	FSOUND_File.close = CloseCallback;
+	FSOUND_File.read = ReadCallback;
+	FSOUND_File.seek = SeekCallback;
+	FSOUND_File.tell = TellCallback;
 }

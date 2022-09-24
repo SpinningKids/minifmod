@@ -14,17 +14,26 @@ set(PUBLIC_HEADER_FILES
 
 set(PRIVATE_HEADER_FILES
   ${SRC_DIR}/Music.h
-  ${SRC_DIR}/music_formatxm.h
   ${SRC_DIR}/Sound.h
+  ${SRC_DIR}/channel.h
+  ${SRC_DIR}/envelope.h
+  ${SRC_DIR}/instrument.h
+  ${SRC_DIR}/lfo.h
+  ${SRC_DIR}/module.h
+  ${SRC_DIR}/pattern.h
+  ${SRC_DIR}/portamento.h
+  ${SRC_DIR}/sample.h
   ${SRC_DIR}/system_file.h
   ${SRC_DIR}/xmeffects.h
   ${SRC_DIR}/xmfile.h
 )
 
 set(SRC_FILES
-  ${SRC_DIR}/Fmusic.cpp
+  ${SRC_DIR}/channel.cpp
+  ${SRC_DIR}/envelope.cpp
+  ${SRC_DIR}/minifmod.cpp
   ${SRC_DIR}/Fsound.cpp
-  ${SRC_DIR}/music_formatxm.cpp
+  ${SRC_DIR}/module.cpp
   ${SRC_DIR}/system_file.cpp
 )
 

@@ -10,15 +10,15 @@
 /* This source must not be redistributed without this notice.                 */
 /******************************************************************************/
 
-#include <algorithm>
-
 #include "Sound.h"
 
+#include <algorithm>
+#include <cassert>
 #include <cstring>
 #include <thread>
 
+#include "module.h"
 #include "Music.h"
-#include "music_formatxm.h"
 
 #ifdef WIN32
 #define NOMINMAX
@@ -232,7 +232,7 @@ void FSOUND_Software_Fill(FMUSIC_MODULE &mod) noexcept
 		{
 			if (!mod.mixer_samplesleft)
 			{
-				XMTick(mod);	// update new mod tick
+				mod.tick();	// update new mod tick
 				mod.mixer_samplesleft = mod.mixer_samplespertick;
 			}
 
@@ -249,7 +249,7 @@ void FSOUND_Software_Fill(FMUSIC_MODULE &mod) noexcept
 		mod.time_ms += MixedSoFar * 1000 / FSOUND_MixRate; // This is (and was before) approximated down by as much as 1ms per block
 
 		FMUSIC_TimeInfo[FSOUND_Software_FillBlock].ms    = mod.time_ms;
-		FMUSIC_TimeInfo[FSOUND_Software_FillBlock].row   = mod.row;
+		FMUSIC_TimeInfo[FSOUND_Software_FillBlock].row   = mod.row_;
 		FMUSIC_TimeInfo[FSOUND_Software_FillBlock].order = mod.order;
 	}
 

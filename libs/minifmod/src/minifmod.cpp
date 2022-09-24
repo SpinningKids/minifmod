@@ -1,6 +1,4 @@
 /******************************************************************************/
-/* FMUSIC.C                                                                   */
-/* ----------------                                                           */
 /* MiniFMOD public source code release.                                       */
 /* This source is provided as-is.  Firelight Technologies will not support    */
 /* or answer questions about the source provided.                             */
@@ -9,44 +7,18 @@
 /* Firelight Technologies is a registered company.                            */
 /* This source must not be redistributed without this notice.                 */
 /******************************************************************************/
-
-#include "Music.h"
-
-#include <cstring>
-#include <thread>
+/* C++ conversion and (heavy) refactoring by Pan/SpinningKids, 2022           */
+/******************************************************************************/
 
 #include <minifmod/minifmod.h>
-#include "music_formatxm.h"
+
+#include <thread>
+
+#include "module.h"
+#include "Music.h"
 #include "system_file.h"
 
-FMUSIC_CHANNEL		FMUSIC_Channel[32];		// channel array for this song
-FMUSIC_TIMMEINFO *	FMUSIC_TimeInfo;
-
 static std::thread	Software_Thread;
-
-//= PRIVATE FUNCTIONS ==============================================================================
-
-
-/*
-[
-	[DESCRIPTION]
-
-	[PARAMETERS]
-
-	[RETURN_VALUE]
-
-	[REMARKS]
-
-	[SEE_ALSO]
-]
-*/
-
-void FMUSIC_SetBPM(FMUSIC_MODULE &module, int bpm) noexcept
-{
-	// number of samples
-	module.mixer_samplespertick = FSOUND_MixRate * 5 / (bpm * 2);
-}
-
 
 //= API FUNCTIONS ==============================================================================
 
@@ -70,11 +42,11 @@ void FMUSIC_SetBPM(FMUSIC_MODULE &module, int bpm) noexcept
 */
 FMUSIC_MODULE * FMUSIC_LoadSong(const char *name, SAMPLELOADCALLBACK sampleloadcallback)
 {
-    if (void* fp = FSOUND_File_Open(name))
+    if (void* fp = FSOUND_File.open(name))
     {
         // create a mod instance
-        std::unique_ptr<FMUSIC_MODULE> mod = XMLoad(fp, sampleloadcallback);
-        FSOUND_File_Close(fp);
+        std::unique_ptr<FMUSIC_MODULE> mod = std::make_unique<FMUSIC_MODULE>(FSOUND_File, fp, sampleloadcallback);
+        FSOUND_File.close(fp);
         return mod.release();
     }
     return nullptr;
@@ -138,26 +110,7 @@ bool FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 
 	FMUSIC_StopSong();
 
-	mod->globalvolume = 64;
-	mod->speed = (int)mod->header.default_tempo;
-	mod->row = 0;
-	mod->order = 0;
-	mod->nextorder = 0;
-	mod->nextrow = 0;
-	mod->mixer_samplesleft = 0;
-	mod->tick = 0;
-	mod->patterndelay = 0;
-	mod->time_ms = 0;
-
-	FMUSIC_SetBPM(*mod, mod->header.default_bpm);
-
-	memset(FMUSIC_Channel, 0, mod->header.channels_count * sizeof(FMUSIC_CHANNEL));
-	//	memset(FSOUND_Channel, 0, 64 * sizeof(FSOUND_CHANNEL));
-
-	for (uint16_t channel_index = 0; channel_index < mod->header.channels_count; channel_index++)
-	{
-		FMUSIC_Channel[channel_index].cptr = &FSOUND_Channel[channel_index];
-	}
+	mod->reset();
 
     // ========================================================================================================
 	// CREATE THREADS / TIMERS (last)
@@ -288,3 +241,4 @@ unsigned int FMUSIC_GetTime() noexcept
 
 	return FMUSIC_TimeInfo[FSOUND_Software_RealBlock].ms;
 }
+
