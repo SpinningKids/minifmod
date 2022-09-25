@@ -136,23 +136,23 @@ FMUSIC_MODULE::FMUSIC_MODULE(const minifmod::FileAccess& fileAccess, void* fp, S
             fileAccess.seek(fp, first_sample_offset, SEEK_SET);
             for (unsigned int sample_index = 0; sample_index < instrument.header.samples_count; sample_index++)
             {
-                Sample& sample = instrument.sample[sample_index];
+                XMSampleHeader& sample_header = instrument.sample[sample_index].header;
 
-                fileAccess.read(&sample.header, sizeof(sample.header), fp);
+                fileAccess.read(&sample_header, sizeof(sample_header), fp);
 
                 // type of sample
-                if (sample.header.bits16)
+                if (sample_header.bits16)
                 {
-                    sample.header.length /= 2;
-                    sample.header.loop_start /= 2;
-                    sample.header.loop_length /= 2;
+                    sample_header.length /= 2;
+                    sample_header.loop_start /= 2;
+                    sample_header.loop_length /= 2;
                 }
 
-                if ((sample.header.loop_mode == XMLoopMode::Off) || (sample.header.length == 0))
+                if ((sample_header.loop_mode == XMLoopMode::Off) || (sample_header.length == 0))
                 {
-                    sample.header.loop_start = 0;
-                    sample.header.loop_length = sample.header.length;
-                    sample.header.loop_mode = XMLoopMode::Off;
+                    sample_header.loop_start = 0;
+                    sample_header.loop_length = sample_header.length;
+                    sample_header.loop_mode = XMLoopMode::Off;
                 }
 
             }
@@ -182,15 +182,14 @@ FMUSIC_MODULE::FMUSIC_MODULE(const minifmod::FileAccess& fileAccess, void* fp, S
                         }
                         else
                         {
-                            int8_t* buff = new int8_t[sample.header.length + 8];
-                            fileAccess.read(buff, sample.header.length, fp);
+                            auto buff = std::make_unique<int8_t[]>(sample.header.length + 8);
+                            fileAccess.read(buff.get(), sample.header.length, fp);
                             for (uint32_t i = 0; i < sample.header.length; i++)
                             {
                                 sample.buff[i] = static_cast<int16_t>(buff[i] * 256);
                             }
 
                             sample.header.bits16 = true;
-                            delete[] buff;
                         }
 
                         // DO DELTA CONVERSION
@@ -233,9 +232,9 @@ void FMUSIC_MODULE::tick() noexcept
     }
 
     tick_++;
-    if (tick_ >= speed + patterndelay)
+    if (tick_ >= ticks_per_row_ + pattern_delay_)
     {
-        patterndelay = 0;
+        pattern_delay_ = 0;
         tick_ = 0;
     }
 }
@@ -245,14 +244,14 @@ void FMUSIC_MODULE::updateNote() noexcept
     bool pattern_jump = false;
 
     // process any rows commands to set the next order/row
-    order = nextorder;
-    row_ = nextrow;
+    order_ = next_order_;
+    row_ = next_row_;
 
     bool row_set = false;
 
     // Point our note pointer to the correct pattern buffer, and to the
     // correct offset in this buffer indicated by row and number of channels
-    const auto& pattern = pattern_[header_.pattern_order[order]];
+    const auto& pattern = pattern_[header_.pattern_order[order_]];
     const auto& row = pattern[row_];
 
     // Loop through each channel in the row until we have finished
@@ -475,8 +474,8 @@ void FMUSIC_MODULE::updateNote() noexcept
 #ifdef FMUSIC_XM_PATTERNJUMP_ACTIVE
         case XMEffect::PATTERNJUMP: // --- 00 B00 : --- 00 D63 , should put us at ord=0, row=63
         {
-            nextorder = note.effect_parameter % header_.song_length;
-            nextrow = 0;
+            next_order_ = note.effect_parameter % header_.song_length;
+            next_row_ = 0;
             pattern_jump = true;
             row_set = true;
             break;
@@ -492,14 +491,14 @@ void FMUSIC_MODULE::updateNote() noexcept
 #ifdef FMUSIC_XM_PATTERNBREAK_ACTIVE
         case XMEffect::PATTERNBREAK:
         {
-            nextrow = (paramx * 10) + paramy;
-            if (nextrow > 63) // NOTE: This seems odd, as the pattern might be longer than 64
+            next_row_ = (paramx * 10) + paramy;
+            if (next_row_ > 63) // NOTE: This seems odd, as the pattern might be longer than 64
             {
-                nextrow = 0;
+                next_row_ = 0;
             }
             if (!pattern_jump)
             {
-                nextorder = (order + 1) % header_.song_length;
+                next_order_ = (order_ + 1) % header_.song_length; // NOTE: shouldn't we go to the restart_position?
             }
             row_set = true;
             break;
@@ -572,7 +571,7 @@ void FMUSIC_MODULE::updateNote() noexcept
                     }
                     if (channel.patloopno)
                     {
-                        nextrow = channel.patlooprow;
+                        next_row_ = channel.patlooprow;
                         //nextorder = order; // This is not needed, as we initially set order = nextorder;
                         row_set = true;
                     }
@@ -629,8 +628,8 @@ void FMUSIC_MODULE::updateNote() noexcept
 #ifdef FMUSIC_XM_PATTERNDELAY_ACTIVE
             case XMSpecialEffect::PATTERNDELAY:
             {
-                patterndelay = paramy;
-                patterndelay *= speed;
+                pattern_delay_ = paramy;
+                pattern_delay_ *= ticks_per_row_;
                 break;
             }
 #endif
@@ -654,7 +653,7 @@ void FMUSIC_MODULE::updateNote() noexcept
 #ifdef FMUSIC_XM_SETGLOBALVOLUME_ACTIVE
         case XMEffect::SETGLOBALVOLUME:
         {
-            globalvolume = note.effect_parameter;
+            global_volume_ = note.effect_parameter;
             break;
         }
 #endif
@@ -740,25 +739,25 @@ void FMUSIC_MODULE::updateNote() noexcept
         channel.processInstrument(instrument);
 
         clampGlobalVolume();
-        channel.updateFlags(sample, globalvolume, header_.flags & FMUSIC_XMFLAGS_LINEARFREQUENCY);
+        channel.updateFlags(sample, global_volume_, header_.flags & FMUSIC_XMFLAGS_LINEARFREQUENCY);
 
         // if there were no row commands
         if (!row_set)
         {
             if (row_ + 1 < pattern.size())	// if end of pattern TODO: Fix signed/unsigned comparison
             {
-                nextrow = row_ + 1;
+                next_row_ = row_ + 1;
             }
             else
             {
-                nextrow = 0;						// start at top of pattn
-                if (order + 1 < header_.song_length)
+                next_row_ = 0;						// start at top of pattn
+                if (order_ + 1 < header_.song_length)
                 {
-                    nextorder = order + 1;
+                    next_order_ = order_ + 1;
                 }
                 else
                 {
-                    nextorder = header_.restart_position; // so increment the order
+                    next_order_ = header_.restart_position; // so increment the order
                 }
             }
         }
@@ -769,7 +768,7 @@ void FMUSIC_MODULE::updateEffects() noexcept
 {
     // Point our note pointer to the correct pattern buffer, and to the
     // correct offset in this buffer indicated by row and number of channels
-    const auto& pattern = pattern_[header_.pattern_order[order]];
+    const auto& pattern = pattern_[header_.pattern_order[order_]];
     const auto& row = pattern[row_];
 
     // Loop through each channel in the row until we have finished
@@ -984,7 +983,7 @@ void FMUSIC_MODULE::updateEffects() noexcept
 #ifdef FMUSIC_XM_GLOBALVOLSLIDE_ACTIVE
         case XMEffect::GLOBALVOLSLIDE:
         {
-            globalvolume += globalvsl;
+            global_volume_ += globalvsl;
             break;
         }
 #endif
@@ -1099,22 +1098,22 @@ void FMUSIC_MODULE::updateEffects() noexcept
         channel.processInstrument(instrument);
 
         clampGlobalVolume();
-        channel.updateFlags(sample, globalvolume, header_.flags& FMUSIC_XMFLAGS_LINEARFREQUENCY);
+        channel.updateFlags(sample, global_volume_, header_.flags& FMUSIC_XMFLAGS_LINEARFREQUENCY);
     }
 }
 
 void FMUSIC_MODULE::reset() noexcept
 {
-    globalvolume = 64;
-    speed = (int)header_.default_tempo;
+    global_volume_ = 64;
+    ticks_per_row_ = (int)header_.default_tempo;
     row_ = 0;
-    order = 0;
-    nextorder = 0;
-    nextrow = 0;
-    mixer_samplesleft = 0;
+    order_ = 0;
+    next_order_ = 0;
+    next_row_ = 0;
+    mixer_samples_left_ = 0;
     tick_ = 0;
-    patterndelay = 0;
-    time_ms = 0;
+    pattern_delay_ = 0;
+    samples_mixed_ = 0;
 
     setBPM(header_.default_bpm);
 

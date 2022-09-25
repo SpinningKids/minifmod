@@ -17,7 +17,7 @@ struct FMUSIC_TIMMEINFO
 {
 	unsigned char order;
 	unsigned char row;
-	unsigned int  ms;
+	unsigned int  samples;
 };
 
 //= VARIABLE EXTERNS ========================================================================
