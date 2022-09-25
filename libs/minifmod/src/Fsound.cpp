@@ -249,8 +249,7 @@ void FSOUND_Software_Fill(FMUSIC_MODULE &mod) noexcept
 		mod.samples_mixed_ += MixedSoFar; // This is (and was before) approximated down by as much as 1ms per block
 
 		FMUSIC_TimeInfo[FSOUND_Software_FillBlock].samples = mod.samples_mixed_;
-		FMUSIC_TimeInfo[FSOUND_Software_FillBlock].row = mod.row_;
-		FMUSIC_TimeInfo[FSOUND_Software_FillBlock].order = mod.order_;
+		FMUSIC_TimeInfo[FSOUND_Software_FillBlock].position = mod.current_;
 	}
 
 

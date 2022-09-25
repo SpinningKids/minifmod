@@ -45,7 +45,7 @@ FMUSIC_MODULE * FMUSIC_LoadSong(const char *name, SAMPLELOADCALLBACK sampleloadc
     if (void* fp = FSOUND_File.open(name))
     {
         // create a mod instance
-        std::unique_ptr<FMUSIC_MODULE> mod = std::make_unique<FMUSIC_MODULE>(FSOUND_File, fp, sampleloadcallback);
+        auto mod = std::make_unique<FMUSIC_MODULE>(FSOUND_File, fp, sampleloadcallback);
         FSOUND_File.close(fp);
         return mod.release();
     }
@@ -172,12 +172,7 @@ void FMUSIC_StopSong()
 */
 unsigned char FMUSIC_GetOrder() noexcept
 {
-	if (!FMUSIC_TimeInfo)
-	{
-		return 0;
-	}
-
-	return FMUSIC_TimeInfo[FSOUND_Software_RealBlock].order;
+	return FMUSIC_TimeInfo ? FMUSIC_TimeInfo[FSOUND_Software_RealBlock].position.order : 0;
 }
 
 
@@ -201,12 +196,7 @@ unsigned char FMUSIC_GetOrder() noexcept
 */
 unsigned char FMUSIC_GetRow() noexcept
 {
-	if (!FMUSIC_TimeInfo)
-    {
-		return 0;
-    }
-
-	return FMUSIC_TimeInfo[FSOUND_Software_RealBlock].row;
+	return FMUSIC_TimeInfo ? FMUSIC_TimeInfo[FSOUND_Software_RealBlock].position.row : 0;
 }
 
 
@@ -234,11 +224,6 @@ unsigned char FMUSIC_GetRow() noexcept
 */
 unsigned int FMUSIC_GetTime() noexcept
 {
-	if (!FMUSIC_TimeInfo)
-    {
-		return 0;
-    }
-
-	return FMUSIC_TimeInfo[FSOUND_Software_RealBlock].samples * 1000ull / FSOUND_MixRate;
+	return FMUSIC_TimeInfo ? FMUSIC_TimeInfo[FSOUND_Software_RealBlock].samples * 1000ull / FSOUND_MixRate : 0;
 }
 

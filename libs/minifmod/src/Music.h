@@ -15,8 +15,7 @@
 
 struct FMUSIC_TIMMEINFO
 {
-	unsigned char order;
-	unsigned char row;
+	Position position;
 	unsigned int  samples;
 };
 
