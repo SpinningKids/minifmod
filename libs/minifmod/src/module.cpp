@@ -241,18 +241,15 @@ void FMUSIC_MODULE::tick() noexcept
 
 void FMUSIC_MODULE::updateNote() noexcept
 {
-    bool pattern_jump = false;
-
     // process any rows commands to set the next order/row
-    order_ = next_order_;
-    row_ = next_row_;
+    current_ = next_;
 
     bool row_set = false;
 
     // Point our note pointer to the correct pattern buffer, and to the
     // correct offset in this buffer indicated by row and number of channels
-    const auto& pattern = pattern_[header_.pattern_order[order_]];
-    const auto& row = pattern[row_];
+    const auto& pattern = pattern_[header_.pattern_order[current_.order]];
+    const auto& row = pattern[current_.row];
 
     // Loop through each channel in the row until we have finished
     for (int channel_index = 0; channel_index < header_.channels_count; channel_index++)
@@ -474,9 +471,8 @@ void FMUSIC_MODULE::updateNote() noexcept
 #ifdef FMUSIC_XM_PATTERNJUMP_ACTIVE
         case XMEffect::PATTERNJUMP: // --- 00 B00 : --- 00 D63 , should put us at ord=0, row=63
         {
-            next_order_ = note.effect_parameter % header_.song_length;
-            next_row_ = 0;
-            pattern_jump = true;
+            next_.order = note.effect_parameter % header_.song_length;
+            next_.row = 0;
             row_set = true;
             break;
         }
@@ -491,14 +487,14 @@ void FMUSIC_MODULE::updateNote() noexcept
 #ifdef FMUSIC_XM_PATTERNBREAK_ACTIVE
         case XMEffect::PATTERNBREAK:
         {
-            next_row_ = (paramx * 10) + paramy;
-            if (next_row_ > 63) // NOTE: This seems odd, as the pattern might be longer than 64
+            next_.row = (paramx * 10) + paramy;
+            if (next_.row > 63) // NOTE: This seems odd, as the pattern might be longer than 64
             {
-                next_row_ = 0;
+                next_.row = 0;
             }
-            if (!pattern_jump)
+            if (!row_set)
             {
-                next_order_ = (order_ + 1) % header_.song_length; // NOTE: shouldn't we go to the restart_position?
+                next_.order = (current_.order + 1) % header_.song_length; // NOTE: shouldn't we go to the restart_position?
             }
             row_set = true;
             break;
@@ -557,7 +553,7 @@ void FMUSIC_MODULE::updateNote() noexcept
             {
                 if (paramy == 0)
                 {
-                    channel.patlooprow = row_;
+                    channel.patlooprow = current_.row;
                 }
                 else
                 {
@@ -571,7 +567,7 @@ void FMUSIC_MODULE::updateNote() noexcept
                     }
                     if (channel.patloopno)
                     {
-                        next_row_ = channel.patlooprow;
+                        next_.row = channel.patlooprow;
                         //nextorder = order; // This is not needed, as we initially set order = nextorder;
                         row_set = true;
                     }
@@ -744,21 +740,14 @@ void FMUSIC_MODULE::updateNote() noexcept
         // if there were no row commands
         if (!row_set)
         {
-            if (row_ + 1 < pattern.size())	// if end of pattern TODO: Fix signed/unsigned comparison
+            if (current_.row + 1 < pattern.size())	// if end of pattern TODO: Fix signed/unsigned comparison
             {
-                next_row_ = row_ + 1;
+                next_.row = current_.row + 1;
             }
             else
             {
-                next_row_ = 0;						// start at top of pattn
-                if (order_ + 1 < header_.song_length)
-                {
-                    next_order_ = order_ + 1;
-                }
-                else
-                {
-                    next_order_ = header_.restart_position; // so increment the order
-                }
+                next_.row = 0;						// start at top of pattn
+                next_.order = current_.order + 1 < header_.song_length ? current_.order + 1 : header_.restart_position;
             }
         }
     }
@@ -768,8 +757,8 @@ void FMUSIC_MODULE::updateEffects() noexcept
 {
     // Point our note pointer to the correct pattern buffer, and to the
     // correct offset in this buffer indicated by row and number of channels
-    const auto& pattern = pattern_[header_.pattern_order[order_]];
-    const auto& row = pattern[row_];
+    const auto& pattern = pattern_[header_.pattern_order[current_.order]];
+    const auto& row = pattern[current_.row];
 
     // Loop through each channel in the row until we have finished
     for (int channel_index = 0; channel_index < header_.channels_count; channel_index++)
@@ -1106,10 +1095,10 @@ void FMUSIC_MODULE::reset() noexcept
 {
     global_volume_ = 64;
     ticks_per_row_ = (int)header_.default_tempo;
-    row_ = 0;
-    order_ = 0;
-    next_order_ = 0;
-    next_row_ = 0;
+    current_.row = 0;
+    current_.order = 0;
+    next_.row = 0;
+    next_.order = 0;
     mixer_samples_left_ = 0;
     tick_ = 0;
     pattern_delay_ = 0;

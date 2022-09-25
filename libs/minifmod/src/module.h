@@ -26,6 +26,12 @@
 
 inline FMUSIC_CHANNEL			FMUSIC_Channel[32]{};		// channel array for this song
 
+struct Position
+{
+	uint8_t		row;				// current row in pattern
+	uint8_t		order;				// current song order position
+};
+
 // Song type - contains info on song
 struct FMUSIC_MODULE final
 {
@@ -39,11 +45,9 @@ struct FMUSIC_MODULE final
 	int			globalvsl;			// global mod volume
 	int			tick_;				// current mod tick
 	int			ticks_per_row_;		// speed of song in ticks per row
-	uint8_t		row_;				// current row in pattern
-	uint8_t		order_;				// current song order position
 	int			pattern_delay_;		// pattern delay counter
-	uint8_t		next_row_;			// current row in pattern
-	uint8_t		next_order_;		// current song order position
+	Position	current_;
+	Position	next_;
 	int			samples_mixed_;		// time passed in seconds since song started
 
 
