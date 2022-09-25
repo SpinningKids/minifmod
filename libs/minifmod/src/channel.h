@@ -31,7 +31,7 @@ struct FMUSIC_CHANNEL
 	bool			stop;
 
 	FSOUND_CHANNEL* cptr;				// pointer to FSOUND system mixing channel
-	const Sample* sptr;				// pointer to FSOUND system sample
+	const Sample*	sptr;				// pointer to FSOUND system sample
 
 	int				period;				// current mod frequency period for this channel
 	int				volume;				// current mod volume for this channel

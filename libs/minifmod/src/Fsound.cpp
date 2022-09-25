@@ -225,32 +225,32 @@ void FSOUND_Software_Fill(FMUSIC_MODULE &mod) noexcept
 	{
 		int MixedSoFar = 0;
 
-        // keep resetting the mix pointer to the beginning of this portion of the ring buffer
+		// keep resetting the mix pointer to the beginning of this portion of the ring buffer
 		float* MixPtr = mixbuffer;
 
 		while (MixedSoFar < FSOUND_BlockSize)
 		{
-			if (!mod.mixer_samplesleft)
+			if (!mod.mixer_samples_left_)
 			{
 				mod.tick();	// update new mod tick
-				mod.mixer_samplesleft = mod.mixer_samplespertick;
+				mod.mixer_samples_left_ = mod.mixer_samples_per_tick_;
 			}
 
-            const int SamplesToMix = std::min(mod.mixer_samplesleft, FSOUND_BlockSize - MixedSoFar);
+			const int SamplesToMix = std::min(mod.mixer_samples_left_, FSOUND_BlockSize - MixedSoFar);
 
 			Mixer_FPU_FilteredVolume(MixPtr, SamplesToMix);
 
-			MixedSoFar	+= SamplesToMix;
-			MixPtr		+= SamplesToMix*2;
-			mod.mixer_samplesleft -= SamplesToMix;
+			MixedSoFar += SamplesToMix;
+			MixPtr += SamplesToMix * 2;
+			mod.mixer_samples_left_ -= SamplesToMix;
 
 		}
 
-		mod.time_ms += MixedSoFar * 1000 / FSOUND_MixRate; // This is (and was before) approximated down by as much as 1ms per block
+		mod.samples_mixed_ += MixedSoFar; // This is (and was before) approximated down by as much as 1ms per block
 
-		FMUSIC_TimeInfo[FSOUND_Software_FillBlock].ms    = mod.time_ms;
-		FMUSIC_TimeInfo[FSOUND_Software_FillBlock].row   = mod.row_;
-		FMUSIC_TimeInfo[FSOUND_Software_FillBlock].order = mod.order;
+		FMUSIC_TimeInfo[FSOUND_Software_FillBlock].samples = mod.samples_mixed_;
+		FMUSIC_TimeInfo[FSOUND_Software_FillBlock].row = mod.row_;
+		FMUSIC_TimeInfo[FSOUND_Software_FillBlock].order = mod.order_;
 	}
 
 

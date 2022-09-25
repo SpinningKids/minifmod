@@ -239,6 +239,6 @@ unsigned int FMUSIC_GetTime() noexcept
 		return 0;
     }
 
-	return FMUSIC_TimeInfo[FSOUND_Software_RealBlock].ms;
+	return FMUSIC_TimeInfo[FSOUND_Software_RealBlock].samples * 1000ull / FSOUND_MixRate;
 }
 
