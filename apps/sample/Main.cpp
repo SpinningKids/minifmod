@@ -152,7 +152,7 @@ int memtell(void* handle)
 #endif
 
 /*
-void songcallback(FMUSIC_MODULE *mod, unsigned char param)
+void songcallback(PlayerState *mod, unsigned char param)
 {
 	printf("order = %d, row = %d      \r", FMUSIC_GetOrder(mod), FMUSIC_GetRow(mod));
 }
@@ -192,7 +192,7 @@ int main(int argc, char *argv[])
 	// ==========================================================================================
 	// LOAD SONG
 	// ==========================================================================================
-	FMUSIC_MODULE* mod = FMUSIC_LoadSong(argv[1], nullptr); //sampleloadcallback);
+	auto mod = FMUSIC_LoadSong(argv[1], nullptr); //sampleloadcallback);
 	if (!mod)
 	{
 		printf("Error loading song\n");
@@ -203,7 +203,7 @@ int main(int argc, char *argv[])
 	// PLAY SONG
 	// ==========================================================================================
 
-    FMUSIC_PlaySong(mod);
+    auto ps = FMUSIC_PlaySong(mod);
 
 	printf("Press any key to quit\n");
 	printf("=========================================================================\n");
@@ -230,5 +230,5 @@ int main(int argc, char *argv[])
 
 	printf("\n");
 
-	FMUSIC_FreeSong(mod);
+	FMUSIC_FreeSong(FMUSIC_StopSong(ps));
 }

@@ -13,13 +13,14 @@
 #include <minifmod/minifmod.h>
 
 #include <thread>
+#include <Windows.h>
 
 #include "module.h"
-#include "Music.h"
+#include "player_state.h"
 #include "system_file.h"
 
-static std::thread	Software_Thread;
-
+static int FSOUND_MixRate = 44100;
+static PlayerState* FSOUND_last_player_state = nullptr;
 //= API FUNCTIONS ==============================================================================
 
 /*
@@ -33,25 +34,24 @@ static std::thread	Software_Thread;
 	'name'		Filename of module to load.
 
 	[RETURN_VALUE]
-	On success, a pointer to a FMUSIC_MODULE handle is returned.
+	On success, a pointer to a PlayerState handle is returned.
 	On failure, nullptr is returned.
 
 	[SEE_ALSO]
 	FMUSIC_FreeSong
 ]
 */
-FMUSIC_MODULE * FMUSIC_LoadSong(const char *name, SAMPLELOADCALLBACK sampleloadcallback)
+Module* FMUSIC_LoadSong(const char *name, SAMPLELOADCALLBACK sampleloadcallback)
 {
     if (void* fp = FSOUND_File.open(name))
     {
         // create a mod instance
-        auto mod = std::make_unique<FMUSIC_MODULE>(FSOUND_File, fp, sampleloadcallback);
+		std::unique_ptr<Module> mod{ new Module(FSOUND_File, fp, sampleloadcallback) };
         FSOUND_File.close(fp);
         return mod.release();
     }
-    return nullptr;
+    return {};
 }
-
 
 /*
 [API]
@@ -71,15 +71,14 @@ FMUSIC_MODULE * FMUSIC_LoadSong(const char *name, SAMPLELOADCALLBACK sampleloadc
 	FMUSIC_LoadSong
 ]
 */
-bool FMUSIC_FreeSong(FMUSIC_MODULE *mod)
+bool FMUSIC_FreeSong(Module* module)
 {
-	if (mod)
-    {
-        FMUSIC_StopSong();
-        delete mod;
-        return true;
-    }
-    return false;
+	if (module)
+	{
+		delete module;
+		return true;
+	}
+	return false;
 }
 
 /*
@@ -101,22 +100,15 @@ bool FMUSIC_FreeSong(FMUSIC_MODULE *mod)
 	FMUSIC_StopSong
 ]
 */
-bool FMUSIC_PlaySong(FMUSIC_MODULE *mod)
+PlayerState* FMUSIC_PlaySong(Module* module)
 {
-    if (!mod)
-    {
-		return false;
-    }
+	if (!module)
+	{
+		return nullptr;
+	}
 
-	FMUSIC_StopSong();
-
-	mod->reset();
-
-    // ========================================================================================================
-	// CREATE THREADS / TIMERS (last)
-	// ========================================================================================================
-	Software_Thread = std::thread(FSOUND_Software_DoubleBufferThread, mod);
-	return true;
+	FSOUND_last_player_state = new PlayerState(std::unique_ptr<Module>{ module }, FSOUND_MixRate);
+	return FSOUND_last_player_state;
 }
 
 
@@ -138,15 +130,17 @@ bool FMUSIC_PlaySong(FMUSIC_MODULE *mod)
 	FMUSIC_PlaySong
 ]
 */
-void FMUSIC_StopSong()
+Module* FMUSIC_StopSong(PlayerState* player_state)
 {
-	// wait until callback has settled down and exited
-	if (Software_Thread.joinable())
+	std::unique_ptr<Module> module;
+	if (!player_state) player_state = FSOUND_last_player_state;
+	if (player_state)
 	{
-		// Kill the thread
-		Software_Thread_Exit = true;
-		Software_Thread.join();
+		module = player_state->stop();
+		if (FSOUND_last_player_state == player_state) FSOUND_last_player_state = nullptr;
+		delete player_state;
 	}
+	return module.release();
 }
 
 //= INFORMATION FUNCTIONS ======================================================================
@@ -172,7 +166,7 @@ void FMUSIC_StopSong()
 */
 unsigned char FMUSIC_GetOrder() noexcept
 {
-	return FMUSIC_TimeInfo ? FMUSIC_TimeInfo[FSOUND_Software_RealBlock].position.order : 0;
+	return FSOUND_last_player_state ? FSOUND_last_player_state->getMixer().getTimeInfo().position.order : 0;
 }
 
 
@@ -196,7 +190,7 @@ unsigned char FMUSIC_GetOrder() noexcept
 */
 unsigned char FMUSIC_GetRow() noexcept
 {
-	return FMUSIC_TimeInfo ? FMUSIC_TimeInfo[FSOUND_Software_RealBlock].position.row : 0;
+	return FSOUND_last_player_state ? FSOUND_last_player_state->getMixer().getTimeInfo().position.row : 0;
 }
 
 
@@ -224,6 +218,16 @@ unsigned char FMUSIC_GetRow() noexcept
 */
 unsigned int FMUSIC_GetTime() noexcept
 {
-	return FMUSIC_TimeInfo ? FMUSIC_TimeInfo[FSOUND_Software_RealBlock].samples * 1000ull / FSOUND_MixRate : 0;
+	return FSOUND_last_player_state ? FSOUND_last_player_state->getMixer().getTimeInfo().samples * 1000ull / FSOUND_MixRate : 0;
 }
 
+bool FSOUND_Init(int mixrate, int vcmmode) noexcept
+{
+	FSOUND_MixRate = mixrate;
+	return true;
+}
+
+float FSOUND_TimeFromSamples() noexcept
+{
+	return FSOUND_last_player_state ? FSOUND_last_player_state->getMixer().timeFromSamples() : 0;
+}

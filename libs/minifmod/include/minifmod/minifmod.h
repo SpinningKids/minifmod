@@ -32,7 +32,8 @@ extern "C" {
 //===============================================================================================
 
 // fmod defined types
-struct FMUSIC_MODULE;
+struct PlayerState;
+struct Module;
 
 //===============================================================================================
 //= FUNCTION PROTOTYPES
@@ -42,7 +43,7 @@ struct FMUSIC_MODULE;
 // Initialization / Global functions.
 // ==================================
 typedef void (*SAMPLELOADCALLBACK)(short *buff, size_t length_samples, int instno, int sampno);
-typedef void (*FMUSIC_CALLBACK)(FMUSIC_MODULE *mod, unsigned char param);
+typedef void (*FMUSIC_CALLBACK)(PlayerState *mod, unsigned char param);
 
 // this must be called before FSOUND_Init!
 void FSOUND_File_SetCallbacks(void*         (*OpenCallback)(const char *name),
@@ -60,10 +61,10 @@ float FSOUND_TimeFromSamples() MINIFMOD_NOEXCEPT;
 // Song management / playback functions.
 // =====================================
 
-FMUSIC_MODULE * FMUSIC_LoadSong(const char *name, SAMPLELOADCALLBACK sampleloadcallback);
-bool    		FMUSIC_FreeSong(FMUSIC_MODULE *mod);
-bool    		FMUSIC_PlaySong(FMUSIC_MODULE *mod);
-void    		FMUSIC_StopSong();
+Module*         FMUSIC_LoadSong(const char *name, SAMPLELOADCALLBACK sampleloadcallback);
+bool    		FMUSIC_FreeSong(Module* module);
+PlayerState*    FMUSIC_PlaySong(Module* module);
+Module*         FMUSIC_StopSong(PlayerState* player_state = nullptr);
 
 // Runtime song information.
 // =========================
