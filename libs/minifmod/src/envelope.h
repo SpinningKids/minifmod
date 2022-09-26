@@ -2,6 +2,7 @@
 #pragma once
 
 #include <cstdint>
+#include "xmeffects.h"
 #include "xmfile.h"
 
 struct EnvelopePoint
@@ -28,7 +29,9 @@ public:
 		value_ = value;
 	}
 
+#if defined(FMUSIC_XM_VOLUMEENVELOPE_ACTIVE) || defined(FMUSIC_XM_PANENVELOPE_ACTIVE)
 	void process(const EnvelopePoints& envelope, XMEnvelopeFlags flags, unsigned char loop_start_index, unsigned char loop_end_index, unsigned char sustain_index, bool keyoff) noexcept;
+#endif
 	float operator()() const { return value_; }
 	void setPosition(int position) { position_ = position; }
 };

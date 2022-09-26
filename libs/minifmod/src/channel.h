@@ -17,8 +17,8 @@
 #include "envelope.h"
 #include "instrument.h"
 #include "lfo.h"
+#include "mixer.h"
 #include "portamento.h"
-#include "sample.h"
 #include "xmfile.h"
 
 // Channel type - contains information on a mod channel
@@ -26,12 +26,10 @@ struct Channel
 {
 	int				index;
 
-	unsigned char  	note;  				// last note set in channel
+	uint8_t			note;  				// last note set in channel
 
 	bool			trigger;
 	bool			stop;
-
-	const Sample*	sptr;				// pointer to FSOUND system sample
 
 	int				period;				// current mod frequency period for this channel
 	int				volume;				// current mod volume for this channel
@@ -43,7 +41,7 @@ struct Channel
 	EnvelopeState   pan_envelope;
 
 	int				fadeoutvol;			// volume fade out
-	int				ivibpos;   			// instrument vibrato position
+	uint8_t			ivibpos;   			// instrument vibrato position
 	int				ivibsweeppos;		// instrument vibrato sweep position
 	bool			keyoff;				// flag whether keyoff has been hit or not)
 
@@ -84,6 +82,7 @@ struct Channel
 	void reset(int volume, int pan) noexcept;
 	void processVolumeByte(uint8_t volume_byte) noexcept;
 	void tremor() noexcept;
-	std::tuple<float, float> updateVolume(int globalvolume) noexcept;
-	int getPeriod() const noexcept { return period + period_delta; }
+	void updateVolume() noexcept;
+
+	void sendToMixer(Mixer& mixer, const Instrument& sample, int globalvolume, int linearfrequency) const noexcept;
 };

@@ -12,7 +12,7 @@ namespace
         return (int)(powf(2.0f, (float)(132 - note) / 12.0f) * 13.375f);
     }
 
-    int FMUSIC_XM_GetAmigaPeriod(int note, int8_t fine_tune) noexcept
+    int GetAmigaPeriodFinetuned(int note, int8_t fine_tune) noexcept
     {
         int period = GetAmigaPeriod(note);
 
@@ -24,15 +24,6 @@ namespace
         return period;
     }
 #endif // FMUSIC_XM_AMIGAPERIODS_ACTIVE
-    int XMLinearPeriod2Frequency(int per)
-    {
-        return (int)(8363.0f * powf(2.0f, (6.0f * 12.0f * 16.0f * 4.0f - per) / (float)(12 * 16 * 4)));
-    }
-
-    int Period2Frequency(int period)
-    {
-        return 14317456L / period;
-    }
 }
 
 Position PlayerState::tick() noexcept
@@ -44,6 +35,16 @@ Position PlayerState::tick() noexcept
     else
     {
         updateEffects();					// Else update the inbetween row effects
+    }
+
+    clampGlobalVolume();
+    for (int channel_index = 0; channel_index < module_->header_.channels_count; channel_index++)
+    {
+        Channel& channel = FMUSIC_Channel[channel_index];
+        channel.updateVolume();
+        const Instrument& instrument = module_->getInstrument(channel.inst);
+        channel.processInstrument(instrument);
+        channel.sendToMixer(mixer_, instrument, global_volume_, module_->header_.flags & FMUSIC_XMFLAGS_LINEARFREQUENCY);
     }
 
     tick_++;
@@ -94,21 +95,11 @@ void PlayerState::updateNote() noexcept
             }
         }
 
-        assert(channel.inst < (int)module_->header_.instruments_count);
-        const Instrument& instrument = module_->instrument_[channel.inst];
-
-        uint8_t note_sample = instrument.sample_header.note_sample_number[channel.note];
-
-        assert(note_sample < 16);
-        const Sample& sample = instrument.sample[note_sample];
+        const Instrument& instrument = module_->getInstrument(channel.inst);
+        const Sample& sample = instrument.getSample(channel.note);
 
         if (valid_note) {
             channel.fine_tune = sample.header.fine_tune;
-        }
-
-        if (!porta)
-        {
-            channel.sptr = &sample;
         }
 
         int oldvolume = channel.volume;
@@ -141,7 +132,7 @@ void PlayerState::updateNote() noexcept
             else
             {
 #ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
-                channel.period_target = FMUSIC_XM_GetAmigaPeriod(channel.realnote, channel.fine_tune);
+                channel.period_target = GetAmigaPeriodFinetuned(channel.realnote, channel.fine_tune);
 #endif
             }
 
@@ -437,8 +428,7 @@ void PlayerState::updateNote() noexcept
 #ifdef FMUSIC_XM_PATTERNDELAY_ACTIVE
             case XMSpecialEffect::PATTERNDELAY:
             {
-                pattern_delay_ = paramy;
-                pattern_delay_ *= ticks_per_row_;
+                pattern_delay_ = ticks_per_row_ * paramy;
                 break;
             }
 #endif
@@ -545,11 +535,6 @@ void PlayerState::updateNote() noexcept
 #endif
         }
 
-        channel.processInstrument(instrument);
-
-        clampGlobalVolume();
-        updateFlags(channel, sample, global_volume_, module_->header_.flags & FMUSIC_XMFLAGS_LINEARFREQUENCY);
-
         // if there were no row commands
         if (!row_set)
         {
@@ -582,13 +567,7 @@ void PlayerState::updateEffects() noexcept
         const unsigned char paramx = note.effect_parameter >> 4;			// get effect param x
         const unsigned char paramy = note.effect_parameter & 0xF;			// get effect param y
 
-        assert(channel.inst < (int)module_->header_.instruments_count);
-        const Instrument& instrument = module_->instrument_[channel.inst];
-
-        uint8_t note_sample = instrument.sample_header.note_sample_number[channel.note];
-
-        assert(note_sample < 16);
-        const Sample& sample = instrument.sample[note_sample];
+        const Sample& sample = module_->getInstrument(channel.inst).getSample(channel.note);
 
         channel.voldelta = 0;
         channel.trigger = false;
@@ -672,8 +651,8 @@ void PlayerState::updateEffects() noexcept
 #ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
             else
             {
-                channel.period_delta = FMUSIC_XM_GetAmigaPeriod(channel.realnote + v, channel.fine_tune) -
-                    FMUSIC_XM_GetAmigaPeriod(channel.realnote, channel.fine_tune);
+                channel.period_delta = GetAmigaPeriodFinetuned(channel.realnote + v, channel.fine_tune) -
+                    GetAmigaPeriodFinetuned(channel.realnote, channel.fine_tune);
             }
 #endif
             break;
@@ -896,11 +875,6 @@ void PlayerState::updateEffects() noexcept
         }
 #endif
         }
-
-        channel.processInstrument(instrument);
-
-        clampGlobalVolume();
-        updateFlags(channel, sample, global_volume_, module_->header_.flags & FMUSIC_XMFLAGS_LINEARFREQUENCY);
     }
 }
 
@@ -922,64 +896,4 @@ PlayerState::PlayerState(std::unique_ptr<Module> module, int mixrate) :
     }
 
     setBPM(module_->header_.default_bpm);
-}
-
-void PlayerState::updateFlags(Channel& channel, const Sample& sample, int globalvolume, bool linearfrequency) noexcept
-{
-    MixerChannel& sound_channel = mixer_.getChannel(channel.index);
-
-    if (channel.trigger)
-    {
-        // this swaps between channels to avoid sounds cutting each other off and causing a click
-        if (sound_channel.sptr != nullptr)
-        {
-            MixerChannel& phaseout_sound_channel = mixer_.getChannel(channel.index + 32);
-            phaseout_sound_channel = sound_channel;
-
-            // this will cause the copy of the old channel to ramp out nicely.
-            phaseout_sound_channel.leftvolume = 0;
-            phaseout_sound_channel.rightvolume = 0;
-        }
-
-        sound_channel.sptr = &sample;
-
-        //==========================================================================================
-        // START THE SOUND!
-        //==========================================================================================
-        if (sound_channel.sampleoffset >= sample.header.loop_start + sample.header.loop_length)
-        {
-            sound_channel.sampleoffset = 0;
-        }
-
-        sound_channel.mixpos = (float)sound_channel.sampleoffset;
-        sound_channel.speeddir = MixDir::Forwards;
-        sound_channel.sampleoffset = 0;	// reset it (in case other samples come in and get corrupted etc)
-
-        // volume ramping
-        sound_channel.filtered_leftvolume = 0;
-        sound_channel.filtered_rightvolume = 0;
-    }
-
-    auto [high_precision_volume, high_precision_pan] = channel.updateVolume(globalvolume);
-
-    sound_channel.leftvolume = high_precision_volume * high_precision_pan;
-    sound_channel.rightvolume = high_precision_volume * (255 - high_precision_pan);
-
-    auto period = channel.getPeriod();
-    if (period != 0)
-    {
-        int freq = std::max(
-            (linearfrequency)
-            ? XMLinearPeriod2Frequency(period)
-            : Period2Frequency(period),
-            100);
-
-        sound_channel.speed = float(freq) / mixer_.getMixRate();
-    }
-    if (channel.stop)
-    {
-        sound_channel.mixpos = 0;
-        //		ccptr->sptr = nullptr;
-        sound_channel.sampleoffset = 0;	// if this channel gets stolen it will be safe
-    }
 }

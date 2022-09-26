@@ -2,6 +2,19 @@
 #include "channel.h"
 #include "xmeffects.h"
 
+namespace
+{
+    int XMLinearPeriod2Frequency(int per)
+    {
+        return (int)(8363.0f * powf(2.0f, (6.0f * 12.0f * 16.0f * 4.0f - per) / (float)(12 * 16 * 4)));
+    }
+
+    int Period2Frequency(int period)
+    {
+        return 14317456L / period;
+    }
+}
+
 void Channel::processInstrument(const Instrument& instrument) noexcept
 {
     //= PROCESS ENVELOPES ==========================================================================
@@ -54,7 +67,7 @@ void Channel::processInstrument(const Instrument& instrument) noexcept
     period_delta += delta;
 
     ivibsweeppos = std::min(ivibsweeppos + 1, int(instrument.sample_header.vibrato_sweep));
-    ivibpos = (ivibpos + instrument.sample_header.vibrato_rate) & 255;
+    ivibpos += instrument.sample_header.vibrato_rate;
 #endif	// FMUSIC_XM_INSTRUMENTVIBRATO_ACTIVE
 }
 
@@ -153,17 +166,67 @@ void Channel::tremor() noexcept
 #endif
 }
 
-std::tuple<float, float> Channel::updateVolume(int globalvolume) noexcept
+void Channel::updateVolume() noexcept
 {
     volume = std::clamp(volume, 0, 64);
     voldelta = std::clamp(voldelta, -volume, 64 - volume);
     pan = std::clamp(pan, 0, 255);
+}
 
-    float high_precision_pan = std::clamp(pan + pan_envelope() * (128 - abs(pan - 128)), 0.0f, 255.0f); // 255
+void Channel::sendToMixer(Mixer& mixer, const Instrument& instrument, int globalvolume, int linearfrequency) const noexcept
+{
+    MixerChannel& sound_channel = mixer.getChannel(index);
+    if (trigger)
+    {
+        // this swaps between channels to avoid sounds cutting each other off and causing a click
+        if (sound_channel.sptr != nullptr)
+        {
+            MixerChannel& phaseout_sound_channel = mixer.getChannel(index + 32);
+            phaseout_sound_channel = sound_channel;
 
+            // this will cause the copy of the old channel to ramp out nicely.
+            phaseout_sound_channel.leftvolume = 0;
+            phaseout_sound_channel.rightvolume = 0;
+        }
+
+        const Sample& sample = instrument.getSample(note);
+        sound_channel.sptr = &sample;
+
+        //==========================================================================================
+        // START THE SOUND!
+        //==========================================================================================
+        if (sound_channel.sampleoffset >= sample.header.loop_start + sample.header.loop_length)
+        {
+            sound_channel.sampleoffset = 0;
+        }
+
+        sound_channel.mixpos = (float)sound_channel.sampleoffset;
+        sound_channel.speeddir = MixDir::Forwards;
+        sound_channel.sampleoffset = 0;	// reset it (in case other samples come in and get corrupted etc)
+
+        // volume ramping
+        sound_channel.filtered_leftvolume = 0;
+        sound_channel.filtered_rightvolume = 0;
+    }
     constexpr float norm = 1.0f / 68451041280.0f; // 2^27 (volume normalization) * 255.0 (pan scale) (*2 for safety?!?)
+    const float high_precision_volume = (volume + voldelta) * fadeoutvol * globalvolume * volume_envelope() * norm;
+    const float high_precision_pan = std::clamp(pan + pan_envelope() * (128 - abs(pan - 128)), 0.0f, 255.0f);
+    sound_channel.leftvolume = high_precision_volume * high_precision_pan;
+    sound_channel.rightvolume = high_precision_volume * (255 - high_precision_pan);
+    const int actual_period = period + period_delta;
+    if (actual_period != 0)
+    {
+        int freq = std::max(
+            (linearfrequency)
+            ? XMLinearPeriod2Frequency(actual_period)
+            : Period2Frequency(actual_period),
+            100);
 
-    float high_precision_volume = (volume + voldelta) * fadeoutvol * globalvolume * volume_envelope() * norm;
-
-    return { high_precision_volume, high_precision_pan };
+        sound_channel.speed = float(freq) / mixer.getMixRate();
+    }
+    if (stop)
+    {
+        sound_channel.mixpos = 0;
+        sound_channel.sampleoffset = 0;	// if this channel gets stolen it will be safe
+    }
 }
