@@ -19,18 +19,18 @@
 #include "lfo.h"
 #include "portamento.h"
 #include "sample.h"
-#include "Sound.h"
 #include "xmfile.h"
 
 // Channel type - contains information on a mod channel
-struct FMUSIC_CHANNEL
+struct Channel
 {
+	int				index;
+
 	unsigned char  	note;  				// last note set in channel
 
 	bool			trigger;
 	bool			stop;
 
-	FSOUND_CHANNEL* cptr;				// pointer to FSOUND system mixing channel
 	const Sample*	sptr;				// pointer to FSOUND system sample
 
 	int				period;				// current mod frequency period for this channel
@@ -82,7 +82,8 @@ struct FMUSIC_CHANNEL
 
 	void processInstrument(const Instrument& instrument) noexcept;
 	void reset(int volume, int pan) noexcept;
-	void updateFlags(const Sample& sample, int globalvolume, bool linearfrequency) noexcept;
 	void processVolumeByte(uint8_t volume_byte) noexcept;
 	void tremor() noexcept;
+	std::tuple<float, float> updateVolume(int globalvolume) noexcept;
+	int getPeriod() const noexcept { return period + period_delta; }
 };
