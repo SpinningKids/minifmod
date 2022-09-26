@@ -12,6 +12,7 @@
 
 #pragma once
 
+#include <cassert>
 #include <cstdint>
 
 #include <minifmod/minifmod.h>
@@ -31,4 +32,10 @@ struct Module final
 	Instrument	instrument_[128];	// instrument array for this song (not used in MOD/S3M)
 
 	Module(const minifmod::FileAccess& fileAccess, void* fp, SAMPLELOADCALLBACK sampleloadcallback);
+
+	const Instrument& getInstrument(int instrument) const noexcept
+	{
+		assert(instrument < (int)header_.instruments_count);
+		return instrument_[instrument];
+	}
 };
