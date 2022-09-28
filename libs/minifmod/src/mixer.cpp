@@ -100,7 +100,7 @@ void Mixer::mix(float* mixptr, int len) noexcept
             // the following code sets up a mix counter. it sees what will happen first, will the output buffer
             // end be reached first or will the end of the sample be reached first?
             // whatever is smallest will be the mixcount.
-            int mix_count = std::min(len - sample_index, samples_to_mix_target);
+            const int mix_count = std::min(len - sample_index, samples_to_mix_target);
 
             float speed = channel.speed;
 

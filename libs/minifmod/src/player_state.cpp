@@ -17,7 +17,7 @@ namespace
         int period = GetAmigaPeriod(note);
 
         // interpolate for finer tuning
-        int direction = (fine_tune > 0) ? 1 : -1;
+        const int direction = (fine_tune > 0) ? 1 : -1;
 
         period += direction * ((GetAmigaPeriod(note + direction) - period) * fine_tune / 128);
 
@@ -78,8 +78,8 @@ void PlayerState::updateNote() noexcept
         const unsigned char paramy = note.effect_parameter & 0xF;			// get effect param y
         const int slide = paramx ? paramx : -paramy;
 
-        bool porta = (note.effect == XMEffect::PORTATO || note.effect == XMEffect::PORTATOVOLSLIDE);
-        bool valid_note = note.note && note.note != FMUSIC_KEYOFF;
+        const bool porta = (note.effect == XMEffect::PORTATO || note.effect == XMEffect::PORTATOVOLSLIDE);
+        const bool valid_note = note.note && note.note != FMUSIC_KEYOFF;
 
         if (!porta)
         {
@@ -248,7 +248,7 @@ void PlayerState::updateNote() noexcept
                 channel.sampleoffset = note.effect_parameter;
             }
 
-            unsigned int offset = channel.sampleoffset * 256;
+            const unsigned int offset = channel.sampleoffset * 256;
 
             if (offset >= sample.header.loop_start + sample.header.loop_length)
             {
