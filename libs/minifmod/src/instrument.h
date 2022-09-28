@@ -16,7 +16,7 @@ struct Instrument final
 	EnvelopePoints				pan_envelope;
 	Sample						sample[16];		// 16 samples per instrument
 
-	const Sample& getSample(int note) const noexcept
+	[[nodiscard]] const Sample& getSample(int note) const noexcept
 	{
 		const uint8_t note_sample = sample_header.note_sample_number[note];
 		assert(note_sample < 16);
