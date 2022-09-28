@@ -18,7 +18,7 @@ struct Instrument final
 
 	const Sample& getSample(int note) const noexcept
 	{
-		uint8_t note_sample = sample_header.note_sample_number[note];
+		const uint8_t note_sample = sample_header.note_sample_number[note];
 		assert(note_sample < 16);
 		return sample[note_sample];
 	}

@@ -222,7 +222,7 @@ void Channel::sendToMixer(Mixer& mixer, const Instrument& instrument, int global
     const int actual_period = period + period_delta;
     if (actual_period != 0)
     {
-        float freq = std::max(
+        const float freq = std::max(
             (linearfrequency)
             ? XMLinearPeriod2Frequency(actual_period)
             : Period2Frequency(actual_period),
