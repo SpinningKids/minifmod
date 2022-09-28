@@ -884,7 +884,7 @@ PlayerState::PlayerState(std::unique_ptr<Module> module, int mixrate) :
     global_volume_{ 64 },
     global_volume_slide_{ 0 },
     tick_{ 0 },
-    ticks_per_row_{ (int)module_->header_.default_tempo },
+    ticks_per_row_{ module_->header_.default_tempo },
     pattern_delay_{ 0 },
     current_{ 0, 0 },
     next_{ 0, 0 }
