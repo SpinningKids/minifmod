@@ -11,11 +11,11 @@ enum class WaveControl : uint8_t
 
 class LFO final
 {
-	WaveControl wave_control_;
-	bool continue_;
-	int position_;
-	int speed_;
-	int depth_;
+	WaveControl wave_control_{};
+	bool continue_{};
+	int position_ = 0;
+	int speed_ = 0;
+	int depth_ = 0;
 public:
 
 	void setup(int speed, int depth)
