@@ -84,5 +84,5 @@ struct Channel
 	void tremor() noexcept;
 	void updateVolume() noexcept;
 
-	void sendToMixer(Mixer& mixer, const Instrument& sample, int globalvolume, int linearfrequency) const noexcept;
+	void sendToMixer(Mixer& mixer, const Instrument& sample, int globalvolume, bool linearfrequency) const noexcept;
 };
