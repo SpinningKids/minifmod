@@ -18,7 +18,7 @@ namespace
     struct FSOUND_SoundBlock
     {
 #ifdef WIN32
-        WAVEHDR		wavehdr;
+        WAVEHDR		wavehdr{};
 #endif
         std::unique_ptr<short[]> data;
     };

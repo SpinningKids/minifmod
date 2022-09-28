@@ -5,8 +5,8 @@
 
 class Portamento
 {
-	int target_;
-	int speed_;
+	int target_ = 0;
+	int speed_ = 0;
 public:
 	void setup(int target, int speed = 0)
 	{
