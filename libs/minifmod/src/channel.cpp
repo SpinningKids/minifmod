@@ -4,14 +4,20 @@
 
 namespace
 {
-    int XMLinearPeriod2Frequency(int per)
+    float XMLinearPeriod2Frequency(int per)
     {
-        return (int)(8363.0f * powf(2.0f, (6.0f * 12.0f * 16.0f * 4.0f - per) / (float)(12 * 16 * 4)));
+        // From XM.TXT:
+        //      Frequency = 8363*2^((6*12*16*4 - Period) / (12*16*4));
+        // Simplified by taking log2(8363) inside the power and simplifying
+        return powf(2.0f, 19.029805f - per / 768.0f);
+        //return (int)(8363.0f * powf(2.0f, (6.0f * 12.0f * 16.0f * 4.0f - per) / (float)(12 * 16 * 4)));
     }
 
-    int Period2Frequency(int period)
+    float Period2Frequency(int period)
     {
-        return 14317456L / period;
+        // From XM.TXT:
+        //      Frequency = 8363*1712/Period;
+        return 14317456.0f / period;
     }
 }
 
@@ -173,7 +179,7 @@ void Channel::updateVolume() noexcept
     pan = std::clamp(pan, 0, 255);
 }
 
-void Channel::sendToMixer(Mixer& mixer, const Instrument& instrument, int globalvolume, int linearfrequency) const noexcept
+void Channel::sendToMixer(Mixer& mixer, const Instrument& instrument, int globalvolume, bool linearfrequency) const noexcept
 {
     MixerChannel& sound_channel = mixer.getChannel(index);
     if (trigger)
@@ -216,13 +222,13 @@ void Channel::sendToMixer(Mixer& mixer, const Instrument& instrument, int global
     const int actual_period = period + period_delta;
     if (actual_period != 0)
     {
-        int freq = std::max(
+        float freq = std::max(
             (linearfrequency)
             ? XMLinearPeriod2Frequency(actual_period)
             : Period2Frequency(actual_period),
-            100);
+            100.0f);
 
-        sound_channel.speed = float(freq) / mixer.getMixRate();
+        sound_channel.speed = freq / mixer.getMixRate();
     }
     if (stop)
     {

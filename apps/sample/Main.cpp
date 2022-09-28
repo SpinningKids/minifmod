@@ -72,6 +72,7 @@ struct MEMFILE
 
 void* memopen(const char *name)
 {
+	FSOUND_Init(96000);
     MEMFILE* memfile = (MEMFILE*)calloc(sizeof(MEMFILE), 1);
 
 #ifndef USEMEMLOADRESOURCE

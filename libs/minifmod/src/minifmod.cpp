@@ -13,7 +13,6 @@
 #include <minifmod/minifmod.h>
 
 #include <thread>
-#include <Windows.h>
 
 #include "module.h"
 #include "player_state.h"
