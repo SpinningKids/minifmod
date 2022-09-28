@@ -44,7 +44,7 @@ public:
 		return std::move(module_);
 	}
 
-	const Mixer& getMixer() const noexcept
+	[[nodiscard]] const Mixer& getMixer() const noexcept
 	{
 		return mixer_;
 	}

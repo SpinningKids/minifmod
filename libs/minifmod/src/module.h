@@ -33,7 +33,7 @@ struct Module final
 
 	Module(const minifmod::FileAccess& fileAccess, void* fp, SAMPLELOADCALLBACK sampleloadcallback);
 
-	const Instrument& getInstrument(int instrument) const noexcept
+	[[nodiscard]] const Instrument& getInstrument(int instrument) const noexcept
 	{
 		assert(instrument < (int)header_.instruments_count);
 		return instrument_[instrument];

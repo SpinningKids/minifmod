@@ -69,7 +69,7 @@ class Mixer final
 public:
 	Mixer(std::function<Position()>&& tick_callback, int mixrate = 44100) noexcept;
 
-	const TimeInfo& getTimeInfo() const noexcept
+	[[nodiscard]] const TimeInfo& getTimeInfo() const noexcept
 	{
 		return FMUSIC_TimeInfo[FSOUND_Software_RealBlock];
 	}
@@ -85,19 +85,19 @@ public:
 		}
 	}
 
-	int getMixRate() const
+	[[nodiscard]] int getMixRate() const
 	{
 		return FSOUND_MixRate;
 	}
 
 	void mix(float* mixptr, int len) noexcept;
 
-	float timeFromSamples() const noexcept;
+	[[nodiscard]] float timeFromSamples() const noexcept;
 	void setSamplesPerTick(int samplesPerTick)
 	{
 		mixer_samples_per_tick_ = samplesPerTick;
 	}
 
-	MixerChannel& getChannel(int index) noexcept { return FSOUND_Channel[index]; }
-	const MixerChannel& getChannel(int index) const { return FSOUND_Channel[index]; }
+	[[nodiscard]] MixerChannel& getChannel(int index) noexcept { return FSOUND_Channel[index]; }
+	[[nodiscard]] const MixerChannel& getChannel(int index) const { return FSOUND_Channel[index]; }
 };
