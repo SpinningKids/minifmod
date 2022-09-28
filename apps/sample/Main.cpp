@@ -73,7 +73,7 @@ struct MEMFILE
 void* memopen(const char *name)
 {
 	FSOUND_Init(96000);
-    MEMFILE* memfile = (MEMFILE*)calloc(sizeof(MEMFILE), 1);
+    auto memfile = (MEMFILE*)calloc(sizeof(MEMFILE), 1);
 
 #ifndef USEMEMLOADRESOURCE
     {
@@ -107,7 +107,7 @@ void* memopen(const char *name)
 
 void memclose(void* handle)
 {
-	MEMFILE *memfile = (MEMFILE *)handle;
+    const auto memfile = (MEMFILE *)handle;
 
 #ifndef USEMEMLOADRESOURCE
 	free(memfile->data);			// dont free it if it was initialized with LockResource
@@ -118,7 +118,7 @@ void memclose(void* handle)
 
 int memread(void *buffer, int size, void* handle)
 {
-	MEMFILE *memfile = (MEMFILE *)handle;
+    const auto memfile = (MEMFILE *)handle;
 
 	if (memfile->pos + size >= memfile->length)
 		size = memfile->length - memfile->pos;
@@ -131,7 +131,7 @@ int memread(void *buffer, int size, void* handle)
 
 void memseek(void* handle, int pos, int mode)
 {
-	MEMFILE *memfile = (MEMFILE *)handle;
+    auto memfile = (MEMFILE *)handle;
 
 	if (mode == SEEK_SET)
 		memfile->pos = pos;
