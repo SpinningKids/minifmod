@@ -5,6 +5,6 @@
 
 struct Position final
 {
-	uint8_t		row;				// current row in pattern
-	uint8_t		order;				// current song order position
+	uint16_t	row;				// current row in pattern
+	uint16_t	order;				// current song order position
 };

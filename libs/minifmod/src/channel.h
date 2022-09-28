@@ -69,7 +69,7 @@ struct Channel
 	unsigned char	tremorpos; 			// tremor position (XM + S3M)
 	unsigned char 	tremoron;   		// remembered parameters for tremor (XM + S3M)
 	unsigned char 	tremoroff;   		// remembered parameters for tremor (XM + S3M)
-	uint8_t			patlooprow;
+	uint16_t		patlooprow;
 	uint8_t 		patloopno;  		// pattern loop variables for effect  E6x
 
 	uint8_t			finevslup;			// parameter for fine volume slide up
@@ -84,5 +84,5 @@ struct Channel
 	void tremor() noexcept;
 	void updateVolume() noexcept;
 
-	void sendToMixer(Mixer& mixer, const Instrument& sample, int globalvolume, bool linearfrequency) const noexcept;
+	void sendToMixer(Mixer& mixer, const Instrument& instrument, int globalvolume, bool linearfrequency) const noexcept;
 };
