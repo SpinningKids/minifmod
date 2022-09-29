@@ -81,19 +81,30 @@ void Channel::reset(int volume, int pan) noexcept
 {
     this->volume = volume;
     this->pan = pan;
+#ifdef FMUSIC_XM_VOLUMEENVELOPE_ACTIVE
     volume_envelope.reset(1.0);
+#endif
+#ifdef FMUSIC_XM_PANENVELOPE_ACTIVE
     pan_envelope.reset(0.0);
+#endif
 
     keyoff = false;
     fadeoutvol = 32768;
+
+#ifdef FMUSIC_XM_INSTRUMENTVIBRATO_ACTIVE
     ivibsweeppos = 0;
     ivibpos = 0;
-
+#endif
     // retrigger tremolo and vibrato waveforms
+#if defined (FMUSIC_XM_VIBRATOVOLSLIDE_ACTIVE) || defined(FMUSIC_XM_VIBRATO_ACTIVE)
     vibrato.reset();
+#endif
+#ifdef FMUSIC_XM_TREMOLO_ACTIVE
     tremolo.reset();
-
+#endif
+#ifdef FMUSIC_XM_TREMOR_ACTIVE
     tremorpos = 0;								// retrigger tremor count
+#endif
 }
 
 void Channel::processVolumeByte(uint8_t volume_byte) noexcept
@@ -215,8 +226,15 @@ void Channel::sendToMixer(Mixer& mixer, const Instrument& instrument, int global
         sound_channel.filtered_rightvolume = 0;
     }
     constexpr float norm = 1.0f / 68451041280.0f; // 2^27 (volume normalization) * 255.0 (pan scale) (*2 for safety?!?)
-    const float high_precision_volume = (volume + voldelta) * fadeoutvol * globalvolume * volume_envelope() * norm;
-    const float high_precision_pan = std::clamp(pan + pan_envelope() * (128 - abs(pan - 128)), 0.0f, 255.0f);
+    float high_precision_volume = (volume + voldelta) * fadeoutvol * globalvolume * norm;
+#ifdef FMUSIC_XM_VOLUMEENVELOPE_ACTIVE
+    high_precision_volume *= volume_envelope();
+#endif
+    float high_precision_pan = pan;
+#ifdef FMUSIC_XM_PANENVELOPE_ACTIVE
+    high_precision_pan += pan_envelope() * (128 - abs(pan - 128));
+#endif
+    high_precision_pan = std::clamp(high_precision_pan, 0.0f, 255.0f);
     sound_channel.leftvolume = high_precision_volume * high_precision_pan;
     sound_channel.rightvolume = high_precision_volume * (255 - high_precision_pan);
     const int actual_period = period + period_delta;

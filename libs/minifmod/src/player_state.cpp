@@ -6,7 +6,7 @@
 namespace
 {
     constexpr uint8_t FMUSIC_KEYOFF = 97;
-#ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
+
     int GetAmigaPeriod(int note)
     {
         return (int)(powf(2.0f, (float)(132 - note) / 12.0f) * 13.375f);
@@ -23,7 +23,6 @@ namespace
 
         return period;
     }
-#endif // FMUSIC_XM_AMIGAPERIODS_ACTIVE
 }
 
 Position PlayerState::tick() noexcept
@@ -103,7 +102,7 @@ void PlayerState::updateNote() noexcept
         }
 
         int oldvolume = channel.volume;
-        int oldperiod = channel.period;
+        float oldperiod = channel.period;
         int oldpan = channel.pan;
 
         // if there is no more tremolo, set volume to volume + last tremolo delta
@@ -150,7 +149,9 @@ void PlayerState::updateNote() noexcept
         }
 
         //= PROCESS VOLUME BYTE ========================================================================
+#ifdef FMUSIC_XM_VOLUMEBYTE_ACTIVE
         channel.processVolumeByte(note.volume);
+#endif
 
         //= PROCESS KEY OFF ============================================================================
         if (note.note == FMUSIC_KEYOFF || note.effect == XMEffect::KEYOFF)
@@ -158,10 +159,12 @@ void PlayerState::updateNote() noexcept
             channel.keyoff = true;
         }
 
+#ifdef FMUSIC_XM_VOLUMEENVELOPE_ACTIVE
         if (instrument.volume_envelope.count == 0 && channel.keyoff)
         {
             channel.volume_envelope.reset(0.0f);
         }
+#endif
 
         //= PROCESS TICK 0 EFFECTS =====================================================================
         switch (note.effect)
@@ -338,7 +341,7 @@ void PlayerState::updateNote() noexcept
                 break;
             }
 #endif
-#ifdef FMUSIC_XM_SETVIBRATOWAVE_ACTIVE
+#if defined(FMUSIC_XM_SETVIBRATOWAVE_ACTIVE) && (defined (FMUSIC_XM_VIBRATOVOLSLIDE_ACTIVE) || defined(FMUSIC_XM_VIBRATO_ACTIVE) || defined(FMUSIC_XM_VOLUMEBYTE_ACTIVE))
             case XMSpecialEffect::SETVIBRATOWAVE:
             {
                 channel.vibrato.setFlags(paramy);
@@ -379,7 +382,7 @@ void PlayerState::updateNote() noexcept
                 break;
             }
 #endif
-#ifdef FMUSIC_XM_SETTREMOLOWAVE_ACTIVE
+#if defined(FMUSIC_XM_TREMOLO_ACTIVE) && defined(FMUSIC_XM_SETTREMOLOWAVE_ACTIVE)
             case XMSpecialEffect::SETTREMOLOWAVE:
             {
                 channel.tremolo.setFlags(paramy);
@@ -466,7 +469,7 @@ void PlayerState::updateNote() noexcept
             break;
         }
 #endif
-#ifdef FMUSIC_XM_SETENVELOPEPOS_ACTIVE
+#if defined(FMUSIC_XM_SETENVELOPEPOS_ACTIVE) && defined(FMUSIC_XM_VOLUMEENVELOPE_ACTIVE)
         case XMEffect::SETENVELOPEPOS:
         {
             channel.volume_envelope.setPosition(note.effect_parameter);
@@ -662,7 +665,7 @@ void PlayerState::updateEffects() noexcept
         case XMEffect::PORTAUP:
         {
             channel.period_delta = 0;
-            channel.period = std::max(channel.period - (channel.portaup * 4), 56); // subtract period and stop at B#8
+            channel.period = std::max(channel.period - (channel.portaup * 4), 56.f); // subtract period and stop at B#8
             break;
         }
 #endif
@@ -752,7 +755,9 @@ void PlayerState::updateEffects() noexcept
                     //= PROCESS INSTRUMENT NUMBER ==================================================================
                     channel.reset(sample.header.default_volume, sample.header.default_panning);
                     channel.period = channel.period_target;
+#ifdef FMUSIC_XM_VOLUMEBYTE_ACTIVE
                     channel.processVolumeByte(note.volume);
+#endif
                     channel.trigger = true;
                 }
                 break;
@@ -882,7 +887,6 @@ PlayerState::PlayerState(std::unique_ptr<Module> module, int mixrate) :
     module_{ std::move(module) },
     mixer_{ [this]() {return this->tick(); }, mixrate },
     global_volume_{ 64 },
-    global_volume_slide_{ 0 },
     tick_{ 0 },
     ticks_per_row_{ module_->header_.default_tempo },
     pattern_delay_{ 0 },

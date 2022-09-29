@@ -13,6 +13,7 @@
 #include "module.h"
 
 #include "channel.h"
+#include "xmeffects.h"
 
 Module::Module(const minifmod::FileAccess& fileAccess, void* fp, SAMPLELOADCALLBACK sampleloadcallback)
 {
@@ -103,8 +104,13 @@ Module::Module(const minifmod::FileAccess& fileAccess, void* fp, SAMPLELOADCALLB
                 }
                 return e;
             };
+#ifdef FMUSIC_XM_VOLUMEENVELOPE_ACTIVE
             instrument.volume_envelope = adjust_envelope(instrument.sample_header.volume_envelope_count, instrument.sample_header.volume_envelope, 0, 64, instrument.sample_header.volume_envelope_flags);
+#endif
+#ifdef FMUSIC_XM_PANENVELOPE_ACTIVE
             instrument.pan_envelope = adjust_envelope(instrument.sample_header.pan_envelope_count, instrument.sample_header.pan_envelope, 32, 32, instrument.sample_header.pan_envelope_flags);
+#endif
+
 
             // seek to first sample
             fileAccess.seek(fp, first_sample_offset, SEEK_SET);

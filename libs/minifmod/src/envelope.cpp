@@ -1,8 +1,6 @@
 
 #include "envelope.h"
-#include "xmeffects.h"
 
-#if defined(FMUSIC_XM_VOLUMEENVELOPE_ACTIVE) || defined(FMUSIC_XM_PANENVELOPE_ACTIVE)
 void EnvelopeState::process(const EnvelopePoints& envelope, XMEnvelopeFlags flags, unsigned char loop_start_index, unsigned char loop_end_index, unsigned char sustain_index, bool keyoff) noexcept
 {
     if (envelope.count > 0)
@@ -30,4 +28,3 @@ void EnvelopeState::process(const EnvelopePoints& envelope, XMEnvelopeFlags flag
         }
     }
 }
-#endif // (FMUSIC_XM_VOLUMEENVELOPE_ACTIVE) || defined(FMUSIC_XM_PANENVELOPE_ACTIVE)
