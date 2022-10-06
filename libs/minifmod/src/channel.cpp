@@ -4,7 +4,7 @@
 
 namespace
 {
-    float XMLinearPeriod2Frequency(int per)
+    float XMLinearPeriod2Frequency(float per)
     {
         // From XM.TXT:
         //      Frequency = 8363*2^((6*12*16*4 - Period) / (12*16*4));
@@ -13,7 +13,7 @@ namespace
         //return (int)(8363.0f * powf(2.0f, (6.0f * 12.0f * 16.0f * 4.0f - per) / (float)(12 * 16 * 4)));
     }
 
-    float Period2Frequency(int period)
+    float Period2Frequency(float period)
     {
         // From XM.TXT:
         //      Frequency = 8363*1712/Period;
@@ -237,7 +237,7 @@ void Channel::sendToMixer(Mixer& mixer, const Instrument& instrument, int global
     high_precision_pan = std::clamp(high_precision_pan, 0.0f, 255.0f);
     sound_channel.leftvolume = high_precision_volume * high_precision_pan;
     sound_channel.rightvolume = high_precision_volume * (255 - high_precision_pan);
-    const int actual_period = period + period_delta;
+    const float actual_period = period + period_delta;
     if (actual_period != 0)
     {
         const float freq = std::max(
