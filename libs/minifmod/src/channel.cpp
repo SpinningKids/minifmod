@@ -133,12 +133,18 @@ void Channel::processVolumeByte(uint8_t volume_byte) noexcept
         }
         case 0xa:
         {
-            vibrato.setup(volumey, 0); // TODO: Check if it's in the correct range (0-15)
+            if (volumey)
+            {
+                vibrato.setSpeed(volumey);
+            }
             break;
         }
         case 0xb:
         {
-            vibrato.setup(0, volumey * 2); // TODO: Check if it's in the correct range (0-15)
+            if (volumey)
+            {
+                vibrato.setDepth(volumey * 8);
+            }
             break;
         }
         case 0xc:
