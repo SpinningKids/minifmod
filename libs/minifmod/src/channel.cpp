@@ -37,13 +37,13 @@ void Channel::processInstrument(const Instrument& instrument) noexcept
     }
     //= INSTRUMENT VIBRATO ============================================================================
 #ifdef FMUSIC_XM_INSTRUMENTVIBRATO_ACTIVE
-    int delta;
+    float delta;
 
     switch (instrument.sample_header.vibrato_type)
     {
     case XMInstrumentVibratoType::Sine:
     {
-        delta = (int)(sinf((float)ivibpos * (2 * 3.141592f / 256.0f)) * 64.0f);
+        delta = sinf((float)ivibpos * (2 * 3.141592f / 256.0f))*64.f;
         break;
     }
     case XMInstrumentVibratoType::Square:
@@ -63,12 +63,11 @@ void Channel::processInstrument(const Instrument& instrument) noexcept
     }
     }
 
-    delta *= instrument.sample_header.vibrato_depth;
+    delta *= instrument.sample_header.vibrato_depth / 64.0f;
     if (instrument.sample_header.vibrato_sweep)
     {
-        delta = delta * ivibsweeppos / instrument.sample_header.vibrato_sweep;
+        delta *= float(ivibsweeppos) / instrument.sample_header.vibrato_sweep;
     }
-    delta /= 64;
 
     period_delta += delta;
 
@@ -159,7 +158,11 @@ void Channel::processVolumeByte(uint8_t volume_byte) noexcept
         }
         case 0xf:
         {
-            portamento.setup(period_target, volumey * 64);
+            portamento.setTarget(period_target);
+            if (volumey)
+            {
+                portamento.setSpeed(volumey * 64);
+            }
             trigger = false;
             break;
         }
