@@ -7,6 +7,11 @@ namespace
 {
     constexpr uint8_t FMUSIC_KEYOFF = 97;
 
+    float GetXMLinearPeriodFineTuned(int note, int8_t fine_tune) // TODO: Check
+    {
+        return (10 * 12 * 16 * 4) - (note * 16 * 4) - (fine_tune / 2);
+    }
+
 #ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
     int GetAmigaPeriod(int note)
     {
@@ -25,6 +30,24 @@ namespace
         return period;
     }
 #endif
+
+    float GetPeriodFinetuned(int note, int8_t fine_tune, bool linear)
+    {
+#ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
+        if (!linear)
+            return GetAmigaPeriodFinetuned(note, fine_tune);
+#endif
+        return GetXMLinearPeriodFineTuned(note, fine_tune);
+    }
+
+    float GetPeriodDeltaFinetuned(int note, int delta, int8_t fine_tune, bool linear)
+    {
+#ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
+        if (!linear)
+            return GetAmigaPeriodFinetuned(note + delta, fine_tune) - GetAmigaPeriodFinetuned(note, fine_tune);
+#endif
+        return delta;
+    }
 }
 
 Position PlayerState::tick() noexcept
@@ -126,16 +149,7 @@ void PlayerState::updateNote() noexcept
             channel.realnote = note.note + sample.header.relative_note - 1;
 
             // get period according to realnote and fine_tune
-            if (module_->header_.flags & FMUSIC_XMFLAGS_LINEARFREQUENCY)
-            {
-                channel.period_target = (10 * 12 * 16 * 4) - (channel.realnote * 16 * 4) - (channel.fine_tune / 2);
-            }
-            else
-            {
-#ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
-                channel.period_target = GetAmigaPeriodFinetuned(channel.realnote, channel.fine_tune);
-#endif
-            }
+            channel.period_target = GetPeriodFinetuned(channel.realnote, channel.fine_tune, module_->header_.flags & FMUSIC_XMFLAGS_LINEARFREQUENCY);
 
             // frequency only changes if there are no portamento effects
             if (!porta)
@@ -653,17 +667,7 @@ void PlayerState::updateEffects() noexcept
                 v = paramy;
                 break;
             }
-            if (module_->header_.flags & FMUSIC_XMFLAGS_LINEARFREQUENCY)
-            {
-                channel.period_delta = v * 64;
-            }
-#ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
-            else
-            {
-                channel.period_delta = GetAmigaPeriodFinetuned(channel.realnote + v, channel.fine_tune) -
-                    GetAmigaPeriodFinetuned(channel.realnote, channel.fine_tune);
-            }
-#endif
+            channel.period_delta = GetPeriodDeltaFinetuned(channel.realnote, v * 64, channel.fine_tune, module_->header_.flags & FMUSIC_XMFLAGS_LINEARFREQUENCY);
             break;
         }
 #endif
