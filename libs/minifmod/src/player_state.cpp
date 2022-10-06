@@ -9,18 +9,18 @@ namespace
 
     float GetXMLinearPeriodFineTuned(int note, int8_t fine_tune) // TODO: Check
     {
-        return (10 * 12 * 16 * 4) - (note * 16 * 4) - (fine_tune / 2);
+        return (10 * 12 * 16 * 4) - (note * 16 * 4) - (fine_tune / 2.0f);
     }
 
 #ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
-    int GetAmigaPeriod(int note)
+    float GetAmigaPeriod(int note)
     {
-        return (int)(powf(2.0f, (float)(132 - note) / 12.0f) * 13.375f);
+        return powf(2.0f, (float)(132 - note) / 12.0f) * 13.375f;
     }
 
-    int GetAmigaPeriodFinetuned(int note, int8_t fine_tune) noexcept
+    float GetAmigaPeriodFinetuned(int note, int8_t fine_tune) noexcept
     {
-        int period = GetAmigaPeriod(note);
+        float period = GetAmigaPeriod(note);
 
         // interpolate for finer tuning
         const int direction = (fine_tune > 0) ? 1 : -1;
@@ -233,7 +233,14 @@ void PlayerState::updateNote() noexcept
 #ifdef FMUSIC_XM_VIBRATO_ACTIVE
         case XMEffect::VIBRATO:
         {
-            channel.vibrato.setup(paramx, paramy * 2); // TODO: Check if it's in the correct range (0-15)
+            if (paramx)
+            {
+                channel.vibrato.setSpeed(paramx);
+            }
+            if (paramy)
+            {
+                channel.vibrato.setDepth(paramy * 8);
+            }
             channel.period_delta = channel.vibrato();
             break;
         }
@@ -252,7 +259,14 @@ void PlayerState::updateNote() noexcept
 #ifdef FMUSIC_XM_TREMOLO_ACTIVE
         case XMEffect::TREMOLO:
         {
-            channel.tremolo.setup(paramx, -paramy);
+            if (paramx)
+            {
+                channel.tremolo.setSpeed(paramx);
+            }
+            if (paramy)
+            {
+                channel.tremolo.setDepth(-paramy * 4);
+            }
             break;
         }
 #endif
@@ -621,7 +635,10 @@ void PlayerState::updateEffects() noexcept
 #ifdef FMUSIC_XM_VIBRATO_ACTIVE
         case 0xb:
         {
-            channel.vibrato.setup(0, volumey * 2); // TODO: Check if it's in the correct range (0-15)
+            if (volumey)
+            {
+                channel.vibrato.setDepth(volumey * 8);
+            }
             channel.period_delta = channel.vibrato();
             channel.vibrato.update();
             break;

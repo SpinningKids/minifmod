@@ -15,21 +15,12 @@ class LFO final
 	bool continue_{};
 	int position_ = 0;
 	int speed_ = 0;
-	int depth_ = 0;
+	float depth_ = 0;
 public:
+	void setSpeed(int speed) { speed_ = speed; }
+	void setDepth(float depth) { depth_ = depth; }
 
-	void setup(int speed, int depth)
-	{
-		if (speed) {
-			speed_ = speed;
-		}
-		if (depth)
-		{
-			depth_ = depth * 4;
-		}
-	}
-
-	void setFlags(uint8_t flags)
+    void setFlags(uint8_t flags)
 	{
 		wave_control_ = (WaveControl)(flags & 3);
 		continue_ = (flags & 4) != 0;
@@ -52,12 +43,12 @@ public:
 		}
 	}
 
-	[[nodiscard]] int operator () () const
+	[[nodiscard]] float operator () () const
 	{
 		switch (wave_control_)
 		{
 		case WaveControl::Sine:
-			return -int(sinf((float)position_ * (2 * 3.141592f / 64.0f)) * depth_);
+			return sinf((float)position_ * (2 * 3.141592f / 64.0f)) * depth_;
 		case WaveControl::SawTooth:
 			return -(position_ * 2 + 1) * depth_ / 63;
 		default:
