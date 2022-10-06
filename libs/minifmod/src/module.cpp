@@ -19,6 +19,9 @@ Module::Module(const minifmod::FileAccess& fileAccess, void* fp, SAMPLELOADCALLB
 {
     fileAccess.seek(fp, 0, SEEK_SET);
     fileAccess.read(&header_, sizeof(header_), fp);
+#ifndef FMUSIC_XM_AMIGAPERIODS_ACTIVE
+    header_.flags |= FMUSIC_XMFLAGS_LINEARFREQUENCY;
+#endif
 
     // seek to patterndata
     fileAccess.seek(fp, 60 + header_.header_size, SEEK_SET);

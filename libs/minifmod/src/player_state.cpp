@@ -7,6 +7,7 @@ namespace
 {
     constexpr uint8_t FMUSIC_KEYOFF = 97;
 
+#ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
     int GetAmigaPeriod(int note)
     {
         return (int)(powf(2.0f, (float)(132 - note) / 12.0f) * 13.375f);
@@ -23,6 +24,7 @@ namespace
 
         return period;
     }
+#endif
 }
 
 Position PlayerState::tick() noexcept
@@ -193,7 +195,11 @@ void PlayerState::updateNote() noexcept
 #ifdef FMUSIC_XM_PORTATO_ACTIVE
         case XMEffect::PORTATO:
         {
-            channel.portamento.setup(channel.period_target, note.effect_parameter * 4);
+            channel.portamento.setTarget(channel.period_target);
+            if (note.effect_parameter)
+            {
+                channel.portamento.setSpeed(note.effect_parameter * 4);
+            }
             channel.trigger = false;
             break;
         }
@@ -201,7 +207,7 @@ void PlayerState::updateNote() noexcept
 #ifdef FMUSIC_XM_PORTATOVOLSLIDE_ACTIVE
         case XMEffect::PORTATOVOLSLIDE:
         {
-            channel.portamento.setup(channel.period_target);
+            channel.portamento.setTarget(channel.period_target);
             if (slide)
             {
                 channel.volslide = slide;
