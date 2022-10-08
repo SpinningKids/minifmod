@@ -81,7 +81,7 @@ void Mixer::mix(float* mixptr, int len) noexcept
         while (channel.sptr && len > sample_index)
         {
 
-            float samples_to_mix;
+            float samples_to_mix; // This can occasionally be < 0
             if (channel.speeddir == MixDir::Forwards)
             {
                 samples_to_mix = channel.sptr->header.loop_start + channel.sptr->header.loop_length - channel.mixpos;
@@ -94,13 +94,16 @@ void Mixer::mix(float* mixptr, int len) noexcept
             {
                 samples_to_mix = channel.mixpos - channel.sptr->header.loop_start;
             }
-            const int samples_to_mix_target = (int)ceil(samples_to_mix / channel.speed); // round up the division
+
+            // Ensure that we don't try to mix a negative amount of samples
+            const int samples_to_mix_target = std::max(0, (int)ceil(samples_to_mix / channel.speed)); // round up the division
 
             // =========================================================================================
             // the following code sets up a mix counter. it sees what will happen first, will the output buffer
             // end be reached first or will the end of the sample be reached first?
             // whatever is smallest will be the mixcount.
             const int mix_count = std::min(len - sample_index, samples_to_mix_target);
+            assert(mix_count >= 0);
 
             float speed = channel.speed;
 
