@@ -7,15 +7,15 @@ namespace
 {
     constexpr uint8_t FMUSIC_KEYOFF = 97;
 
-    float GetXMLinearPeriodFineTuned(int note, int8_t fine_tune) // TODO: Check
+    float GetXMLinearPeriodFineTuned(int note, int8_t fine_tune)
     {
-        return (10 * 12 * 16 * 4) - (note * 16 * 4) - (fine_tune / 2.0f);
+        return 120 - note - fine_tune / 128.0f;
     }
 
 #ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
     float GetAmigaPeriod(int note)
     {
-        return powf(2.0f, (float)(132 - note) / 12.0f) * 13.375f;
+        return exp2f(8.7414660f - note / 12.0f);
     }
 
     float GetAmigaPeriodFinetuned(int note, int8_t fine_tune) noexcept
@@ -25,7 +25,7 @@ namespace
         // interpolate for finer tuning
         const int direction = (fine_tune > 0) ? 1 : -1;
 
-        period += direction * ((GetAmigaPeriod(note + direction) - period) * fine_tune / 128);
+        period += direction * ((GetAmigaPeriod(note + direction) - period) * fine_tune / 128.0f);
 
         return period;
     }
@@ -46,7 +46,7 @@ namespace
         if (!linear)
             return GetAmigaPeriodFinetuned(note + delta, fine_tune) - GetAmigaPeriodFinetuned(note, fine_tune);
 #endif
-        return delta * 64.0f;
+        return delta;
     }
 }
 
@@ -212,7 +212,7 @@ void PlayerState::updateNote() noexcept
             channel.portamento.setTarget(channel.period_target);
             if (note.effect_parameter)
             {
-                channel.portamento.setSpeed(note.effect_parameter * 4);
+                channel.portamento.setSpeed(note.effect_parameter / 16.0f);
             }
             channel.trigger = false;
             break;
@@ -239,7 +239,7 @@ void PlayerState::updateNote() noexcept
             }
             if (paramy)
             {
-                channel.vibrato.setDepth(paramy * 8);
+                channel.vibrato.setDepth(paramy / 8.0f);
             }
             channel.period_delta = channel.vibrato();
             break;
@@ -353,7 +353,7 @@ void PlayerState::updateNote() noexcept
                 {
                     channel.fineportaup = paramy;
                 }
-                channel.period -= channel.fineportaup * 4;
+                channel.period -= channel.fineportaup / 16.0f;
                 break;
             }
 #endif
@@ -364,7 +364,7 @@ void PlayerState::updateNote() noexcept
                 {
                     channel.fineportadown = paramy;
                 }
-                channel.period += channel.fineportadown * 4;
+                channel.period += channel.fineportadown / 16.0f;
                 break;
             }
 #endif
@@ -554,7 +554,7 @@ void PlayerState::updateNote() noexcept
                 {
                     channel.xtraportaup = paramy;
                 }
-                channel.period -= channel.xtraportaup;
+                channel.period -= channel.xtraportaup / 64.0f;
                 break;
             }
             case 2:
@@ -563,7 +563,7 @@ void PlayerState::updateNote() noexcept
                 {
                     channel.xtraportadown = paramy;
                 }
-                channel.period += channel.xtraportadown;
+                channel.period += channel.xtraportadown / 64.0f;
                 break;
             }
             }
@@ -637,7 +637,7 @@ void PlayerState::updateEffects() noexcept
         {
             if (volumey)
             {
-                channel.vibrato.setDepth(volumey * 8);
+                channel.vibrato.setDepth(volumey / 8.0f);
             }
             channel.period_delta = channel.vibrato();
             channel.vibrato.update();
@@ -692,7 +692,7 @@ void PlayerState::updateEffects() noexcept
         case XMEffect::PORTAUP:
         {
             channel.period_delta = 0;
-            channel.period = std::max(channel.period - (channel.portaup * 4), 56.f); // subtract period and stop at B#8
+            channel.period = std::max(channel.period - (channel.portaup / 16.0f), 0.875f); // subtract period and stop at B#8
             break;
         }
 #endif
@@ -700,7 +700,7 @@ void PlayerState::updateEffects() noexcept
         case XMEffect::PORTADOWN:
         {
             channel.period_delta = 0;
-            channel.period += channel.portadown * 4; // subtract period
+            channel.period += channel.portadown / 16.0f; // subtract period
             break;
         }
 #endif
