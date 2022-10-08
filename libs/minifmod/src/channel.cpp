@@ -9,7 +9,7 @@ namespace
         // From XM.TXT:
         //      Frequency = 8363*2^((6*12*16*4 - Period) / (12*16*4));
         // Simplified by taking log2(8363) inside the power and simplifying
-        return powf(2.0f, 19.029805f - per / 768.0f);
+        return exp2f(19.029805f - per / 12.0f);
         //return (int)(8363.0f * powf(2.0f, (6.0f * 12.0f * 16.0f * 4.0f - per) / (float)(12 * 16 * 4)));
     }
 
@@ -17,7 +17,7 @@ namespace
     {
         // From XM.TXT:
         //      Frequency = 8363*1712/Period;
-        return 14317456.0f / period;
+        return 223710.25f / period;
     }
 }
 
@@ -69,7 +69,7 @@ void Channel::processInstrument(const Instrument& instrument) noexcept
         delta *= float(ivibsweeppos) / instrument.sample_header.vibrato_sweep;
     }
 
-    period_delta += delta;
+    period_delta += delta / 64.0f;
 
     ivibsweeppos = std::min(ivibsweeppos + 1, int(instrument.sample_header.vibrato_sweep));
     ivibpos += instrument.sample_header.vibrato_rate;
@@ -143,7 +143,7 @@ void Channel::processVolumeByte(uint8_t volume_byte) noexcept
         {
             if (volumey)
             {
-                vibrato.setDepth(volumey * 8);
+                vibrato.setDepth(volumey / 8.0f);
             }
             break;
         }
@@ -167,7 +167,7 @@ void Channel::processVolumeByte(uint8_t volume_byte) noexcept
             portamento.setTarget(period_target);
             if (volumey)
             {
-                portamento.setSpeed(volumey * 64);
+                portamento.setSpeed(volumey);
             }
             trigger = false;
             break;
