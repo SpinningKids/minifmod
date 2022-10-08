@@ -46,7 +46,7 @@ namespace
         if (!linear)
             return GetAmigaPeriodFinetuned(note + delta, fine_tune) - GetAmigaPeriodFinetuned(note, fine_tune);
 #endif
-        return delta;
+        return delta * 64.0f;
     }
 }
 
@@ -684,7 +684,7 @@ void PlayerState::updateEffects() noexcept
                 v = paramy;
                 break;
             }
-            channel.period_delta = GetPeriodDeltaFinetuned(channel.realnote, v * 64, channel.fine_tune, module_->header_.flags & FMUSIC_XMFLAGS_LINEARFREQUENCY);
+            channel.period_delta = GetPeriodDeltaFinetuned(channel.realnote, v, channel.fine_tune, module_->header_.flags & FMUSIC_XMFLAGS_LINEARFREQUENCY);
             break;
         }
 #endif
