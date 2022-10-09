@@ -5,13 +5,13 @@
 
 class Portamento
 {
-	float target_ = 0;
-	float speed_ = 0;
+	int target_ = 0;
+	int speed_ = 0;
 public:
-	void setTarget(float target) { target_ = target; }
-	void setSpeed(float speed) { speed_ = speed; }
+	void setTarget(int target) { target_ = target; }
+	void setSpeed(int speed) { speed_ = speed; }
 
-	float operator ()(float period) const noexcept
+	int operator ()(int period) const noexcept
 	{
 		return std::clamp(target_, period - speed_, period + speed_);
 	}

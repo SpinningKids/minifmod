@@ -7,31 +7,31 @@ namespace
 {
     constexpr uint8_t FMUSIC_KEYOFF = 97;
 
-    float GetXMLinearPeriodFinetuned(int note, int8_t fine_tune)
+    int GetXMLinearPeriodFinetuned(int note, int8_t fine_tune)
     {
-        return 120 - note - fine_tune / 128.0f;
+        return 120*128 - note*128 - fine_tune;
     }
 
 #ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
-    float GetAmigaPeriod(int note)
+    int GetAmigaPeriod(int note)
     {
-        return exp2f(8.7414660f - note / 12.0f);
+        return (int)exp2f(15.7414660f - note / 12.0f);
     }
 
-    float GetAmigaPeriodFinetuned(int note, int8_t fine_tune) noexcept
+    int GetAmigaPeriodFinetuned(int note, int8_t fine_tune) noexcept
     {
-        float period = GetAmigaPeriod(note);
+        int period = GetAmigaPeriod(note);
 
         // interpolate for finer tuning
         const int direction = (fine_tune > 0) ? 1 : -1;
 
-        period += direction * ((GetAmigaPeriod(note + direction) - period) * fine_tune / 128.0f);
+        period += direction * ((GetAmigaPeriod(note + direction) - period) * fine_tune / 128);
 
         return period;
     }
 #endif
 
-    float GetPeriodFinetuned(int note, int8_t fine_tune, bool linear)
+    int GetPeriodFinetuned(int note, int8_t fine_tune, bool linear)
     {
 #ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
         if (!linear)
@@ -40,13 +40,13 @@ namespace
         return GetXMLinearPeriodFinetuned(note, fine_tune);
     }
 
-    float GetPeriodDeltaFinetuned(int note, int delta, int8_t fine_tune, bool linear)
+    int GetPeriodDeltaFinetuned(int note, int delta, int8_t fine_tune, bool linear)
     {
 #ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
         if (!linear)
             return GetAmigaPeriodFinetuned(note + delta, fine_tune) - GetAmigaPeriodFinetuned(note, fine_tune);
 #endif
-        return delta;
+        return delta * 128;
     }
 }
 
@@ -127,7 +127,7 @@ void PlayerState::updateNote() noexcept
         }
 
         int oldvolume = channel.volume;
-        float oldperiod = channel.period;
+        int oldperiod = channel.period;
         int oldpan = channel.pan;
 
         // if there is no more tremolo, set volume to volume + last tremolo delta
@@ -212,7 +212,7 @@ void PlayerState::updateNote() noexcept
             channel.portamento.setTarget(channel.period_target);
             if (note.effect_parameter)
             {
-                channel.portamento.setSpeed(note.effect_parameter / 16.0f);
+                channel.portamento.setSpeed(note.effect_parameter * 8);
             }
             channel.trigger = false;
             break;
@@ -239,7 +239,7 @@ void PlayerState::updateNote() noexcept
             }
             if (paramy)
             {
-                channel.vibrato.setDepth(paramy / 8.0f);
+                channel.vibrato.setDepth(paramy * 16);
             }
             channel.period_delta = channel.vibrato();
             break;
@@ -353,7 +353,7 @@ void PlayerState::updateNote() noexcept
                 {
                     channel.fineportaup = paramy;
                 }
-                channel.period -= channel.fineportaup / 16.0f;
+                channel.period -= channel.fineportaup * 8;
                 break;
             }
 #endif
@@ -364,7 +364,7 @@ void PlayerState::updateNote() noexcept
                 {
                     channel.fineportadown = paramy;
                 }
-                channel.period += channel.fineportadown / 16.0f;
+                channel.period += channel.fineportadown * 8;
                 break;
             }
 #endif
@@ -554,7 +554,7 @@ void PlayerState::updateNote() noexcept
                 {
                     channel.xtraportaup = paramy;
                 }
-                channel.period -= channel.xtraportaup / 64.0f;
+                channel.period -= channel.xtraportaup * 2;
                 break;
             }
             case 2:
@@ -563,7 +563,7 @@ void PlayerState::updateNote() noexcept
                 {
                     channel.xtraportadown = paramy;
                 }
-                channel.period += channel.xtraportadown / 64.0f;
+                channel.period += channel.xtraportadown * 2;
                 break;
             }
             }
@@ -638,7 +638,7 @@ void PlayerState::updateEffects() noexcept
         {
             if (volumey)
             {
-                channel.vibrato.setDepth(volumey / 8.0f);
+                channel.vibrato.setDepth(volumey * 16);
             }
             channel.period_delta = channel.vibrato();
             channel.vibrato.update();
@@ -693,7 +693,7 @@ void PlayerState::updateEffects() noexcept
         case XMEffect::PORTAUP:
         {
             channel.period_delta = 0;
-            channel.period = std::max(channel.period - (channel.portaup / 16.0f), 0.875f); // subtract period and stop at B#8
+            channel.period = std::max(channel.period - (channel.portaup * 8), 112); // subtract period and stop at B#8
             break;
         }
 #endif
@@ -701,7 +701,7 @@ void PlayerState::updateEffects() noexcept
         case XMEffect::PORTADOWN:
         {
             channel.period_delta = 0;
-            channel.period += channel.portadown / 16.0f; // subtract period
+            channel.period += channel.portadown * 8; // subtract period
             break;
         }
 #endif
