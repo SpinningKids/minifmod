@@ -32,9 +32,9 @@ struct Channel
 	bool			trigger;
 	bool			stop;
 
-	float			period;				// current mod frequency period for this channel
-	float			period_delta;		// delta for frequency commands.. vibrato/arpeggio etc
-	float			period_target;		// last period set in channel
+	int				period;				// current mod frequency period for this channel
+	int				period_delta;		// delta for frequency commands.. vibrato/arpeggio etc
+	int				period_target;		// last period set in channel
 
     int				volume;				// current mod volume for this channel
 	int				pan;				// current mod pan for this channel

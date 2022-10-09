@@ -4,20 +4,20 @@
 
 namespace
 {
-    float XMLinearPeriod2Frequency(float per)
+    float XMLinearPeriod2Frequency(int per)
     {
         // From XM.TXT:
         //      Frequency = 8363*2^((6*12*16*4 - Period) / (12*16*4));
         // Simplified by taking log2(8363) inside the power and simplifying
-        return exp2f(19.029805f - per / 12.0f);
+        return exp2f(19.029805f - per / 1536.0f);
         //return (int)(8363.0f * powf(2.0f, (6.0f * 12.0f * 16.0f * 4.0f - per) / (float)(12 * 16 * 4)));
     }
 
-    float Period2Frequency(float period)
+    float Period2Frequency(int period)
     {
         // From XM.TXT:
         //      Frequency = 8363*1712/Period;
-        return 223710.25f / period;
+        return 28634912.0f / period;
     }
 }
 
@@ -37,39 +37,39 @@ void Channel::processInstrument(const Instrument& instrument) noexcept
     }
     //= INSTRUMENT VIBRATO ============================================================================
 #ifdef FMUSIC_XM_INSTRUMENTVIBRATO_ACTIVE
-    float delta;
+    int delta;
 
     switch (instrument.sample_header.vibrato_type)
     {
     case XMInstrumentVibratoType::Sine:
     {
-        delta = sinf((float)ivibpos * (2 * 3.141592f / 256.0f))*64.f;
+        delta = (int)(sinf((float)ivibpos * (2 * 3.141592f / 256.0f))*256.0f);
         break;
     }
     case XMInstrumentVibratoType::Square:
     {
-        delta = 64 - (ivibpos & 128);
+        delta = 256 - (ivibpos & 128)*4;
         break;
     }
     case XMInstrumentVibratoType::InverseSawTooth:
     {
-        delta = (ivibpos & 128) - ((ivibpos + 1) / 4);
+        delta = (ivibpos & 128) * 4 - (ivibpos + 1);
         break;
     }
     case XMInstrumentVibratoType::SawTooth:
     {
-        delta = ((ivibpos + 1) / 4) - (ivibpos & 128);
+        delta = (ivibpos + 1) - (ivibpos & 128) * 4;
         break;
     }
     }
 
-    delta *= instrument.sample_header.vibrato_depth / 64.0f;
+    delta *= instrument.sample_header.vibrato_depth;
     if (instrument.sample_header.vibrato_sweep)
     {
-        delta *= float(ivibsweeppos) / instrument.sample_header.vibrato_sweep;
+        delta *= ivibsweeppos;
+        delta /= instrument.sample_header.vibrato_sweep;
     }
-
-    period_delta += delta / 64.0f;
+    period_delta += delta / 128;
 
     ivibsweeppos = std::min(ivibsweeppos + 1, int(instrument.sample_header.vibrato_sweep));
     ivibpos += instrument.sample_header.vibrato_rate;
@@ -143,7 +143,7 @@ void Channel::processVolumeByte(uint8_t volume_byte) noexcept
         {
             if (volumey)
             {
-                vibrato.setDepth(volumey / 8.0f);
+                vibrato.setDepth(volumey * 16);
             }
             break;
         }
@@ -167,7 +167,7 @@ void Channel::processVolumeByte(uint8_t volume_byte) noexcept
             portamento.setTarget(period_target);
             if (volumey)
             {
-                portamento.setSpeed(volumey);
+                portamento.setSpeed(volumey * 2);
             }
             trigger = false;
             break;
@@ -246,7 +246,7 @@ void Channel::sendToMixer(Mixer& mixer, const Instrument& instrument, int global
     high_precision_pan = std::clamp(high_precision_pan, 0.0f, 255.0f);
     sound_channel.leftvolume = high_precision_volume * high_precision_pan;
     sound_channel.rightvolume = high_precision_volume * (255 - high_precision_pan);
-    const float actual_period = period + period_delta;
+    const int actual_period = period + period_delta;
     if (actual_period != 0)
     {
         const float freq = std::max(
