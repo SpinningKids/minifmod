@@ -7,7 +7,7 @@ namespace
 {
     constexpr uint8_t FMUSIC_KEYOFF = 97;
 
-    float GetXMLinearPeriodFineTuned(int note, int8_t fine_tune)
+    float GetXMLinearPeriodFinetuned(int note, int8_t fine_tune)
     {
         return 120 - note - fine_tune / 128.0f;
     }
@@ -37,7 +37,7 @@ namespace
         if (!linear)
             return GetAmigaPeriodFinetuned(note, fine_tune);
 #endif
-        return GetXMLinearPeriodFineTuned(note, fine_tune);
+        return GetXMLinearPeriodFinetuned(note, fine_tune);
     }
 
     float GetPeriodDeltaFinetuned(int note, int delta, int8_t fine_tune, bool linear)
@@ -571,18 +571,19 @@ void PlayerState::updateNote() noexcept
         }
 #endif
         }
+    }
 
-        // if there were no row commands
-        if (!row_set)
+    // if there were no row commands
+    if (!row_set)
+    {
+        next_.row = current_.row + 1;
+        if (next_.row >= pattern.size())	// if end of pattern
         {
-            if (current_.row + 1 < pattern.size())	// if end of pattern TODO: Fix signed/unsigned comparison
+            next_.row = 0;						// start at top of pattn
+            next_.order = current_.order + 1;
+            if (next_.order >= module_->header_.song_length)
             {
-                next_.row = current_.row + 1;
-            }
-            else
-            {
-                next_.row = 0;						// start at top of pattn
-                next_.order = current_.order + 1 < module_->header_.song_length ? current_.order + 1 : module_->header_.restart_position;
+                next_.order = module_->header_.restart_position;
             }
         }
     }
