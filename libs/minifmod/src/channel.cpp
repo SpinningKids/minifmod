@@ -9,7 +9,7 @@ namespace
         // From XM.TXT:
         //      Frequency = 8363*2^((6*12*16*4 - Period) / (12*16*4));
         // Simplified by taking log2(8363) inside the power and simplifying
-        return exp2f(19.029805f - per / 1536.0f);
+        return exp2f(19.029805f - static_cast<float>(per) / 1536.0f);
         //return (int)(8363.0f * powf(2.0f, (6.0f * 12.0f * 16.0f * 4.0f - per) / (float)(12 * 16 * 4)));
     }
 
@@ -17,7 +17,7 @@ namespace
     {
         // From XM.TXT:
         //      Frequency = 8363*1712/Period;
-        return 28634912.0f / period;
+        return 28634912.0f / static_cast<float>(period);
     }
 }
 
@@ -37,13 +37,13 @@ void Channel::processInstrument(const Instrument& instrument) noexcept
     }
     //= INSTRUMENT VIBRATO ============================================================================
 #ifdef FMUSIC_XM_INSTRUMENTVIBRATO_ACTIVE
-    int delta;
+    int delta = 0;
 
     switch (instrument.sample_header.vibrato_type)
     {
     case XMInstrumentVibratoType::Sine:
     {
-        delta = (int)(sinf((float)ivibpos * (2 * 3.141592f / 256.0f))*256.0f);
+        delta = static_cast<int>(sinf(static_cast<float>(ivibpos) * (2 * 3.141592f / 256.0f)) * 256.0f);
         break;
     }
     case XMInstrumentVibratoType::Square:
@@ -58,7 +58,7 @@ void Channel::processInstrument(const Instrument& instrument) noexcept
     }
     case XMInstrumentVibratoType::SawTooth:
     {
-        delta = (ivibpos + 1) - (ivibpos & 128) * 4;
+        delta = ivibpos + 1 - (ivibpos & 128) * 4;
         break;
     }
     }
@@ -71,15 +71,15 @@ void Channel::processInstrument(const Instrument& instrument) noexcept
     }
     period_delta += delta / 128;
 
-    ivibsweeppos = std::min(ivibsweeppos + 1, int(instrument.sample_header.vibrato_sweep));
+    ivibsweeppos = std::min(ivibsweeppos + 1, static_cast<int>(instrument.sample_header.vibrato_sweep));
     ivibpos += instrument.sample_header.vibrato_rate;
 #endif	// FMUSIC_XM_INSTRUMENTVIBRATO_ACTIVE
 }
 
-void Channel::reset(int volume, int pan) noexcept
+void Channel::reset(int new_volume, int new_pan) noexcept
 {
-    this->volume = volume;
-    this->pan = pan;
+    volume = new_volume;
+    pan = new_pan;
 #ifdef FMUSIC_XM_VOLUMEENVELOPE_ACTIVE
     volume_envelope.reset(1.0);
 #endif
@@ -116,7 +116,7 @@ void Channel::processVolumeByte(uint8_t volume_byte) noexcept
     }
     else
     {
-        int volumey = (volume_byte & 0xF);
+        int volumey = volume_byte & 0xF;
         switch (volume_byte >> 4)
         {
         case 0x6:
@@ -185,7 +185,7 @@ void Channel::tremor() noexcept
         voldelta = -volume;
     }
     tremorpos++;
-    if (tremorpos >= (tremoron + tremoroff))
+    if (tremorpos >= tremoron + tremoroff)
     {
         tremorpos = 0;
     }
@@ -226,7 +226,7 @@ void Channel::sendToMixer(Mixer& mixer, const Instrument& instrument, int global
             sound_channel.sampleoffset = 0;
         }
 
-        sound_channel.mixpos = (float)sound_channel.sampleoffset;
+        sound_channel.mixpos = static_cast<float>(sound_channel.sampleoffset);
         sound_channel.speeddir = MixDir::Forwards;
         sound_channel.sampleoffset = 0;	// reset it (in case other samples come in and get corrupted etc)
 
@@ -235,13 +235,13 @@ void Channel::sendToMixer(Mixer& mixer, const Instrument& instrument, int global
         sound_channel.filtered_rightvolume = 0;
     }
     constexpr float norm = 1.0f / 68451041280.0f; // 2^27 (volume normalization) * 255.0 (pan scale) (*2 for safety?!?)
-    float high_precision_volume = (volume + voldelta) * fadeoutvol * globalvolume * norm;
+    float high_precision_volume = static_cast<float>((volume + voldelta) * fadeoutvol * globalvolume) * norm;
 #ifdef FMUSIC_XM_VOLUMEENVELOPE_ACTIVE
     high_precision_volume *= volume_envelope();
 #endif
-    float high_precision_pan = pan;
+    float high_precision_pan = static_cast<float>(pan);
 #ifdef FMUSIC_XM_PANENVELOPE_ACTIVE
-    high_precision_pan += pan_envelope() * (128 - abs(pan - 128));
+    high_precision_pan += pan_envelope() * static_cast<float>(128 - abs(pan - 128));
 #endif
     high_precision_pan = std::clamp(high_precision_pan, 0.0f, 255.0f);
     sound_channel.leftvolume = high_precision_volume * high_precision_pan;
@@ -250,12 +250,12 @@ void Channel::sendToMixer(Mixer& mixer, const Instrument& instrument, int global
     if (actual_period != 0)
     {
         const float freq = std::max(
-            (linearfrequency)
+            linearfrequency
             ? XMLinearPeriod2Frequency(actual_period)
             : Period2Frequency(actual_period),
             100.0f);
 
-        sound_channel.speed = freq / mixer.getMixRate();
+        sound_channel.speed = freq / static_cast<float>(mixer.getMixRate());
     }
     if (stop)
     {

@@ -24,20 +24,20 @@ Module::Module(const minifmod::FileAccess& fileAccess, void* fp, SAMPLELOADCALLB
 #endif
 
     // seek to patterndata
-    fileAccess.seek(fp, 60 + header_.header_size, SEEK_SET);
+    fileAccess.seek(fp, static_cast<int>(60 + header_.header_size), SEEK_SET);
 
     // unpack and read patterns
     for (uint16_t pattern_index = 0; pattern_index < header_.patterns_count; pattern_index++)
     {
-        XMPatternHeader header;
-        fileAccess.read(&header, sizeof(header), fp);
+        XMPatternHeader pattern_header;
+        fileAccess.read(&pattern_header, sizeof(pattern_header), fp);
 
         Pattern& pattern = pattern_[pattern_index];
-        pattern.resize(header.rows);
+        pattern.resize(pattern_header.rows);
 
-        if (header.packed_pattern_data_size > 0)
+        if (pattern_header.packed_pattern_data_size > 0)
         {
-            for (uint16_t row = 0; row < header.rows; ++row)
+            for (uint16_t row = 0; row < pattern_header.rows; ++row)
             {
                 auto& current_row = pattern[row];
 
@@ -59,7 +59,7 @@ Module::Module(const minifmod::FileAccess& fileAccess, void* fp, SAMPLELOADCALLB
                     else
                     {
                         note.note = dat;
-                        fileAccess.read(((char*)&note) + 1, sizeof(XMNote) - 1, fp);
+                        fileAccess.read(reinterpret_cast<char*>(&note) + 1, sizeof(XMNote) - 1, fp);
                     }
 
                     if (note.sample_index > 0x80)
@@ -79,7 +79,7 @@ Module::Module(const minifmod::FileAccess& fileAccess, void* fp, SAMPLELOADCALLB
 
         int first_sample_offset = fileAccess.tell(fp);
         fileAccess.read(&instrument.header, sizeof(instrument.header), fp);				// instrument size
-        first_sample_offset += instrument.header.header_size;
+        first_sample_offset += static_cast<int>(instrument.header.header_size);
 
         assert(instrument.header.samples_count <= 16);
 
@@ -94,12 +94,12 @@ Module::Module(const minifmod::FileAccess& fileAccess, void* fp, SAMPLELOADCALLB
                 for (uint8_t i = 0; i < e.count; ++i)
                 {
                     e.envelope[i].position = original_points[i].position;
-                    e.envelope[i].value = (original_points[i].value - offset) / scale;
+                    e.envelope[i].value = static_cast<float>(original_points[i].value - offset) / scale;
                     if (i > 0)
                     {
                         const int tickdiff = e.envelope[i].position - e.envelope[i - 1].position;
 
-                        e.envelope[i - 1].delta = tickdiff ? (e.envelope[i].value - e.envelope[i - 1].value) / tickdiff : 0;
+                        e.envelope[i - 1].delta = tickdiff ? (e.envelope[i].value - e.envelope[i - 1].value) / static_cast<float>(tickdiff) : 0.f;
                     }
                 }
                 if (e.count) {
@@ -141,7 +141,7 @@ Module::Module(const minifmod::FileAccess& fileAccess, void* fp, SAMPLELOADCALLB
             }
 
             // Load sample data
-            for (unsigned int sample_index = 0; sample_index < instrument.header.samples_count; sample_index++)
+            for (int sample_index = 0; sample_index < static_cast<int>(instrument.header.samples_count); sample_index++)
             {
                 Sample& sample = instrument.sample[sample_index];
                 //unsigned int	samplelenbytes = sample.header.length * sample.bits / 8;
@@ -155,7 +155,7 @@ Module::Module(const minifmod::FileAccess& fileAccess, void* fp, SAMPLELOADCALLB
                     if (sampleloadcallback)
                     {
                         sampleloadcallback(sample.buff.get(), sample.header.length, instrument_index, sample_index);
-                        fileAccess.seek(fp, sample.header.length * (sample.header.bits16 ? 2 : 1), SEEK_CUR);
+                        fileAccess.seek(fp, static_cast<int>(sample.header.length * (sample.header.bits16 ? 2 : 1)), SEEK_CUR);
                     }
                     else
                     {
@@ -166,7 +166,7 @@ Module::Module(const minifmod::FileAccess& fileAccess, void* fp, SAMPLELOADCALLB
                         else
                         {
                             auto buff = std::unique_ptr<int8_t[]>(new int8_t[sample.header.length + 8]);
-                            fileAccess.read(buff.get(), sample.header.length, fp);
+                            fileAccess.read(buff.get(), static_cast<int>(sample.header.length), fp);
                             for (uint32_t i = 0; i < sample.header.length; i++)
                             {
                                 sample.buff[i] = static_cast<int16_t>(buff[i] * 256);

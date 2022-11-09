@@ -220,7 +220,7 @@ unsigned int FMUSIC_GetTime() noexcept
 	return FSOUND_last_player_state ? FSOUND_last_player_state->getMixer().getTimeInfo().samples * 1000ull / FSOUND_MixRate : 0;
 }
 
-bool FSOUND_Init(int mixrate, int vcmmode) noexcept
+bool FSOUND_Init(int mixrate, int /* vcmmode */) noexcept
 {
 	FSOUND_MixRate = mixrate;
 	return true;

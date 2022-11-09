@@ -73,7 +73,7 @@ struct MEMFILE
 void* memopen(const char *name)
 {
 	FSOUND_Init(96000);
-    auto memfile = (MEMFILE*)calloc(sizeof(MEMFILE), 1);
+    const auto memfile = static_cast<MEMFILE*>(calloc(sizeof(MEMFILE), 1));
 
 #ifndef USEMEMLOADRESOURCE
     {
@@ -107,7 +107,7 @@ void* memopen(const char *name)
 
 void memclose(void* handle)
 {
-    const auto memfile = (MEMFILE *)handle;
+    const auto memfile = static_cast<MEMFILE*>(handle);
 
 #ifndef USEMEMLOADRESOURCE
 	free(memfile->data);			// dont free it if it was initialized with LockResource
@@ -118,12 +118,12 @@ void memclose(void* handle)
 
 int memread(void *buffer, int size, void* handle)
 {
-    const auto memfile = (MEMFILE *)handle;
+    const auto memfile = static_cast<MEMFILE*>(handle);
 
 	if (memfile->pos + size >= memfile->length)
 		size = memfile->length - memfile->pos;
 
-	memcpy(buffer, (char *)memfile->data+memfile->pos, size);
+	memcpy(buffer, static_cast<char*>(memfile->data)+memfile->pos, size);
 	memfile->pos += size;
 
 	return size;
@@ -131,7 +131,7 @@ int memread(void *buffer, int size, void* handle)
 
 void memseek(void* handle, int pos, int mode)
 {
-    auto memfile = (MEMFILE *)handle;
+    const auto memfile = static_cast<MEMFILE*>(handle);
 
 	if (mode == SEEK_SET)
 		memfile->pos = pos;
@@ -146,7 +146,7 @@ void memseek(void* handle, int pos, int mode)
 
 int memtell(void* handle)
 {
-    const MEMFILE *memfile = (MEMFILE *)handle;
+    const MEMFILE *memfile = static_cast<MEMFILE*>(handle);
 
 	return memfile->pos;
 }
@@ -193,7 +193,7 @@ int main(int argc, char *argv[])
 	// ==========================================================================================
 	// LOAD SONG
 	// ==========================================================================================
-	auto mod = FMUSIC_LoadSong(argv[1], nullptr); //sampleloadcallback);
+    const auto mod = FMUSIC_LoadSong(argv[1], nullptr); //sampleloadcallback);
 	if (!mod)
 	{
 		printf("Error loading song\n");
@@ -204,7 +204,7 @@ int main(int argc, char *argv[])
 	// PLAY SONG
 	// ==========================================================================================
 
-    auto ps = FMUSIC_PlaySong(mod);
+    const auto ps = FMUSIC_PlaySong(mod);
 
 	printf("Press any key to quit\n");
 	printf("=========================================================================\n");
@@ -222,9 +222,9 @@ int main(int argc, char *argv[])
 #endif
             const int ord = FMUSIC_GetOrder();
 			const int row = FMUSIC_GetRow();
-			const float mytime = (float)FMUSIC_GetTime() / 1000.0f;
+			const double mytime = (float)FMUSIC_GetTime() / 1000.0;
 
-			printf("ord %2d row %2d seconds %5.02f %s      \r", ord, row, mytime, (row % 8 ? "    " : "TICK"));
+			printf("ord %2d row %2d seconds %5.02f %s      \r", ord, row, mytime, (row % 8) ? "    " : "TICK");
 
 		} while (key != 27);
 	}

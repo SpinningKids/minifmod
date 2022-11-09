@@ -15,7 +15,7 @@ namespace
 #ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
     int GetAmigaPeriod(int note)
     {
-        return (int)exp2f(15.7414660f - note / 12.0f);
+        return static_cast<int>(exp2f(15.7414660f - static_cast<float>(note) / 12.0f));
     }
 
     int GetAmigaPeriodFinetuned(int note, int8_t fine_tune) noexcept
@@ -102,7 +102,7 @@ void PlayerState::updateNote() noexcept
         const unsigned char paramy = note.effect_parameter & 0xF;			// get effect param y
         const int slide = paramx ? paramx : -paramy;
 
-        const bool porta = (note.effect == XMEffect::PORTATO || note.effect == XMEffect::PORTATOVOLSLIDE);
+        const bool porta = note.effect == XMEffect::PORTATO || note.effect == XMEffect::PORTATOVOLSLIDE;
         const bool valid_note = note.note && note.note != FMUSIC_KEYOFF;
 
         if (!porta)
@@ -285,9 +285,7 @@ void PlayerState::updateNote() noexcept
                 channel.sampleoffset = note.effect_parameter;
             }
 
-            const unsigned int offset = channel.sampleoffset * 256;
-
-            if (offset >= sample.header.loop_start + sample.header.loop_length)
+            if (const unsigned int offset = channel.sampleoffset * 256; offset >= sample.header.loop_start + sample.header.loop_length)
             {
                 channel.trigger = false;
                 channel.stop = true;
@@ -328,7 +326,7 @@ void PlayerState::updateNote() noexcept
 #ifdef FMUSIC_XM_PATTERNBREAK_ACTIVE
         case XMEffect::PATTERNBREAK:
         {
-            next_.row = (paramx * 10) + paramy;
+            next_.row = paramx * 10 + paramy;
             if (next_.row > 63) // NOTE: This seems odd, as the pattern might be longer than 64
             {
                 next_.row = 0;
@@ -536,8 +534,8 @@ void PlayerState::updateNote() noexcept
         {
             if (note.effect_parameter)
             {
-                channel.tremoron = (paramx + 1);
-                channel.tremoroff = (paramy + 1);
+                channel.tremoron = paramx + 1;
+                channel.tremoroff = paramy + 1;
             }
             channel.tremor();
             break;
@@ -613,7 +611,7 @@ void PlayerState::updateEffects() noexcept
         channel.stop = false;
 
 #ifdef FMUSIC_XM_VOLUMEBYTE_ACTIVE
-        int volumey = (note.volume & 0xF);
+        int volumey = note.volume & 0xF;
         switch (note.volume >> 4)
         {
             //			case 0x0:
@@ -672,12 +670,9 @@ void PlayerState::updateEffects() noexcept
 #ifdef FMUSIC_XM_ARPEGGIO_ACTIVE
         case XMEffect::ARPEGGIO:
         {
-            int v;
+            int v = 0;
             switch (tick_ % 3)
             {
-            case 0:
-                v = 0;
-                break;
             case 1:
                 v = paramx;
                 break;
@@ -913,7 +908,7 @@ void PlayerState::updateEffects() noexcept
 
 PlayerState::PlayerState(std::unique_ptr<Module> module, int mixrate) :
     module_{ std::move(module) },
-    mixer_{ [this]() {return this->tick(); }, mixrate },
+    mixer_{ [this] {return this->tick(); }, mixrate },
     global_volume_{ 64 },
     tick_{ 0 },
     ticks_per_row_{ module_->header_.default_tempo },

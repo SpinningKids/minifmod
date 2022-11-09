@@ -22,7 +22,7 @@ public:
 
     void setFlags(uint8_t flags)
 	{
-		wave_control_ = (WaveControl)(flags & 3);
+		wave_control_ = static_cast<WaveControl>(flags & 3);
 		continue_ = (flags & 4) != 0;
 	}
 
@@ -48,12 +48,12 @@ public:
 		switch (wave_control_)
 		{
 		case WaveControl::Sine:
-			return int(sinf((float)position_ * (2 * 3.141592f / 64.0f)) * depth_);
+			return static_cast<int>(sinf(static_cast<float>(position_) * (2 * 3.141592f / 64.0f)) * static_cast<float>(depth_));
 		case WaveControl::SawTooth:
 			return -(position_ * 2 + 1) * depth_ / 63;
 		default:
-			//case WaveControl::Square:
-			//case WaveControl::Random:
+		//case WaveControl::Square:
+		//case WaveControl::Random:
 			return (position_ >= 0) ? -depth_ : depth_; // square
 		}
 	}
