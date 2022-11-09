@@ -67,7 +67,7 @@ class Mixer final
 	void double_buffer_thread() noexcept;
 	void fill() noexcept;
 public:
-	Mixer(std::function<Position()>&& tick_callback, int mixrate = 44100) noexcept;
+	explicit Mixer(std::function<Position()>&& tick_callback, int mixrate = 44100) noexcept;
 
 	[[nodiscard]] const TimeInfo& getTimeInfo() const noexcept
 	{

@@ -20,7 +20,7 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 		"$<$<CONFIG:RELEASE>:/EHs-c->"
 		"$<$<CONFIG:RELEASE>:/sdl->"
 		"$<$<CONFIG:RELEASE>:/vd0>"
-		"/d2noftol3"
+		#"/d2noftol3" # it actually makes the code bigger!
 	)
 	add_link_options(
 		"/MAP:out.map"

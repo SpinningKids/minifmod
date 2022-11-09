@@ -44,7 +44,7 @@ struct Channel
 	bool			keyoff;				// flag whether keyoff has been hit or not)
 
 	unsigned char	inst;				// last instrument set in channel
-	unsigned char  	realnote;  			// last realnote set in channel
+	int			  	realnote;  			// last realnote set in channel
 	XMEffect		recenteffect;		// previous row's effect.. used to correct tremolo volume
 
 	unsigned int	sampleoffset;		// sample offset for this channel in SAMPLES
@@ -129,7 +129,7 @@ struct Channel
 #endif
 
 	void processInstrument(const Instrument& instrument) noexcept;
-	void reset(int volume, int pan) noexcept;
+	void reset(int new_volume, int new_pan) noexcept;
 	void processVolumeByte(uint8_t volume_byte) noexcept;
 	void tremor() noexcept;
 	void updateVolume() noexcept;

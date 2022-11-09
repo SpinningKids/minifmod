@@ -17,7 +17,7 @@ void EnvelopeState::process(const EnvelopePoints& envelope, XMEnvelopeFlags flag
 
         // interpolate new envelope position
 
-        value_ = envelope.envelope[current_index].value + envelope.envelope[current_index].delta * (position_ - envelope.envelope[current_index].position);
+        value_ = envelope.envelope[current_index].value + envelope.envelope[current_index].delta * static_cast<float>(position_ - envelope.envelope[current_index].position);
 
         // Envelope
         // if it is at the last position, abort the envelope and continue last value
