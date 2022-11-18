@@ -243,9 +243,10 @@ void Mixer::double_buffer_thread() noexcept
     while (!Software_Thread_Exit)
     {
 #ifdef WIN32
-        MMTIME	mmt;
+        MMTIME	mmt{
+            .wType = TIME_BYTES
+        };
 
-        mmt.wType = TIME_BYTES;
         waveOutGetPosition(FSOUND_WaveOutHandle, &mmt, sizeof(MMTIME));
 
         const int cursorpos = static_cast<int>(mmt.u.cb / 4) % FSOUND_BufferSize;

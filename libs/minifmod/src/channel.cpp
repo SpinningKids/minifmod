@@ -1,6 +1,7 @@
 
 #include "channel.h"
 #include "xmeffects.h"
+#include <numbers>
 
 namespace
 {
@@ -43,7 +44,7 @@ void Channel::processInstrument(const Instrument& instrument) noexcept
     {
     case XMInstrumentVibratoType::Sine:
     {
-        delta = static_cast<int>(sinf(static_cast<float>(ivibpos) * (2 * 3.141592f / 256.0f)) * 256.0f);
+        delta = static_cast<int>(sinf(static_cast<float>(ivibpos) * (2 * std::numbers::pi_v<float> / 256.0f)) * 256.0f);
         break;
     }
     case XMInstrumentVibratoType::Square:
