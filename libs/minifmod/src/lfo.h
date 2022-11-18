@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include <numbers>
+
 enum class WaveControl : uint8_t
 {
 	Sine,
@@ -48,7 +50,7 @@ public:
 		switch (wave_control_)
 		{
 		case WaveControl::Sine:
-			return static_cast<int>(sinf(static_cast<float>(position_) * (2 * 3.141592f / 64.0f)) * static_cast<float>(depth_));
+			return static_cast<int>(sinf(static_cast<float>(position_) * (2 * std::numbers::pi_v<float> / 64.0f)) * static_cast<float>(depth_));
 		case WaveControl::SawTooth:
 			return -(position_ * 2 + 1) * depth_ / 63;
 		default:

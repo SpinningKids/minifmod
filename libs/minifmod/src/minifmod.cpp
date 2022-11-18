@@ -45,7 +45,7 @@ Module* FMUSIC_LoadSong(const char *name, SAMPLELOADCALLBACK sampleloadcallback)
     if (void* fp = FSOUND_File.open(name))
     {
         // create a mod instance
-		std::unique_ptr<Module> mod{ new Module(FSOUND_File, fp, sampleloadcallback) };
+		auto mod = std::make_unique<Module>(FSOUND_File, fp, sampleloadcallback);
         FSOUND_File.close(fp);
         return mod.release();
     }

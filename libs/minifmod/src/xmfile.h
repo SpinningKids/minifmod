@@ -1,10 +1,13 @@
 
 #pragma once
 
+#include <bit>
 #include <cstdint>
 
 #pragma pack(push)
 #pragma pack(1)
+
+static_assert(std::endian::native == std::endian::little); // this will only work in little endian system
 
 constexpr uint16_t FMUSIC_XMFLAGS_LINEARFREQUENCY = 1;
 
