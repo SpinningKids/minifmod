@@ -1,6 +1,6 @@
 # minifmod
 
-MiniFMOD 1.9.9-pre C++ version
+MiniFMOD 1.99.99-pre C++ version
 
 Copyright Firelight Technologies, 1999-2003.
 
@@ -9,7 +9,7 @@ CMake adaption and heavy refactoring/cleanup/rewrite by Pan/SpinningKids 2022
 DOCUMENTATION 
 ==============
 
-Disclaimer and legal
+Disclaimer and legal (from original author)
 ----------------------------
 - *MiniFMOD is not FMOD*.  The code is a complete hack, and does 
   by no way represent the source contained within the main FMOD library.  
