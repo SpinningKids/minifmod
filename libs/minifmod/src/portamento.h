@@ -9,7 +9,7 @@ class Portamento
 	int speed_ = 0;
 public:
 	void setTarget(int target) { target_ = target; }
-	void setSpeed(int speed) { speed_ = speed; }
+	void setSpeed(int speed) { if (speed) speed_ = speed; }
 
 	int operator ()(int period) const noexcept
 	{

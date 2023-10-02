@@ -42,26 +42,26 @@ void Channel::processInstrument(const Instrument& instrument) noexcept
 
     switch (instrument.sample_header.vibrato_type)
     {
-    case XMInstrumentVibratoType::Sine:
-    {
-        delta = static_cast<int>(sinf(static_cast<float>(ivibpos) * (2 * std::numbers::pi_v<float> / 256.0f)) * 256.0f);
-        break;
-    }
-    case XMInstrumentVibratoType::Square:
-    {
-        delta = 256 - (ivibpos & 128)*4;
-        break;
-    }
-    case XMInstrumentVibratoType::InverseSawTooth:
-    {
-        delta = (ivibpos & 128) * 4 - (ivibpos + 1);
-        break;
-    }
-    case XMInstrumentVibratoType::SawTooth:
-    {
-        delta = ivibpos + 1 - (ivibpos & 128) * 4;
-        break;
-    }
+        case XMInstrumentVibratoType::Sine:
+        {
+            delta = static_cast<int>(sinf(static_cast<float>(ivibpos) * (2 * std::numbers::pi_v<float> / 256.0f)) * 256.0f);
+            break;
+        }
+        case XMInstrumentVibratoType::Square:
+        {
+            delta = 256 - (ivibpos & 128)*4;
+            break;
+        }
+        case XMInstrumentVibratoType::InverseSawTooth:
+        {
+            delta = (ivibpos & 128) * 4 - (ivibpos + 1);
+            break;
+        }
+        case XMInstrumentVibratoType::SawTooth:
+        {
+            delta = ivibpos + 1 - (ivibpos & 128) * 4;
+            break;
+        }
     }
 
     delta *= instrument.sample_header.vibrato_depth;
@@ -107,7 +107,7 @@ void Channel::reset(int new_volume, int new_pan) noexcept
 #endif
 }
 
-void Channel::processVolumeByte(uint8_t volume_byte) noexcept
+void Channel::processVolumeByteNote(uint8_t volume_byte) noexcept
 {
 #ifdef FMUSIC_XM_VOLUMEBYTE_ACTIVE
     // NOTE: Having this if makes code actually smaller than using the switch.
@@ -120,39 +120,80 @@ void Channel::processVolumeByte(uint8_t volume_byte) noexcept
         int volumey = volume_byte & 0xF;
         switch (volume_byte >> 4)
         {
+            case 0x6:
+            case 0x8:
+            {
+                volume -= volumey;
+                break;
+            }
+            case 0x7:
+            case 0x9:
+            {
+                volume += volumey;
+                break;
+            }
+            case 0xa:
+            {
+                vibrato.setSpeed(volumey);
+                break;
+            }
+            case 0xb:
+            {
+                vibrato.setDepth(volumey * 16);
+                break;
+            }
+            case 0xc:
+            {
+                pan = volumey * 16;
+                break;
+            }
+            case 0xd:
+            {
+                pan -= volumey;
+                break;
+            }
+            case 0xe:
+            {
+                pan += volumey;
+                break;
+            }
+            case 0xf:
+            {
+                portamento.setTarget(period_target);
+                portamento.setSpeed(volumey * 2);
+                trigger = false;
+                break;
+            }
+        }
+    }
+#endif // #define FMUSIC_XM_VOLUMEBYTE_ACTIVE
+}
+
+void Channel::processVolumeByteEffect(uint8_t volume_byte) noexcept
+{
+#ifdef FMUSIC_XM_VOLUMEBYTE_ACTIVE
+    int volumey = volume_byte & 0xF;
+    switch (volume_byte >> 4)
+    {
         case 0x6:
-        case 0x8:
         {
             volume -= volumey;
             break;
         }
         case 0x7:
-        case 0x9:
         {
             volume += volumey;
             break;
         }
-        case 0xa:
-        {
-            if (volumey)
-            {
-                vibrato.setSpeed(volumey);
-            }
-            break;
-        }
+#ifdef FMUSIC_XM_VIBRATO_ACTIVE
         case 0xb:
         {
-            if (volumey)
-            {
-                vibrato.setDepth(volumey * 16);
-            }
+            vibrato.setDepth(volumey * 16);
+            period_delta = vibrato();
+            vibrato.update();
             break;
         }
-        case 0xc:
-        {
-            pan = volumey * 16;
-            break;
-        }
+#endif
         case 0xd:
         {
             pan -= volumey;
@@ -163,19 +204,15 @@ void Channel::processVolumeByte(uint8_t volume_byte) noexcept
             pan += volumey;
             break;
         }
+#ifdef FMUSIC_XM_PORTATO_ACTIVE
         case 0xf:
         {
-            portamento.setTarget(period_target);
-            if (volumey)
-            {
-                portamento.setSpeed(volumey * 2);
-            }
-            trigger = false;
+            updatePeriodFromPortamento();
             break;
         }
-        }
+#endif
     }
-#endif // #define FMUSIC_XM_VOLUMEBYTE_ACTIVE
+#endif
 }
 
 void Channel::tremor() noexcept

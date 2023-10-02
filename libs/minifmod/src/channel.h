@@ -130,9 +130,20 @@ struct Channel
 
 	void processInstrument(const Instrument& instrument) noexcept;
 	void reset(int new_volume, int new_pan) noexcept;
-	void processVolumeByte(uint8_t volume_byte) noexcept;
+	void processVolumeByteNote(uint8_t volume_byte) noexcept;
+	void processVolumeByteEffect(uint8_t volume_byte) noexcept;
 	void tremor() noexcept;
 	void updateVolume() noexcept;
+
+	void setVolSlide(int value) noexcept { if (value) volslide = value; }
+	void setPanSlide(int value) noexcept { if (value) panslide = value; }
+	void setSampleOffset(int value) noexcept { if (value) sampleoffset = value; }
+	void updatePeriodFromPortamento() noexcept
+	{
+#if defined(FMUSIC_XM_PORTATOVOLSLIDE_ACTIVE) || defined(FMUSIC_XM_PORTATO_ACTIVE) || defined(FMUSIC_XM_VOLUMEBYTE_ACTIVE)
+		period = portamento(period);
+#endif
+	}
 
 	void sendToMixer(Mixer& mixer, const Instrument& instrument, int globalvolume, bool linearfrequency) const noexcept;
 };
