@@ -19,8 +19,8 @@ class LFO final
 	int speed_ = 0;
 	int depth_ = 0;
 public:
-	void setSpeed(int speed) { speed_ = speed; }
-	void setDepth(int depth) { depth_ = depth; }
+	void setSpeed(int speed) { if (speed) speed_ = speed; }
+	void setDepth(int depth) { if (depth) depth_ = depth; }
 
     void setFlags(uint8_t flags)
 	{
