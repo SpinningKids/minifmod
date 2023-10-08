@@ -141,14 +141,13 @@ Module::Module(const minifmod::FileAccess& fileAccess, void* fp, SAMPLELOADCALLB
             }
 
             // Load sample data
-            for (int sample_index = 0; sample_index < static_cast<int>(instrument.header.samples_count); sample_index++)
+            for (uint16_t sample_index = 0; sample_index < instrument.header.samples_count; sample_index++)
             {
-                Sample& sample = instrument.sample[sample_index];
                 //unsigned int	samplelenbytes = sample.header.length * sample.bits / 8;
 
                 //= ALLOCATE MEMORY FOR THE SAMPLE BUFFER ==============================================
 
-                if (sample.header.length)
+                if (Sample& sample = instrument.sample[sample_index]; sample.header.length)
                 {
                     sample.buff.reset(new int16_t[sample.header.length + 8]);
 
@@ -161,7 +160,7 @@ Module::Module(const minifmod::FileAccess& fileAccess, void* fp, SAMPLELOADCALLB
                     {
                         if (sample.header.bits16)
                         {
-                            fileAccess.read(sample.buff.get(), sample.header.length * sizeof(short), fp);
+                            fileAccess.read(sample.buff.get(), static_cast<int>(sample.header.length * sizeof(short)), fp);
                         }
                         else
                         {

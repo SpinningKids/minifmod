@@ -169,7 +169,7 @@ void Channel::processVolumeByteNote(uint8_t volume_byte) noexcept
 #endif // #define FMUSIC_XM_VOLUMEBYTE_ACTIVE
 }
 
-void Channel::processVolumeByteEffect(uint8_t volume_byte) noexcept
+void Channel::processVolumeByteTick(uint8_t volume_byte) noexcept
 {
 #ifdef FMUSIC_XM_VOLUMEBYTE_ACTIVE
     int volumey = volume_byte & 0xF;
@@ -277,15 +277,14 @@ void Channel::sendToMixer(Mixer& mixer, const Instrument& instrument, int global
 #ifdef FMUSIC_XM_VOLUMEENVELOPE_ACTIVE
     high_precision_volume *= volume_envelope();
 #endif
-    float high_precision_pan = static_cast<float>(pan);
+    auto high_precision_pan = static_cast<float>(pan);
 #ifdef FMUSIC_XM_PANENVELOPE_ACTIVE
     high_precision_pan += pan_envelope() * static_cast<float>(128 - abs(pan - 128));
 #endif
     high_precision_pan = std::clamp(high_precision_pan, 0.0f, 255.0f);
     sound_channel.leftvolume = high_precision_volume * high_precision_pan;
     sound_channel.rightvolume = high_precision_volume * (255 - high_precision_pan);
-    const int actual_period = period + period_delta;
-    if (actual_period != 0)
+    if (const int actual_period = period + period_delta; actual_period != 0)
     {
         const float freq = std::max(
             linearfrequency

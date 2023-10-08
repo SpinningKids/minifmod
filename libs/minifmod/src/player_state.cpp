@@ -58,7 +58,7 @@ Position PlayerState::tick() noexcept
     }
     else
     {
-        updateEffects();					// Else update the inbetween row effects
+        updateTick();					// Else update the inbetween row effects
     }
 
     clampGlobalVolume();
@@ -95,35 +95,35 @@ void PlayerState::updateNote() noexcept
     // Loop through each channel in the row until we have finished
     for (int channel_index = 0; channel_index < module_->header_.channels_count; channel_index++)
     {
-        const XMNote& note = row[channel_index];
+        const auto& [note, sample_index, volume, effect, effect_parameter] = row[channel_index];
         Channel& channel = FMUSIC_Channel[channel_index];
 
-        const unsigned char paramx = note.effect_parameter >> 4;			// get effect param x
-        const unsigned char paramy = note.effect_parameter & 0xF;			// get effect param y
+        const unsigned char paramx = effect_parameter >> 4;			// get effect param x
+        const unsigned char paramy = effect_parameter & 0xF;			// get effect param y
         const int slide = paramx ? paramx : -paramy;
 
-        const bool porta = note.effect == XMEffect::PORTATO || note.effect == XMEffect::PORTATOVOLSLIDE;
-        const bool valid_note = note.note && note.note != FMUSIC_KEYOFF;
+        const bool porta = effect == XMEffect::PORTATO || effect == XMEffect::PORTATOVOLSLIDE;
+        const bool valid_note = note && note != FMUSIC_KEYOFF;
 
         if (!porta)
         {
             // first store note and instrument number if there was one
-            if (note.sample_index)							//  bugfix 3.20 (&& !porta)
+            if (sample_index)							//  bugfix 3.20 (&& !porta)
             {
-                channel.inst = note.sample_index - 1;						// remember the Instrument #
+                channel.inst = sample_index - 1;						// remember the Instrument #
             }
 
             if (valid_note) //  bugfix 3.20 (&& !porta)
             {
-                channel.note = note.note - 1;						// remember the note
+                channel.note = note - 1;						// remember the note
             }
         }
 
         const Instrument& instrument = module_->getInstrument(channel.inst);
-        const Sample& sample = instrument.getSample(channel.note);
+        const XMSampleHeader& sample_header = instrument.getSample(channel.note).header;
 
         if (valid_note) {
-            channel.fine_tune = sample.header.fine_tune;
+            channel.fine_tune = sample_header.fine_tune;
         }
 
         int oldvolume = channel.volume;
@@ -131,11 +131,11 @@ void PlayerState::updateNote() noexcept
         int oldpan = channel.pan;
 
         // if there is no more tremolo, set volume to volume + last tremolo delta
-        if (channel.recenteffect == XMEffect::TREMOLO && note.effect != XMEffect::TREMOLO)
+        if (channel.recenteffect == XMEffect::TREMOLO && effect != XMEffect::TREMOLO)
         {
             channel.volume += channel.voldelta;
         }
-        channel.recenteffect = note.effect;
+        channel.recenteffect = effect;
 
         channel.voldelta = 0;
         channel.trigger = valid_note;
@@ -146,7 +146,7 @@ void PlayerState::updateNote() noexcept
         if (valid_note)
         {
             // get note according to relative note
-            channel.realnote = note.note + sample.header.relative_note - 1;
+            channel.realnote = note + sample_header.relative_note - 1;
 
             // get period according to realnote and fine_tune
             channel.period_target = GetPeriodFinetuned(channel.realnote, channel.fine_tune, module_->header_.flags & FMUSIC_XMFLAGS_LINEARFREQUENCY);
@@ -159,16 +159,16 @@ void PlayerState::updateNote() noexcept
         }
 
         //= PROCESS INSTRUMENT NUMBER ==================================================================
-        if (note.sample_index)
+        if (sample_index)
         {
-            channel.reset(sample.header.default_volume, sample.header.default_panning);
+            channel.reset(sample_header.default_volume, sample_header.default_panning);
         }
 
         //= PROCESS VOLUME BYTE ========================================================================
-        channel.processVolumeByteNote(note.volume);
+        channel.processVolumeByteNote(volume);
 
         //= PROCESS KEY OFF ============================================================================
-        if (note.note == FMUSIC_KEYOFF || note.effect == XMEffect::KEYOFF)
+        if (note == FMUSIC_KEYOFF || effect == XMEffect::KEYOFF)
         {
             channel.keyoff = true;
         }
@@ -181,14 +181,14 @@ void PlayerState::updateNote() noexcept
 #endif
 
         //= PROCESS TICK 0 EFFECTS =====================================================================
-        switch (note.effect)
+        switch (effect)
         {
 #ifdef FMUSIC_XM_PORTAUP_ACTIVE
             case XMEffect::PORTAUP:
             {
-                if (note.effect_parameter)
+                if (effect_parameter)
                 {
-                    channel.portaup = note.effect_parameter;
+                    channel.portaup = effect_parameter;
                 }
                 break;
             }
@@ -196,9 +196,9 @@ void PlayerState::updateNote() noexcept
 #ifdef FMUSIC_XM_PORTADOWN_ACTIVE
             case XMEffect::PORTADOWN:
             {
-                if (note.effect_parameter)
+                if (effect_parameter)
                 {
-                    channel.portadown = note.effect_parameter;
+                    channel.portadown = effect_parameter;
                 }
                 break;
             }
@@ -207,7 +207,7 @@ void PlayerState::updateNote() noexcept
             case XMEffect::PORTATO:
             {
                 channel.portamento.setTarget(channel.period_target);
-                channel.portamento.setSpeed(note.effect_parameter * 8);
+                channel.portamento.setSpeed(effect_parameter * 8);
                 channel.trigger = false;
                 break;
             }
@@ -249,15 +249,15 @@ void PlayerState::updateNote() noexcept
 #ifdef FMUSIC_XM_SETPANPOSITION_ACTIVE
             case XMEffect::SETPANPOSITION:
             {
-                channel.pan = note.effect_parameter;
+                channel.pan = effect_parameter;
                 break;
             }
 #endif
 #ifdef FMUSIC_XM_SETSAMPLEOFFSET_ACTIVE
             case XMEffect::SETSAMPLEOFFSET:
             {
-                channel.setSampleOffset(note.effect_parameter * 256);
-                if (channel.sampleoffset < sample.header.loop_start + sample.header.loop_length)
+                channel.setSampleOffset(effect_parameter * 256);
+                if (channel.sampleoffset < sample_header.loop_start + sample_header.loop_length)
                 {
                     mixer_.getChannel(channel.index).sampleoffset = channel.sampleoffset;
                 }
@@ -279,7 +279,7 @@ void PlayerState::updateNote() noexcept
 #ifdef FMUSIC_XM_PATTERNJUMP_ACTIVE
             case XMEffect::PATTERNJUMP: // --- 00 B00 : --- 00 D63 , should put us at ord=0, row=63
             {
-                next_.order = note.effect_parameter % module_->header_.song_length;
+                next_.order = effect_parameter % module_->header_.song_length;
                 next_.row = 0;
                 row_set = true;
                 break;
@@ -288,7 +288,7 @@ void PlayerState::updateNote() noexcept
 #ifdef FMUSIC_XM_SETVOLUME_ACTIVE
             case XMEffect::SETVOLUME:
             {
-                channel.volume = note.effect_parameter;
+                channel.volume = effect_parameter;
                 break;
             }
 #endif
@@ -352,7 +352,7 @@ void PlayerState::updateNote() noexcept
 #ifdef FMUSIC_XM_SETFINETUNE_ACTIVE
                     case XMSpecialEffect::SETFINETUNE:
                     {
-                        channel.fine_tune = paramy;
+                        channel.fine_tune = static_cast<int8_t>(paramy);
                         break;
                     }
 #endif
@@ -442,13 +442,13 @@ void PlayerState::updateNote() noexcept
 #ifdef FMUSIC_XM_SETSPEED_ACTIVE
             case XMEffect::SETSPEED:
             {
-                if (note.effect_parameter < 0x20)
+                if (effect_parameter < 0x20)
                 {
-                    ticks_per_row_ = note.effect_parameter;
+                    ticks_per_row_ = effect_parameter;
                 }
                 else
                 {
-                    setBPM(note.effect_parameter);
+                    setBPM(effect_parameter);
                 }
                 break;
             }
@@ -456,7 +456,7 @@ void PlayerState::updateNote() noexcept
 #ifdef FMUSIC_XM_SETGLOBALVOLUME_ACTIVE
             case XMEffect::SETGLOBALVOLUME:
             {
-                global_volume_ = note.effect_parameter;
+                global_volume_ = effect_parameter;
                 break;
             }
 #endif
@@ -473,7 +473,7 @@ void PlayerState::updateNote() noexcept
 #if defined(FMUSIC_XM_SETENVELOPEPOS_ACTIVE) && defined(FMUSIC_XM_VOLUMEENVELOPE_ACTIVE)
             case XMEffect::SETENVELOPEPOS:
             {
-                channel.volume_envelope.setPosition(note.effect_parameter);
+                channel.volume_envelope.setPosition(effect_parameter);
                 break;
             }
 #endif
@@ -487,7 +487,7 @@ void PlayerState::updateNote() noexcept
 #ifdef FMUSIC_XM_MULTIRETRIG_ACTIVE
             case XMEffect::MULTIRETRIG:
             {
-                if (note.effect_parameter)
+                if (effect_parameter)
                 {
                     channel.retrigx = paramx;
                     channel.retrigy = paramy;
@@ -498,7 +498,7 @@ void PlayerState::updateNote() noexcept
 #ifdef FMUSIC_XM_TREMOR_ACTIVE
             case XMEffect::TREMOR:
             {
-                if (note.effect_parameter)
+                if (effect_parameter)
                 {
                     channel.tremoron = paramx + 1;
                     channel.tremoroff = paramy + 1;
@@ -553,7 +553,7 @@ void PlayerState::updateNote() noexcept
     }
 }
 
-void PlayerState::updateEffects() noexcept
+void PlayerState::updateTick() noexcept
 {
     // Point our note pointer to the correct pattern buffer, and to the
     // correct offset in this buffer indicated by row and number of channels
@@ -563,14 +563,11 @@ void PlayerState::updateEffects() noexcept
     // Loop through each channel in the row until we have finished
     for (int channel_index = 0; channel_index < module_->header_.channels_count; channel_index++)
     {
-        const XMNote& note = row[channel_index];
+        const auto& [note, sample_index, volume, effect, effect_parameter] = row[channel_index];
         Channel& channel = FMUSIC_Channel[channel_index];
 
-        const unsigned char paramx = note.effect_parameter >> 4;			// get effect param x
-        const unsigned char paramy = note.effect_parameter & 0xF;			// get effect param y
-
-        const Instrument& instrument = module_->getInstrument(channel.inst);
-        const Sample& sample = instrument.getSample(channel.note);
+        const unsigned char paramx = effect_parameter >> 4;			// get effect param x
+        const unsigned char paramy = effect_parameter & 0xF;			// get effect param y
 
         channel.voldelta = 0;
         channel.trigger = false;
@@ -578,10 +575,10 @@ void PlayerState::updateEffects() noexcept
         channel.stop = false;
 
         //= PROCESS VOLUME BYTE ========================================================================
-        channel.processVolumeByteEffect(note.volume);
+        channel.processVolumeByteTick(volume);
 
         //= PROCESS TICK N != 0 EFFECTS =====================================================================
-        switch (note.effect)
+        switch (effect)
         {
 #ifdef FMUSIC_XM_ARPEGGIO_ACTIVE
             case XMEffect::ARPEGGIO:
@@ -680,9 +677,10 @@ void PlayerState::updateEffects() noexcept
                         if (tick_ == paramy)
                         {
                             //= PROCESS INSTRUMENT NUMBER ==================================================================
-                            channel.reset(sample.header.default_volume, sample.header.default_panning);
+                            const XMSampleHeader& sample_header = module_->getInstrument(channel.inst).getSample(channel.note).header;
+                            channel.reset(sample_header.default_volume, sample_header.default_panning);
                             channel.period = channel.period_target;
-                            channel.processVolumeByteNote(note.volume);
+                            channel.processVolumeByteNote(volume);
                             channel.trigger = true;
                         }
                         break;
@@ -828,7 +826,7 @@ void PlayerState::updateEffects() noexcept
     }
 }
 
-PlayerState::PlayerState(std::unique_ptr<Module> module, int mixrate) :
+PlayerState::PlayerState(std::unique_ptr<Module> module, unsigned int mixrate) :
     module_{ std::move(module) },
     mixer_{ [this] {return this->tick(); }, mixrate },
     global_volume_{ 64 },

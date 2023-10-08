@@ -48,7 +48,7 @@ void FSOUND_File_SetCallbacks(void*         (*OpenCallback)(const char *name),
                               void			(*CloseCallback)(void* handle),
                               int			(*ReadCallback)(void *buffer, int size, void* handle),
                               void			(*SeekCallback)(void* handle, int pos, int mode),
-                              int			(*TellCallback)(void* handle)) noexcept;
+                              int			(*TellCallback)(void* handle)) MINIFMOD_NOEXCEPT;
 bool FSOUND_Init(int mixrate, int vcmmode = 0) MINIFMOD_NOEXCEPT;
 float FSOUND_TimeFromSamples() MINIFMOD_NOEXCEPT;
 
@@ -67,8 +67,8 @@ Module*         FMUSIC_StopSong(PlayerState* player_state = nullptr);
 // Runtime song information.
 // =========================
 
-unsigned char	FMUSIC_GetOrder() MINIFMOD_NOEXCEPT;
-unsigned char	FMUSIC_GetRow() MINIFMOD_NOEXCEPT;
+unsigned short	FMUSIC_GetOrder() MINIFMOD_NOEXCEPT;
+unsigned short	FMUSIC_GetRow() MINIFMOD_NOEXCEPT;
 unsigned int	FMUSIC_GetTime() MINIFMOD_NOEXCEPT;
 
 #ifdef __cplusplus
