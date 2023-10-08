@@ -25,7 +25,7 @@ private:
 #endif
 
 	void updateNote() noexcept;
-	void updateEffects() noexcept;
+	void updateTick() noexcept;
 
 	void clampGlobalVolume() noexcept
 	{
@@ -34,9 +34,9 @@ private:
 
 	Position tick() noexcept;
 public:
-	PlayerState(std::unique_ptr<Module> module, int mixrate);
+	PlayerState(std::unique_ptr<Module> module, unsigned int mixrate);
 
-	void setBPM(int bpm) noexcept
+	void setBPM(unsigned int bpm) noexcept
 	{
 		mixer_.setSamplesPerTick(mixer_.getMixRate() * 5 / (bpm * 2));
 	}

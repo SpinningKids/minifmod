@@ -131,7 +131,7 @@ struct Channel
 	void processInstrument(const Instrument& instrument) noexcept;
 	void reset(int new_volume, int new_pan) noexcept;
 	void processVolumeByteNote(uint8_t volume_byte) noexcept;
-	void processVolumeByteEffect(uint8_t volume_byte) noexcept;
+	void processVolumeByteTick(uint8_t volume_byte) noexcept;
 	void tremor() noexcept;
 	void updateVolume() noexcept;
 

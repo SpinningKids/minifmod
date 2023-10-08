@@ -18,7 +18,7 @@
 #include "player_state.h"
 #include "system_file.h"
 
-static int FSOUND_MixRate = 44100;
+static unsigned int FSOUND_MixRate = 44100;
 static PlayerState* FSOUND_last_player_state = nullptr;
 //= API FUNCTIONS ==============================================================================
 
@@ -163,7 +163,7 @@ Module* FMUSIC_StopSong(PlayerState* player_state)
 	FMUSIC_GetPattern
 ]
 */
-unsigned char FMUSIC_GetOrder() noexcept
+unsigned short FMUSIC_GetOrder() noexcept
 {
 	return FSOUND_last_player_state ? FSOUND_last_player_state->getMixer().getTimeInfo().position.order : 0;
 }
@@ -187,7 +187,7 @@ unsigned char FMUSIC_GetOrder() noexcept
 	[SEE_ALSO]
 ]
 */
-unsigned char FMUSIC_GetRow() noexcept
+unsigned short FMUSIC_GetRow() noexcept
 {
 	return FSOUND_last_player_state ? FSOUND_last_player_state->getMixer().getTimeInfo().position.row : 0;
 }

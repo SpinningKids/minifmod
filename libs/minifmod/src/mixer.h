@@ -40,34 +40,34 @@ struct MixerChannel
 class Mixer final
 {
 	// mixing info
-	std::function<Position()> tick_callback_;
-	int					FSOUND_MixRate = 44100;		// mixing rate in hz.
-	int					FSOUND_BlockSize;			// LATENCY ms worth of samples
-	int					totalblocks;
-	int					FSOUND_BufferSize;			// size of 1 'latency' ms buffer in bytes
-	float volume_filter_k;
+	std::function<Position()>	tick_callback_;
+	unsigned int				FSOUND_MixRate = 44100;		// mixing rate in hz.
+	unsigned int				FSOUND_BlockSize;			// LATENCY ms worth of samples
+	unsigned int				totalblocks;
+	unsigned int				FSOUND_BufferSize;			// size of 1 'latency' ms buffer in bytes
+	float						volume_filter_k;
 	std::unique_ptr<TimeInfo[]> FMUSIC_TimeInfo;
 
-	int					FSOUND_Software_FillBlock = 0;
+	unsigned int				FSOUND_Software_FillBlock = 0;
 
-	std::unique_ptr<float[]> FSOUND_MixBuffer;			// mix output buffer (stereo 32bit float)
+	std::unique_ptr<float[]>	FSOUND_MixBuffer;			// mix output buffer (stereo 32bit float)
 
 	//= VARIABLE EXTERNS ==========================================================================
-	MixerChannel		FSOUND_Channel[64];			// channel pool
+	MixerChannel				FSOUND_Channel[64];			// channel pool
 
 	// thread control variables
-	std::thread	Software_Thread;
-	bool				Software_Thread_Exit = false;		// mixing thread termination flag
-	int					FSOUND_Software_RealBlock = 0;
-	int			mixer_samples_left_;
-	int			mixer_samples_per_tick_;
-	int			samples_mixed_;		// time passed in samples since song started
-	Position    last_position_;
+	std::thread					Software_Thread;
+	bool						Software_Thread_Exit = false;		// mixing thread termination flag
+	unsigned int				FSOUND_Software_RealBlock = 0;
+	unsigned int				mixer_samples_left_;
+	unsigned int				mixer_samples_per_tick_;
+	unsigned int				samples_mixed_;		// time passed in samples since song started
+	Position					last_position_;
 
 	void double_buffer_thread() noexcept;
 	void fill() noexcept;
 public:
-	explicit Mixer(std::function<Position()>&& tick_callback, int mixrate = 44100) noexcept;
+	explicit Mixer(std::function<Position()>&& tick_callback, unsigned int mixrate = 44100) noexcept;
 
 	[[nodiscard]] const TimeInfo& getTimeInfo() const noexcept
 	{
@@ -85,15 +85,15 @@ public:
 		}
 	}
 
-	[[nodiscard]] int getMixRate() const
+	[[nodiscard]] unsigned int getMixRate() const
 	{
 		return FSOUND_MixRate;
 	}
 
-	void mix(float* mixptr, int len) noexcept;
+	void mix(float* mixptr, unsigned int len) noexcept;
 
 	[[nodiscard]] float timeFromSamples() const noexcept;
-	void setSamplesPerTick(int samplesPerTick)
+	void setSamplesPerTick(unsigned int samplesPerTick)
 	{
 		mixer_samples_per_tick_ = samplesPerTick;
 	}

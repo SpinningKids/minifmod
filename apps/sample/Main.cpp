@@ -67,7 +67,7 @@ struct MEMFILE
 {
 	int length;
 	int pos;
-	void *data;
+	char *data;
 };
 
 void* memopen(const char *name)
@@ -82,7 +82,7 @@ void* memopen(const char *name)
 		{
 			fseek(fp, 0, SEEK_END);
 			memfile->length = ftell(fp);
-			memfile->data = calloc(memfile->length,1);
+			memfile->data = static_cast<char*>(calloc(memfile->length,1));
 			memfile->pos = 0;
 
 			fseek(fp, 0, SEEK_SET);
@@ -123,7 +123,7 @@ int memread(void *buffer, int size, void* handle)
 	if (memfile->pos + size >= memfile->length)
 		size = memfile->length - memfile->pos;
 
-	memcpy(buffer, static_cast<char*>(memfile->data)+memfile->pos, size);
+	memcpy(buffer, memfile->data+memfile->pos, size);
 	memfile->pos += size;
 
 	return size;
@@ -222,7 +222,7 @@ int main(int argc, char *argv[])
 #endif
             const int ord = FMUSIC_GetOrder();
 			const int row = FMUSIC_GetRow();
-			const double mytime = (float)FMUSIC_GetTime() / 1000.0;
+			const double mytime = FMUSIC_GetTime() / 1000.0;
 
 			printf("ord %2d row %2d seconds %5.02f %s      \r", ord, row, mytime, (row % 8) ? "    " : "TICK");
 
