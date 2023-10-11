@@ -7,7 +7,7 @@ namespace
 {
     constexpr uint8_t FMUSIC_KEYOFF = 97;
 
-    int GetXMLinearPeriodFinetuned(int note, int8_t fine_tune)
+    int GetXMLinearPeriodFinetuned(int note, int fine_tune)
     {
         return 120*128 - note*128 - fine_tune;
     }
@@ -18,7 +18,7 @@ namespace
         return static_cast<int>(exp2f(15.7414660f - static_cast<float>(note) / 12.0f));
     }
 
-    int GetAmigaPeriodFinetuned(int note, int8_t fine_tune) noexcept
+    int GetAmigaPeriodFinetuned(int note, int fine_tune) noexcept
     {
         int period = GetAmigaPeriod(note);
 
@@ -31,7 +31,7 @@ namespace
     }
 #endif
 
-    int GetPeriodFinetuned(int note, int8_t fine_tune, bool linear)
+    int GetPeriodFinetuned(int note, int fine_tune, bool linear)
     {
 #ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
         if (!linear)
@@ -40,7 +40,7 @@ namespace
         return GetXMLinearPeriodFinetuned(note, fine_tune);
     }
 
-    int GetPeriodDeltaFinetuned(int note, int delta, int8_t fine_tune, bool linear)
+    int GetPeriodDeltaFinetuned(int note, int delta, int fine_tune, bool linear)
     {
 #ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
         if (!linear)
@@ -98,8 +98,8 @@ void PlayerState::updateNote() noexcept
         const auto& [note, sample_index, volume, effect, effect_parameter] = row[channel_index];
         Channel& channel = FMUSIC_Channel[channel_index];
 
-        const unsigned char paramx = effect_parameter >> 4;			// get effect param x
-        const unsigned char paramy = effect_parameter & 0xF;			// get effect param y
+        const int paramx = effect_parameter >> 4;			// get effect param x
+        const int paramy = effect_parameter & 0xF;			// get effect param y
         const int slide = paramx ? paramx : -paramy;
 
         const bool porta = effect == XMEffect::PORTATO || effect == XMEffect::PORTATOVOLSLIDE;
@@ -352,7 +352,7 @@ void PlayerState::updateNote() noexcept
 #ifdef FMUSIC_XM_SETFINETUNE_ACTIVE
                     case XMSpecialEffect::SETFINETUNE:
                     {
-                        channel.fine_tune = static_cast<int8_t>(paramy);
+                        channel.fine_tune = paramy;
                         break;
                     }
 #endif
@@ -566,8 +566,8 @@ void PlayerState::updateTick() noexcept
         const auto& [note, sample_index, volume, effect, effect_parameter] = row[channel_index];
         Channel& channel = FMUSIC_Channel[channel_index];
 
-        const unsigned char paramx = effect_parameter >> 4;			// get effect param x
-        const unsigned char paramy = effect_parameter & 0xF;			// get effect param y
+        const int paramx = effect_parameter >> 4;			// get effect param x
+        const int paramy = effect_parameter & 0xF;			// get effect param y
 
         channel.voldelta = 0;
         channel.trigger = false;
@@ -837,7 +837,7 @@ PlayerState::PlayerState(std::unique_ptr<Module> module, unsigned int mixrate) :
     next_{ 0, 0 }
 {
     memset(FMUSIC_Channel, 0, sizeof(FMUSIC_Channel));
-    for (uint16_t channel_index = 0; channel_index < module_->header_.channels_count; channel_index++)
+    for (int channel_index = 0; channel_index < static_cast<int>(module_->header_.channels_count); channel_index++)
     {
         FMUSIC_Channel[channel_index].index = channel_index;
     }

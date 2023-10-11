@@ -67,9 +67,9 @@ Module*         FMUSIC_StopSong(PlayerState* player_state = nullptr);
 // Runtime song information.
 // =========================
 
-unsigned short	FMUSIC_GetOrder() MINIFMOD_NOEXCEPT;
-unsigned short	FMUSIC_GetRow() MINIFMOD_NOEXCEPT;
-unsigned int	FMUSIC_GetTime() MINIFMOD_NOEXCEPT;
+int FMUSIC_GetOrder() MINIFMOD_NOEXCEPT;
+int FMUSIC_GetRow() MINIFMOD_NOEXCEPT;
+int FMUSIC_GetTime() MINIFMOD_NOEXCEPT;
 
 #ifdef __cplusplus
 }

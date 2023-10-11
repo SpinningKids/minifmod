@@ -27,7 +27,7 @@ Module::Module(const minifmod::FileAccess& fileAccess, void* fp, SAMPLELOADCALLB
     fileAccess.seek(fp, static_cast<int>(60 + header_.header_size), SEEK_SET);
 
     // unpack and read patterns
-    for (uint16_t pattern_index = 0; pattern_index < header_.patterns_count; pattern_index++)
+    for (int pattern_index = 0; pattern_index < static_cast<int>(header_.patterns_count); pattern_index++)
     {
         XMPatternHeader pattern_header;
         fileAccess.read(&pattern_header, sizeof(pattern_header), fp);
@@ -37,11 +37,11 @@ Module::Module(const minifmod::FileAccess& fileAccess, void* fp, SAMPLELOADCALLB
 
         if (pattern_header.packed_pattern_data_size > 0)
         {
-            for (uint16_t row = 0; row < pattern_header.rows; ++row)
+            for (int row = 0; row < static_cast<int>(pattern_header.rows); ++row)
             {
                 auto& current_row = pattern[row];
 
-                for (uint16_t channel_index = 0; channel_index < header_.channels_count; channel_index++)
+                for (int channel_index = 0; channel_index < static_cast<int>(header_.channels_count); channel_index++)
                 {
                     unsigned char dat;
 
@@ -72,7 +72,7 @@ Module::Module(const minifmod::FileAccess& fileAccess, void* fp, SAMPLELOADCALLB
     }
 
     // load instrument information
-    for (uint16_t instrument_index = 0; instrument_index < header_.instruments_count; ++instrument_index)
+    for (int instrument_index = 0; instrument_index < static_cast<int>(header_.instruments_count); ++instrument_index)
     {
         // point a pointer to that particular instrument
         Instrument& instrument = instrument_[instrument_index];
@@ -87,11 +87,11 @@ Module::Module(const minifmod::FileAccess& fileAccess, void* fp, SAMPLELOADCALLB
         {
             fileAccess.read(&instrument.sample_header, sizeof(instrument.sample_header), fp);
 
-            auto adjust_envelope = [](uint8_t count, const XMEnvelopePoint(&original_points)[12], int offset, float scale, XMEnvelopeFlags flags) noexcept
+            auto adjust_envelope = [](int count, const XMEnvelopePoint(&original_points)[12], int offset, float scale, XMEnvelopeFlags flags) noexcept
             {
                 EnvelopePoints e;
                 e.count = (count < 2 || !(flags & XMEnvelopeFlagsOn)) ? 0 : count;
-                for (uint8_t i = 0; i < e.count; ++i)
+                for (int i = 0; i < e.count; ++i)
                 {
                     e.envelope[i].position = original_points[i].position;
                     e.envelope[i].value = static_cast<float>(original_points[i].value - offset) / scale;
@@ -117,7 +117,7 @@ Module::Module(const minifmod::FileAccess& fileAccess, void* fp, SAMPLELOADCALLB
 
             // seek to first sample
             fileAccess.seek(fp, first_sample_offset, SEEK_SET);
-            for (unsigned int sample_index = 0; sample_index < instrument.header.samples_count; sample_index++)
+            for (int sample_index = 0; sample_index < static_cast<int>(instrument.header.samples_count); sample_index++)
             {
                 XMSampleHeader& sample_header = instrument.sample[sample_index].header;
 
@@ -141,7 +141,7 @@ Module::Module(const minifmod::FileAccess& fileAccess, void* fp, SAMPLELOADCALLB
             }
 
             // Load sample data
-            for (uint16_t sample_index = 0; sample_index < instrument.header.samples_count; sample_index++)
+            for (int sample_index = 0; sample_index < static_cast<int>(instrument.header.samples_count); sample_index++)
             {
                 //unsigned int	samplelenbytes = sample.header.length * sample.bits / 8;
 

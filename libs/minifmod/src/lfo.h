@@ -3,7 +3,7 @@
 
 #include <numbers>
 
-enum class WaveControl : uint8_t
+enum class WaveControl
 {
 	Sine,
 	SawTooth,
@@ -22,7 +22,7 @@ public:
 	void setSpeed(int speed) { if (speed) speed_ = speed; }
 	void setDepth(int depth) { if (depth) depth_ = depth; }
 
-    void setFlags(uint8_t flags)
+    void setFlags(int flags)
 	{
 		wave_control_ = static_cast<WaveControl>(flags & 3);
 		continue_ = (flags & 4) != 0;

@@ -12,7 +12,7 @@ void EnvelopeState::process(const EnvelopePoints& envelope, XMEnvelopeFlags flag
             position_ = envelope.envelope[loop_start_index].position;
         }
         // search new envelope position
-        uint8_t current_index = 0;
+        int current_index = 0;
         while (current_index + 1 < envelope.count && position_ > envelope.envelope[current_index + 1].position) current_index++;
 
         // interpolate new envelope position
