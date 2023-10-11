@@ -12,8 +12,6 @@
 
 #pragma once
 
-#include <cstdint>
-
 #include "envelope.h"
 #include "instrument.h"
 #include "lfo.h"
@@ -27,7 +25,7 @@ struct Channel
 {
 	int				index;
 
-	uint8_t			note;  				// last note set in channel
+	int				note;  				// last note set in channel
 
 	bool			trigger;
 	bool			stop;
@@ -43,15 +41,15 @@ struct Channel
 	int				fadeoutvol;			// volume fade out
 	bool			keyoff;				// flag whether keyoff has been hit or not)
 
-	unsigned char	inst;				// last instrument set in channel
+	int				inst;				// last instrument set in channel
 	int			  	realnote;  			// last realnote set in channel
 	XMEffect		recenteffect;		// previous row's effect.. used to correct tremolo volume
 
 	unsigned int	sampleoffset;		// sample offset for this channel in SAMPLES
-	int8_t			fine_tune;
+	int				fine_tune;
 
 #ifdef FMUSIC_XM_INSTRUMENTVIBRATO_ACTIVE
-	uint8_t			ivibpos;   			// instrument vibrato position
+	int				ivibpos;   			// instrument vibrato position
 	int				ivibsweeppos;		// instrument vibrato sweep position
 #endif
 
@@ -68,9 +66,9 @@ struct Channel
 #endif
 
 #ifdef FMUSIC_XM_TREMOR_ACTIVE
-	unsigned char	tremorpos; 			// tremor position (XM + S3M)
-	unsigned char 	tremoron;   		// remembered parameters for tremor (XM + S3M)
-	unsigned char 	tremoroff;   		// remembered parameters for tremor (XM + S3M)
+	int				tremorpos; 			// tremor position (XM + S3M)
+	int			 	tremoron;   		// remembered parameters for tremor (XM + S3M)
+	int			 	tremoroff;   		// remembered parameters for tremor (XM + S3M)
 #endif
 
 #if defined(FMUSIC_XM_PORTATOVOLSLIDE_ACTIVE) || defined(FMUSIC_XM_VIBRATOVOLSLIDE_ACTIVE) || defined(FMUSIC_XM_VOLUMESLIDE_ACTIVE)
@@ -78,16 +76,16 @@ struct Channel
 #endif
 
 #ifdef FMUSIC_XM_PORTAUP_ACTIVE
-	unsigned char	portaup;   			// last porta up value (XM)
+	int				portaup;   			// last porta up value (XM)
 #endif
 
 #ifdef FMUSIC_XM_PORTADOWN_ACTIVE
-	unsigned char	portadown;  		// last porta down value (XM)
+	int				portadown;  		// last porta down value (XM)
 #endif
 
 #ifdef FMUSIC_XM_EXTRAFINEPORTA_ACTIVE
-	unsigned char	xtraportadown;		// last porta down value (XM)
-	unsigned char	xtraportaup;  		// last porta up value (XM)
+	int				xtraportadown;		// last porta down value (XM)
+	int				xtraportaup;  		// last porta up value (XM)
 #endif
 
 #ifdef FMUSIC_XM_PANSLIDE_ACTIVE
@@ -95,8 +93,8 @@ struct Channel
 #endif
 
 #ifdef FMUSIC_XM_MULTIRETRIG_ACTIVE
-	unsigned char	retrigx;   			// last retrig volume slide used (XM + S3M)
-	unsigned char	retrigy;   			// last retrig tick count used (XM + S3M)
+	int				retrigx;   			// last retrig volume slide used (XM + S3M)
+	int				retrigy;   			// last retrig tick count used (XM + S3M)
 #endif
 
 #if defined(FMUSIC_XM_PORTATOVOLSLIDE_ACTIVE) || defined(FMUSIC_XM_PORTATO_ACTIVE) || defined(FMUSIC_XM_VOLUMEBYTE_ACTIVE)
@@ -108,30 +106,30 @@ struct Channel
 #endif
 
 #ifdef FMUSIC_XM_FINEPORTAUP_ACTIVE
-	uint8_t			fineportaup;		// parameter for fine porta slide up
+	int				fineportaup;		// parameter for fine porta slide up
 #endif
 
 #ifdef FMUSIC_XM_FINEPORTADOWN_ACTIVE
-	uint8_t			fineportadown;		// parameter for fine porta slide down
+	int				fineportadown;		// parameter for fine porta slide down
 #endif
 
 #ifdef FMUSIC_XM_PATTERNLOOP_ACTIVE
-	uint16_t		patlooprow;
-	uint8_t 		patloopno;  		// pattern loop variables for effect  E6x
+	int				patlooprow;
+	int		 		patloopno;  		// pattern loop variables for effect  E6x
 #endif
 
 #ifdef FMUSIC_XM_FINEVOLUMESLIDEUP_ACTIVE
-	uint8_t			finevslup;			// parameter for fine volume slide up
+	int				finevslup;			// parameter for fine volume slide up
 #endif
 
 #ifdef FMUSIC_XM_FINEVOLUMESLIDEDOWN_ACTIVE
-    uint8_t			finevsldown;		// parameter for fine volume slide down
+    int				finevsldown;		// parameter for fine volume slide down
 #endif
 
 	void processInstrument(const Instrument& instrument) noexcept;
 	void reset(int new_volume, int new_pan) noexcept;
-	void processVolumeByteNote(uint8_t volume_byte) noexcept;
-	void processVolumeByteTick(uint8_t volume_byte) noexcept;
+	void processVolumeByteNote(int volume_byte) noexcept;
+	void processVolumeByteTick(int volume_byte) noexcept;
 	void tremor() noexcept;
 	void updateVolume() noexcept;
 

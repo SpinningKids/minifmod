@@ -1,7 +1,6 @@
 
 #pragma once
 
-#include <cstdint>
 #include "xmfile.h"
 
 struct EnvelopePoint
@@ -13,7 +12,7 @@ struct EnvelopePoint
 
 struct EnvelopePoints
 {
-	uint8_t count;
+	int count;
 	EnvelopePoint envelope[12];
 };
 

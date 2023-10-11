@@ -15,9 +15,9 @@ private:
 	std::unique_ptr<Module> module_;
 	Mixer mixer_;
 	int				global_volume_;		// global mod volume
-	unsigned int	tick_;				// current mod tick
-	unsigned int	ticks_per_row_;		// speed of song in ticks per row
-	unsigned int	pattern_delay_;		// pattern delay counter
+	int				tick_;				// current mod tick
+	int				ticks_per_row_;		// speed of song in ticks per row
+	int				pattern_delay_;		// pattern delay counter
 	Position		current_;
 	Position		next_;
 #ifdef FMUSIC_XM_GLOBALVOLSLIDE_ACTIVE

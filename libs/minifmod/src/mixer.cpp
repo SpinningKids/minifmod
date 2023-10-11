@@ -62,9 +62,9 @@ Mixer::Mixer(std::function<Position()>&& tick_callback, unsigned int mixrate) no
         channel_index.speed = 1.0f;
     }
 
-    FSOUND_MixBlock.data.reset(new short[static_cast<size_t>(FSOUND_BufferSize) * 2]);
+    FSOUND_MixBlock.data.reset(new short[FSOUND_BufferSize * 2]);
 
-    FSOUND_MixBuffer.reset(new float[static_cast<size_t>(FSOUND_BlockSize) * 2]);
+    FSOUND_MixBuffer.reset(new float[FSOUND_BlockSize * 2]);
 
     Software_Thread = std::thread(&Mixer::double_buffer_thread, this);
 }
