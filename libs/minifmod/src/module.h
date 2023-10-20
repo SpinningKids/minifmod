@@ -23,8 +23,6 @@
 #include "system_file.h"
 #include "xmfile.h"
 
-inline Channel			FMUSIC_Channel[32]{};		// channel array for this song
-
 struct Module final
 {
 	XMHeader	header_;

@@ -15,21 +15,6 @@ namespace
     constexpr unsigned int	FSOUND_LATENCY = 20;
     constexpr float VolumeFilterTimeConstant = 0.003f; // time constant (RC) of the volume IIR filter
 
-    struct FSOUND_SoundBlock
-    {
-#ifdef WIN32
-        WAVEHDR		wavehdr{};
-#endif
-        std::unique_ptr<short[]> data;
-    };
-
-    FSOUND_SoundBlock	FSOUND_MixBlock;
-
-#ifdef WIN32
-    HWAVEOUT			FSOUND_WaveOutHandle = nullptr;
-#endif
-
-
     void MixerClipCopy_Float32(int16_t* dest, const float* src, size_t len) noexcept
     {
         assert(src);
@@ -44,29 +29,27 @@ namespace
     }
 }
 
-Mixer::Mixer(std::function<Position()>&& tick_callback, unsigned int mixrate) noexcept :
-    tick_callback_{ std::move(tick_callback) },
-    FSOUND_MixRate{ mixrate },
-    FSOUND_BlockSize{ (((FSOUND_MixRate * FSOUND_LATENCY / 1000) + 3) & 0xFFFFFFFC) },
-    totalblocks{ (FSOUND_BufferSizeMs / FSOUND_LATENCY) * 2 },
-    FSOUND_BufferSize{ FSOUND_BlockSize * totalblocks },
-    volume_filter_k{ 1.f / (1.f + static_cast<float>(FSOUND_MixRate) * VolumeFilterTimeConstant) },
-    FMUSIC_TimeInfo{ new TimeInfo[totalblocks] },
-    FSOUND_Channel{},
-    mixer_samples_left_{ 0 },
-    samples_mixed_{ 0 },
-    last_position_{}
+Mixer::Mixer(std::function<Position()>&& tick_callback, uint16_t bpm, unsigned int mixrate) noexcept :
+    tick_callback_{std::move(tick_callback)},
+    mix_rate_{mixrate},
+    block_size_{(((mix_rate_ * FSOUND_LATENCY / 1000) + 3) & 0xFFFFFFFC)},
+    total_blocks_{(FSOUND_BufferSizeMs / FSOUND_LATENCY) * 2},
+    buffer_size_{block_size_ * total_blocks_},
+    volume_filter_k_{1.f / (1.f + static_cast<float>(mix_rate_) * VolumeFilterTimeConstant)},
+    time_info_{new TimeInfo[total_blocks_]},
+    mix_buffer_{std::make_unique_for_overwrite<float[]>(static_cast<size_t>(block_size_) * 2)},
+    channel_{},
+    mixer_samples_left_{0},
+    bpm_{ bpm },
+    samples_mixed_{0},
+    last_position_{},
+    mix_block_{std::make_unique_for_overwrite<short[]>(static_cast<size_t>(buffer_size_) * 2)},
+    software_thread_{&Mixer::double_buffer_thread, this}
 {
-    for (auto& channel_index : FSOUND_Channel)
+    for (auto& channel_index : channel_)
     {
         channel_index.speed = 1.0f;
     }
-
-    FSOUND_MixBlock.data.reset(new short[static_cast<size_t>(FSOUND_BufferSize) * 2]);
-
-    FSOUND_MixBuffer.reset(new float[static_cast<size_t>(FSOUND_BlockSize) * 2]);
-
-    Software_Thread = std::thread(&Mixer::double_buffer_thread, this);
 }
 
 void Mixer::mix(float* mixptr, unsigned int len) noexcept
@@ -74,7 +57,7 @@ void Mixer::mix(float* mixptr, unsigned int len) noexcept
     //==============================================================================================
     // LOOP THROUGH CHANNELS
     //==============================================================================================
-    for (auto& channel : FSOUND_Channel)
+    for (auto& channel : channel_)
     {
         unsigned int sample_index = 0;
 
@@ -125,8 +108,8 @@ void Mixer::mix(float* mixptr, unsigned int len) noexcept
                 const float newsamp = static_cast<float>(channel.sptr->buff[mixpos + 1] - samp1) * frac + static_cast<float>(samp1);
                 mixptr[0 + (sample_index + i) * 2] += channel.filtered_leftvolume * newsamp;
                 mixptr[1 + (sample_index + i) * 2] += channel.filtered_rightvolume * newsamp;
-                channel.filtered_leftvolume += (channel.leftvolume - channel.filtered_leftvolume) * volume_filter_k;
-                channel.filtered_rightvolume += (channel.rightvolume - channel.filtered_rightvolume) * volume_filter_k;
+                channel.filtered_leftvolume += (channel.leftvolume - channel.filtered_leftvolume) * volume_filter_k_;
+                channel.filtered_rightvolume += (channel.rightvolume - channel.filtered_rightvolume) * volume_filter_k_;
                 channel.mixpos += speed;
             }
 
@@ -176,11 +159,11 @@ void Mixer::mix(float* mixptr, unsigned int len) noexcept
 float Mixer::timeFromSamples() const noexcept
 {
 #ifdef WIN32
-    if (FSOUND_WaveOutHandle) {
+    if (wave_out_handle_) {
         MMTIME mmtime;
         mmtime.wType = TIME_SAMPLES;
-        waveOutGetPosition(FSOUND_WaveOutHandle, &mmtime, sizeof(mmtime));
-        return static_cast<float>(mmtime.u.sample) / static_cast<float>(FSOUND_MixRate);
+        waveOutGetPosition(wave_out_handle_, &mmtime, sizeof(mmtime));
+        return static_cast<float>(mmtime.u.sample) / static_cast<float>(mix_rate_);
     }
 #endif
     return 0;
@@ -188,7 +171,7 @@ float Mixer::timeFromSamples() const noexcept
 
 void Mixer::double_buffer_thread() noexcept
 {
-    Software_Thread_Exit = false;
+    software_thread_exit_ = false;
 
     {
 
@@ -201,13 +184,13 @@ void Mixer::double_buffer_thread() noexcept
         pcmwf.nChannels = 2;
         pcmwf.wBitsPerSample = 16;
         pcmwf.nBlockAlign = pcmwf.nChannels * pcmwf.wBitsPerSample / 8;
-        pcmwf.nSamplesPerSec = FSOUND_MixRate;
+        pcmwf.nSamplesPerSec = mix_rate_;
         pcmwf.nAvgBytesPerSec = pcmwf.nSamplesPerSec * pcmwf.nBlockAlign;
         pcmwf.cbSize = 0;
 
-        if (waveOutOpen(&FSOUND_WaveOutHandle, WAVE_MAPPER, &pcmwf, 0, 0, 0))
+        if (waveOutOpen(&wave_out_handle_, WAVE_MAPPER, &pcmwf, 0, 0, 0))
         {
-            Software_Thread_Exit = true;
+            software_thread_exit_ = true;
             return;
         }
 #endif
@@ -217,51 +200,51 @@ void Mixer::double_buffer_thread() noexcept
     // ========================================================================================================
 
 #ifdef WIN32
-    FSOUND_MixBlock.wavehdr.dwFlags = WHDR_BEGINLOOP | WHDR_ENDLOOP;
-    FSOUND_MixBlock.wavehdr.lpData = reinterpret_cast<LPSTR>(FSOUND_MixBlock.data.get());
-    FSOUND_MixBlock.wavehdr.dwBufferLength = FSOUND_BufferSize * sizeof(short) * 2;
-    FSOUND_MixBlock.wavehdr.dwBytesRecorded = 0;
-    FSOUND_MixBlock.wavehdr.dwUser = 0;
-    FSOUND_MixBlock.wavehdr.dwLoops = -1;
-    waveOutPrepareHeader(FSOUND_WaveOutHandle, &FSOUND_MixBlock.wavehdr, sizeof(WAVEHDR));
+    mix_block_.wavehdr.dwFlags = WHDR_BEGINLOOP | WHDR_ENDLOOP;
+    mix_block_.wavehdr.lpData = reinterpret_cast<LPSTR>(mix_block_.data.get());
+    mix_block_.wavehdr.dwBufferLength = buffer_size_ * sizeof(short) * 2;
+    mix_block_.wavehdr.dwBytesRecorded = 0;
+    mix_block_.wavehdr.dwUser = 0;
+    mix_block_.wavehdr.dwLoops = -1;
+    waveOutPrepareHeader(wave_out_handle_, &mix_block_.wavehdr, sizeof(WAVEHDR));
 #endif
 
     do
     {
         fill();
-    } while (FSOUND_Software_FillBlock);
+    } while (software_fill_block_);
 
     // ========================================================================================================
     // START THE OUTPUT
     // ========================================================================================================
 
 #ifdef WIN32
-    waveOutWrite(FSOUND_WaveOutHandle, &FSOUND_MixBlock.wavehdr, sizeof(WAVEHDR));
+    waveOutWrite(wave_out_handle_, &mix_block_.wavehdr, sizeof(WAVEHDR));
 #endif
 
-    while (!Software_Thread_Exit)
+    while (!software_thread_exit_)
     {
 #ifdef WIN32
         MMTIME	mmt{
             .wType = TIME_BYTES
         };
 
-        waveOutGetPosition(FSOUND_WaveOutHandle, &mmt, sizeof(MMTIME));
+        waveOutGetPosition(wave_out_handle_, &mmt, sizeof(MMTIME));
 
-        const unsigned int cursorpos = (mmt.u.cb / 4) % FSOUND_BufferSize;
+        const unsigned int cursorpos = (mmt.u.cb / 4) % buffer_size_;
 #else
         const unsigned int cursorpos = 0;
 #endif
-        const unsigned int cursorblock = cursorpos / FSOUND_BlockSize;
+        const unsigned int cursorblock = cursorpos / block_size_;
 
-        while (FSOUND_Software_FillBlock != cursorblock)
+        while (software_fill_block_ != cursorblock)
         {
             fill();
 
-            ++FSOUND_Software_RealBlock;
-            if (FSOUND_Software_RealBlock >= totalblocks)
+            ++software_real_block_;
+            if (software_real_block_ >= total_blocks_)
             {
-                FSOUND_Software_RealBlock = 0;
+                software_real_block_ = 0;
             }
         }
 
@@ -273,11 +256,11 @@ void Mixer::double_buffer_thread() noexcept
     }
 
 #ifdef WIN32
-    if (FSOUND_MixBlock.wavehdr.lpData)
+    if (mix_block_.wavehdr.lpData)
     {
-        waveOutUnprepareHeader(FSOUND_WaveOutHandle, &FSOUND_MixBlock.wavehdr, sizeof(WAVEHDR));
-        FSOUND_MixBlock.wavehdr.dwFlags &= ~WHDR_PREPARED;
-        FSOUND_MixBlock.wavehdr.lpData = nullptr;
+        waveOutUnprepareHeader(wave_out_handle_, &mix_block_.wavehdr, sizeof(WAVEHDR));
+        mix_block_.wavehdr.dwFlags &= ~WHDR_PREPARED;
+        mix_block_.wavehdr.lpData = nullptr;
     }
 #endif
 
@@ -285,23 +268,23 @@ void Mixer::double_buffer_thread() noexcept
     // SHUT DOWN OUTPUT DRIVER
     // ========================================================================================================
 #ifdef WIN32
-    waveOutReset(FSOUND_WaveOutHandle);
+    waveOutReset(wave_out_handle_);
 
-    waveOutClose(FSOUND_WaveOutHandle);
-    FSOUND_WaveOutHandle = nullptr;
+    waveOutClose(wave_out_handle_);
+    wave_out_handle_ = nullptr;
 #endif
 
 }
 
 void Mixer::fill() noexcept
 {
-    const unsigned int mixpos = FSOUND_Software_FillBlock * FSOUND_BlockSize;
+    const unsigned int mixpos = software_fill_block_ * block_size_;
 
     //==============================================================================
     // MIXBUFFER CLEAR
     //==============================================================================
 
-    memset(FSOUND_MixBuffer.get(), 0, FSOUND_BlockSize * sizeof(float) * 2);
+    memset(mix_buffer_.get(), 0, block_size_ * sizeof(float) * 2);
 
     //==============================================================================
     // UPDATE MUSIC
@@ -311,17 +294,17 @@ void Mixer::fill() noexcept
         unsigned int MixedSoFar = 0;
 
         // keep resetting the mix pointer to the beginning of this portion of the ring buffer
-        float* MixPtr = FSOUND_MixBuffer.get();
+        float* MixPtr = mix_buffer_.get();
 
-        while (MixedSoFar < FSOUND_BlockSize)
+        while (MixedSoFar < block_size_)
         {
             if (!mixer_samples_left_)
             {
                 last_position_ = tick_callback_();	// update new mod tick
-                mixer_samples_left_ = mixer_samples_per_tick_;
+                mixer_samples_left_ = mix_rate_ * 5 / (bpm_ * 2);
             }
 
-            const unsigned int SamplesToMix = std::min(mixer_samples_left_, FSOUND_BlockSize - MixedSoFar);
+            const unsigned int SamplesToMix = std::min(mixer_samples_left_, block_size_ - MixedSoFar);
 
             mix(MixPtr, SamplesToMix);
 
@@ -333,20 +316,20 @@ void Mixer::fill() noexcept
 
         samples_mixed_ += MixedSoFar; // This is (and was before) approximated down by as much as 1ms per block
 
-        FMUSIC_TimeInfo[FSOUND_Software_FillBlock].samples = samples_mixed_;
-        FMUSIC_TimeInfo[FSOUND_Software_FillBlock].position = last_position_;
+        time_info_[software_fill_block_].samples = samples_mixed_;
+        time_info_[software_fill_block_].position = last_position_;
     }
 
 
     // ====================================================================================
     // CLIP AND COPY BLOCK TO OUTPUT BUFFER
     // ====================================================================================
-    MixerClipCopy_Float32(FSOUND_MixBlock.data.get() + static_cast<size_t>(mixpos) * 2, FSOUND_MixBuffer.get(), FSOUND_BlockSize);
+    MixerClipCopy_Float32(mix_block_.data.get() + static_cast<size_t>(mixpos) * 2, mix_buffer_.get(), block_size_);
 
-    ++FSOUND_Software_FillBlock;
+    ++software_fill_block_;
 
-    if (FSOUND_Software_FillBlock >= totalblocks)
+    if (software_fill_block_ >= total_blocks_)
     {
-        FSOUND_Software_FillBlock = 0;
+        software_fill_block_ = 0;
     }
 }

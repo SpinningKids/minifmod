@@ -828,7 +828,7 @@ void PlayerState::updateTick() noexcept
 
 PlayerState::PlayerState(std::unique_ptr<Module> module, unsigned int mixrate) :
     module_{ std::move(module) },
-    mixer_{ [this] {return this->tick(); }, mixrate },
+    mixer_{ [this] {return this->tick(); }, module_->header_.default_bpm, mixrate },
     global_volume_{ 64 },
     tick_{ 0 },
     ticks_per_row_{ module_->header_.default_tempo },
@@ -836,11 +836,8 @@ PlayerState::PlayerState(std::unique_ptr<Module> module, unsigned int mixrate) :
     current_{ 0, 0 },
     next_{ 0, 0 }
 {
-    memset(FMUSIC_Channel, 0, sizeof(FMUSIC_Channel));
     for (int channel_index = 0; channel_index < static_cast<int>(module_->header_.channels_count); channel_index++)
     {
         FMUSIC_Channel[channel_index].index = channel_index;
     }
-
-    setBPM(module_->header_.default_bpm);
 }

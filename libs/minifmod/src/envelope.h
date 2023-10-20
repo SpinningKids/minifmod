@@ -18,8 +18,8 @@ struct EnvelopePoints
 
 class EnvelopeState
 {
-	int position_ = 0;
-	float value_ = 0.0f;
+	int position_;
+	float value_;
 public:
 	void reset(float value)
 	{

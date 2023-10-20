@@ -5,8 +5,8 @@
 
 class Portamento
 {
-	int target_ = 0;
-	int speed_ = 0;
+	int target_;
+	int speed_;
 public:
 	void setTarget(int target) { target_ = target; }
 	void setSpeed(int speed) { if (speed) speed_ = speed; }
