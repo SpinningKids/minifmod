@@ -62,9 +62,9 @@ Mixer::Mixer(std::function<Position()>&& tick_callback, unsigned int mixrate) no
         channel_index.speed = 1.0f;
     }
 
-    FSOUND_MixBlock.data.reset(new short[FSOUND_BufferSize * 2]);
+    FSOUND_MixBlock.data.reset(new short[static_cast<size_t>(FSOUND_BufferSize) * 2]);
 
-    FSOUND_MixBuffer.reset(new float[FSOUND_BlockSize * 2]);
+    FSOUND_MixBuffer.reset(new float[static_cast<size_t>(FSOUND_BlockSize) * 2]);
 
     Software_Thread = std::thread(&Mixer::double_buffer_thread, this);
 }
@@ -100,7 +100,7 @@ void Mixer::mix(float* mixptr, unsigned int len) noexcept
             }
 
             // Ensure that we don't try to mix a negative amount of samples
-            const unsigned int samples_to_mix_target = static_cast<unsigned int>(std::max(0.f, ceil(samples_to_mix / channel.speed))); // round up the division
+            const auto samples_to_mix_target = static_cast<unsigned int>(std::max(0.f, ceil(samples_to_mix / fabs(channel.speed)))); // round up the division
 
             // =========================================================================================
             // the following code sets up a mix counter. it sees what will happen first, will the output buffer
