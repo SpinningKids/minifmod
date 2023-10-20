@@ -13,11 +13,11 @@ enum class WaveControl
 
 class LFO final
 {
-	WaveControl wave_control_{};
-	bool continue_{};
-	int position_ = 0;
-	int speed_ = 0;
-	int depth_ = 0;
+	WaveControl wave_control_;
+	bool continue_;
+	int position_;
+	int speed_;
+	int depth_;
 public:
 	void setSpeed(int speed) { if (speed) speed_ = speed; }
 	void setDepth(int depth) { if (depth) depth_ = depth; }

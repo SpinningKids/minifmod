@@ -9,9 +9,9 @@
 class Pattern
 {
 	int size_;
-	XMNote data_[256][32];
+	XMNote data_[256][32]; // uninitialized on purpose
 public:
-	Pattern() noexcept : size_{ 64 }, data_{} {}
+	Pattern() noexcept : size_{ 64 } {}
 
 	[[nodiscard]] int size() const noexcept { return size_; }
 	void resize(int size)

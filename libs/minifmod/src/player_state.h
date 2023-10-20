@@ -12,6 +12,8 @@
 struct PlayerState final
 {
 private:
+	Channel FMUSIC_Channel[32]{};		// channel array for this song
+
 	std::unique_ptr<Module> module_;
 	Mixer mixer_;
 	int				global_volume_;		// global mod volume
@@ -38,7 +40,7 @@ public:
 
 	void setBPM(unsigned int bpm) noexcept
 	{
-		mixer_.setSamplesPerTick(mixer_.getMixRate() * 5 / (bpm * 2));
+		mixer_.setBPM(bpm);
 	}
 
 	std::unique_ptr<Module> stop() noexcept
