@@ -5,20 +5,18 @@
 
 namespace
 {
-    constexpr uint8_t FMUSIC_KEYOFF = 97;
-
-    int GetXMLinearPeriodFinetuned(int note, int fine_tune)
+    int GetXMLinearPeriodFinetuned(XMNote note, int fine_tune)
     {
-        return 120*128 - note*128 - fine_tune;
+        return 121*128 - note.value*128 - fine_tune;
     }
 
 #ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
-    int GetAmigaPeriod(int note)
+    int GetAmigaPeriod(XMNote note)
     {
-        return static_cast<int>(exp2f(15.7414660f - static_cast<float>(note) / 12.0f));
+        return static_cast<int>(exp2f(15.824799333333333333333333333333f - static_cast<float>(note.value)));
     }
 
-    int GetAmigaPeriodFinetuned(int note, int fine_tune) noexcept
+    int GetAmigaPeriodFinetuned(XMNote note, int fine_tune) noexcept
     {
         int period = GetAmigaPeriod(note);
 
@@ -31,7 +29,7 @@ namespace
     }
 #endif
 
-    int GetPeriodFinetuned(int note, int fine_tune, bool linear)
+    int GetPeriodFinetuned(XMNote note, int fine_tune, bool linear)
     {
 #ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
         if (!linear)
@@ -40,7 +38,7 @@ namespace
         return GetXMLinearPeriodFinetuned(note, fine_tune);
     }
 
-    int GetPeriodDeltaFinetuned(int note, int delta, int fine_tune, bool linear)
+    int GetPeriodDeltaFinetuned(XMNote note, int delta, int fine_tune, bool linear)
     {
 #ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
         if (!linear)
@@ -103,7 +101,7 @@ void PlayerState::updateNote() noexcept
         const int slide = paramx ? paramx : -paramy;
 
         const bool porta = effect == XMEffect::PORTATO || effect == XMEffect::PORTATOVOLSLIDE;
-        const bool valid_note = note && note != FMUSIC_KEYOFF;
+        const bool valid_note = note.isValid();
 
         if (!porta)
         {
@@ -115,7 +113,7 @@ void PlayerState::updateNote() noexcept
 
             if (valid_note) //  bugfix 3.20 (&& !porta)
             {
-                channel.note = note - 1;						// remember the note
+                channel.note = note;						// remember the note
             }
         }
 
@@ -146,7 +144,7 @@ void PlayerState::updateNote() noexcept
         if (valid_note)
         {
             // get note according to relative note
-            channel.realnote = note + sample_header.relative_note - 1;
+            channel.realnote = note + sample_header.relative_note;
 
             // get period according to realnote and fine_tune
             channel.period_target = GetPeriodFinetuned(channel.realnote, channel.fine_tune, module_->header_.flags & FMUSIC_XMFLAGS_LINEARFREQUENCY);
@@ -168,7 +166,7 @@ void PlayerState::updateNote() noexcept
         channel.processVolumeByteNote(volume);
 
         //= PROCESS KEY OFF ============================================================================
-        if (note == FMUSIC_KEYOFF || effect == XMEffect::KEYOFF)
+        if (note.isKeyOff() || effect == XMEffect::KEYOFF)
         {
             channel.keyoff = true;
         }

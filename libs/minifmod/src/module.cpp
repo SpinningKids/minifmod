@@ -45,26 +45,26 @@ Module::Module(const minifmod::FileAccess& fileAccess, void* fp, SAMPLELOADCALLB
                 {
                     unsigned char dat;
 
-                    XMNote& note = current_row[channel_index];
+                    XMPatternCell& pattern_cell = current_row[channel_index];
 
                     fileAccess.read(&dat, 1, fp);
                     if (dat & 0x80)
                     {
-                        if (dat & 1)  fileAccess.read(&note.note, 1, fp);
-                        if (dat & 2)  fileAccess.read(&note.sample_index, 1, fp);
-                        if (dat & 4)  fileAccess.read(&note.volume, 1, fp);
-                        if (dat & 8)  fileAccess.read(&note.effect, 1, fp);
-                        if (dat & 16) fileAccess.read(&note.effect_parameter, 1, fp);
+                        if (dat & 1)  fileAccess.read(&pattern_cell.note, 1, fp);
+                        if (dat & 2)  fileAccess.read(&pattern_cell.sample_index, 1, fp);
+                        if (dat & 4)  fileAccess.read(&pattern_cell.volume, 1, fp);
+                        if (dat & 8)  fileAccess.read(&pattern_cell.effect, 1, fp);
+                        if (dat & 16) fileAccess.read(&pattern_cell.effect_parameter, 1, fp);
                     }
                     else
                     {
-                        note.note = dat;
-                        fileAccess.read(reinterpret_cast<char*>(&note) + 1, sizeof(XMNote) - 1, fp);
+                        pattern_cell.note = XMNote{ dat };
+                        fileAccess.read(reinterpret_cast<char*>(&pattern_cell) + 1, sizeof(XMPatternCell) - 1, fp);
                     }
 
-                    if (note.sample_index > 0x80)
+                    if (pattern_cell.sample_index > 0x80)
                     {
-                        note.sample_index = 0;
+                        pattern_cell.sample_index = 0;
                     }
                 }
             }
