@@ -12,7 +12,7 @@
 #include <Windows.h>
 #endif
 
-struct TimeInfo
+struct TimeInfo final
 {
 	Position position;
 	unsigned int samples;
@@ -24,29 +24,29 @@ enum class MixDir
 	Backwards
 };
 
-struct MixerChannel
+struct MixerChannel final
 {
-	unsigned int 	sampleoffset; 	// sample offset (sample starts playing from here).
+	unsigned int 	sample_offset;			// sample offset (sample starts playing from here).
 
-	const Sample* sptr;			// currently playing sample
+	const Sample* 	sample_ptr;				// currently playing sample
 
 	// software mixer stuff
-	float			leftvolume;     // mixing information. adjusted volume for left channel (panning involved)
-	float			rightvolume;    // mixing information. adjusted volume for right channel (panning involved)
-	float			mixpos;			// mixing information. floating point fractional position in sample.
-	float			speed;			// mixing information. playback rate - floating point.
-	MixDir			speeddir;		// mixing information. playback direction - forwards or backwards
+	float			left_volume;			// mixing information. adjusted volume for left channel (panning involved)
+	float			right_volume;			// mixing information. adjusted volume for right channel (panning involved)
+	float			mix_position;			// mixing information. floating point fractional position in sample.
+	float			speed;					// mixing information. playback rate - floating point.
+	MixDir			speed_direction;		// mixing information. playback direction - forwards or backwards
 
 	// software mixer volume ramping stuff
-	float			filtered_leftvolume;
-	float			filtered_rightvolume;
+	float			filtered_left_volume;
+	float			filtered_right_volume;
 };
 
 class Mixer final
 {
 	// mixing info
 	std::function<Position()>	tick_callback_;
-	unsigned int				mix_rate_ = 44100;		// mixing rate in hz.
+	unsigned int				mix_rate_;				// mixing rate in hz.
 	unsigned int				block_size_;			// LATENCY ms worth of samples
 	unsigned int				total_blocks_;
 	unsigned int				buffer_size_;			// size of 1 'latency' ms buffer in bytes
@@ -87,7 +87,13 @@ class Mixer final
 	void double_buffer_thread() noexcept;
 	void fill() noexcept;
 public:
-	explicit Mixer(std::function<Position()>&& tick_callback, uint16_t bpm, unsigned int mixrate = 44100) noexcept;
+	explicit Mixer(
+		std::function<Position()>&& tick_callback, 
+		uint16_t bpm, 
+		unsigned int mix_rate = 44100,
+		unsigned int buffer_size_ms = 1000, 
+		unsigned int latency = 20,
+		float volume_filter_time_constant = 0.003) noexcept;
 
 	[[nodiscard]] const TimeInfo& getTimeInfo() const noexcept
 	{

@@ -12,7 +12,7 @@
 struct PlayerState final
 {
 private:
-	Channel FMUSIC_Channel[32]{};		// channel array for this song
+	Channel			channels_[32]{};	// channel array for this song
 
 	std::unique_ptr<Module> module_;
 	Mixer mixer_;
@@ -36,7 +36,7 @@ private:
 
 	Position tick() noexcept;
 public:
-	PlayerState(std::unique_ptr<Module> module, unsigned int mixrate);
+	PlayerState(std::unique_ptr<Module> module, unsigned int mix_rate);
 
 	void setBPM(unsigned int bpm) noexcept
 	{

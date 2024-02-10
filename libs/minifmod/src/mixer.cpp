@@ -11,10 +11,6 @@
 
 namespace
 {
-    constexpr unsigned int	FSOUND_BufferSizeMs = 1000;
-    constexpr unsigned int	FSOUND_LATENCY = 20;
-    constexpr float VolumeFilterTimeConstant = 0.003f; // time constant (RC) of the volume IIR filter
-
     void MixerClipCopy_Float32(int16_t* dest, const float* src, size_t len) noexcept
     {
         assert(src);
@@ -29,13 +25,13 @@ namespace
     }
 }
 
-Mixer::Mixer(std::function<Position()>&& tick_callback, uint16_t bpm, unsigned int mixrate) noexcept :
+Mixer::Mixer(std::function<Position()>&& tick_callback, uint16_t bpm, unsigned int mix_rate, unsigned int buffer_size_ms, unsigned int latency, float volume_filter_time_constant) noexcept :
     tick_callback_{std::move(tick_callback)},
-    mix_rate_{mixrate},
-    block_size_{(((mix_rate_ * FSOUND_LATENCY / 1000) + 3) & 0xFFFFFFFC)},
-    total_blocks_{(FSOUND_BufferSizeMs / FSOUND_LATENCY) * 2},
+    mix_rate_{mix_rate},
+    block_size_{(((mix_rate_ * latency / 1000) + 3) & 0xFFFFFFFC)},
+    total_blocks_{(buffer_size_ms / latency) * 2},
     buffer_size_{block_size_ * total_blocks_},
-    volume_filter_k_{1.f / (1.f + static_cast<float>(mix_rate_) * VolumeFilterTimeConstant)},
+    volume_filter_k_{1.f / (1.f + static_cast<float>(mix_rate_) * volume_filter_time_constant)},
     time_info_{new TimeInfo[total_blocks_]},
     mix_buffer_{std::make_unique_for_overwrite<float[]>(static_cast<size_t>(block_size_) * 2)},
     channel_{},
@@ -64,22 +60,22 @@ void Mixer::mix(float* mixptr, unsigned int len) noexcept
         //==============================================================================================
         // LOOP THROUGH CHANNELS
         //==============================================================================================
-        while (channel.sptr && len > sample_index)
+        while (channel.sample_ptr && len > sample_index)
         {
-            const auto loop_end = static_cast<float>(channel.sptr->header.loop_start + channel.sptr->header.loop_length);
+            const auto loop_end = static_cast<float>(channel.sample_ptr->header.loop_start + channel.sample_ptr->header.loop_length);
 
             float samples_to_mix; // This can occasionally be < 0
-            if (channel.speeddir == MixDir::Forwards)
+            if (channel.speed_direction == MixDir::Forwards)
             {
-                samples_to_mix = loop_end - channel.mixpos;
+                samples_to_mix = loop_end - channel.mix_position;
                 if (samples_to_mix <= 0)
                 {
-                    samples_to_mix = static_cast<float>(channel.sptr->header.length) - channel.mixpos;
+                    samples_to_mix = static_cast<float>(channel.sample_ptr->header.length) - channel.mix_position;
                 }
             }
             else
             {
-                samples_to_mix = channel.mixpos - static_cast<float>(channel.sptr->header.loop_start);
+                samples_to_mix = channel.mix_position - static_cast<float>(channel.sample_ptr->header.loop_start);
             }
 
             // Ensure that we don't try to mix a negative amount of samples
@@ -93,7 +89,7 @@ void Mixer::mix(float* mixptr, unsigned int len) noexcept
 
             float speed = channel.speed;
 
-            if (channel.speeddir != MixDir::Forwards)
+            if (channel.speed_direction != MixDir::Forwards)
             {
                 speed = -speed;
             }
@@ -102,15 +98,15 @@ void Mixer::mix(float* mixptr, unsigned int len) noexcept
 
             for (unsigned int i = 0; i < mix_count; ++i)
             {
-                const auto mixpos = static_cast<uint32_t>(channel.mixpos);
-                const float frac = channel.mixpos - static_cast<float>(mixpos);
-                const auto samp1 = channel.sptr->buff[mixpos];
-                const float newsamp = static_cast<float>(channel.sptr->buff[mixpos + 1] - samp1) * frac + static_cast<float>(samp1);
-                mixptr[0 + (sample_index + i) * 2] += channel.filtered_leftvolume * newsamp;
-                mixptr[1 + (sample_index + i) * 2] += channel.filtered_rightvolume * newsamp;
-                channel.filtered_leftvolume += (channel.leftvolume - channel.filtered_leftvolume) * volume_filter_k_;
-                channel.filtered_rightvolume += (channel.rightvolume - channel.filtered_rightvolume) * volume_filter_k_;
-                channel.mixpos += speed;
+                const auto mixpos = static_cast<uint32_t>(channel.mix_position);
+                const float frac = channel.mix_position - static_cast<float>(mixpos);
+                const auto samp1 = channel.sample_ptr->buff[mixpos];
+                const float newsamp = static_cast<float>(channel.sample_ptr->buff[mixpos + 1] - samp1) * frac + static_cast<float>(samp1);
+                mixptr[0 + (sample_index + i) * 2] += channel.filtered_left_volume * newsamp;
+                mixptr[1 + (sample_index + i) * 2] += channel.filtered_right_volume * newsamp;
+                channel.filtered_left_volume += (channel.left_volume - channel.filtered_left_volume) * volume_filter_k_;
+                channel.filtered_right_volume += (channel.right_volume - channel.filtered_right_volume) * volume_filter_k_;
+                channel.mix_position += speed;
             }
 
             sample_index += mix_count;
@@ -120,36 +116,36 @@ void Mixer::mix(float* mixptr, unsigned int len) noexcept
             //=============================================================================================
             if (mix_count == samples_to_mix_target)
             {
-                if (channel.sptr->header.loop_mode == XMLoopMode::Normal)
+                if (channel.sample_ptr->header.loop_mode == XMLoopMode::Normal)
                 {
                     do
                     {
-                        channel.mixpos -= static_cast<float>(channel.sptr->header.loop_length);
-                    } while (channel.mixpos >= loop_end);
+                        channel.mix_position -= static_cast<float>(channel.sample_ptr->header.loop_length);
+                    } while (channel.mix_position >= loop_end);
                 }
-                else if (channel.sptr->header.loop_mode == XMLoopMode::Bidi)
+                else if (channel.sample_ptr->header.loop_mode == XMLoopMode::Bidi)
                 {
                     do {
-                        if (channel.speeddir != MixDir::Forwards)
+                        if (channel.speed_direction != MixDir::Forwards)
                         {
                             //BidiBackwards
-                            channel.mixpos = static_cast<float>(2 * channel.sptr->header.loop_start) - channel.mixpos - 1;
-                            channel.speeddir = MixDir::Forwards;
-                            if (channel.mixpos < loop_end)
+                            channel.mix_position = static_cast<float>(2 * channel.sample_ptr->header.loop_start) - channel.mix_position - 1;
+                            channel.speed_direction = MixDir::Forwards;
+                            if (channel.mix_position < loop_end)
                             {
                                 break;
                             }
                         }
                         //BidiForward
-                        channel.mixpos = 2 * loop_end - channel.mixpos - 1;
-                        channel.speeddir = MixDir::Backwards;
+                        channel.mix_position = 2 * loop_end - channel.mix_position - 1;
+                        channel.speed_direction = MixDir::Backwards;
 
-                    } while (channel.mixpos < static_cast<float>(channel.sptr->header.loop_start));
+                    } while (channel.mix_position < static_cast<float>(channel.sample_ptr->header.loop_start));
                 }
                 else
                 {
-                    channel.mixpos = 0;
-                    channel.sptr = nullptr;
+                    channel.mix_position = 0;
+                    channel.sample_ptr = nullptr;
                 }
             }
         }

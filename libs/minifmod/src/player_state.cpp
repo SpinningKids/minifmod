@@ -64,7 +64,7 @@ Position PlayerState::tick() noexcept
     clampGlobalVolume();
     for (int channel_index = 0; channel_index < module_->header_.channels_count; channel_index++)
     {
-        Channel& channel = FMUSIC_Channel[channel_index];
+        Channel& channel = channels_[channel_index];
         channel.updateVolume();
         const Instrument& instrument = module_->getInstrument(channel.inst);
         channel.processInstrument(instrument);
@@ -96,7 +96,7 @@ void PlayerState::updateNote() noexcept
     for (int channel_index = 0; channel_index < module_->header_.channels_count; channel_index++)
     {
         const auto& [note, sample_index, volume, effect, effect_parameter] = row[channel_index];
-        Channel& channel = FMUSIC_Channel[channel_index];
+        Channel& channel = channels_[channel_index];
 
         const int paramx = effect_parameter >> 4;			// get effect param x
         const int paramy = effect_parameter & 0xF;			// get effect param y
@@ -126,9 +126,9 @@ void PlayerState::updateNote() noexcept
             channel.fine_tune = sample_header.fine_tune;
         }
 
-        int oldvolume = channel.volume;
-        int oldperiod = channel.period;
-        int oldpan = channel.pan;
+        const int old_volume = channel.volume;
+        const int old_period = channel.period;
+        const int old_pan = channel.pan;
 
         // if there is no more tremolo, set volume to volume + last tremolo delta
         if (channel.recenteffect == XMEffect::TREMOLO && effect != XMEffect::TREMOLO)
@@ -259,7 +259,7 @@ void PlayerState::updateNote() noexcept
                 channel.setSampleOffset(effect_parameter * 256);
                 if (channel.sampleoffset < sample_header.loop_start + sample_header.loop_length)
                 {
-                    mixer_.getChannel(channel.index).sampleoffset = channel.sampleoffset;
+                    mixer_.getChannel(channel.index).sample_offset = channel.sampleoffset;
                 }
                 else
                 {
@@ -422,9 +422,9 @@ void PlayerState::updateNote() noexcept
 #ifdef FMUSIC_XM_NOTEDELAY_ACTIVE
                     case XMSpecialEffect::NOTEDELAY:
                     {
-                        channel.volume = oldvolume;
-                        channel.period = oldperiod;
-                        channel.pan = oldpan;
+                        channel.volume = old_volume;
+                        channel.period = old_period;
+                        channel.pan = old_pan;
                         channel.trigger = false;
                         break;
                     }
@@ -564,7 +564,7 @@ void PlayerState::updateTick() noexcept
     for (int channel_index = 0; channel_index < module_->header_.channels_count; channel_index++)
     {
         const auto& [note, sample_index, volume, effect, effect_parameter] = row[channel_index];
-        Channel& channel = FMUSIC_Channel[channel_index];
+        Channel& channel = channels_[channel_index];
 
         const int paramx = effect_parameter >> 4;			// get effect param x
         const int paramy = effect_parameter & 0xF;			// get effect param y
@@ -826,9 +826,9 @@ void PlayerState::updateTick() noexcept
     }
 }
 
-PlayerState::PlayerState(std::unique_ptr<Module> module, unsigned int mixrate) :
+PlayerState::PlayerState(std::unique_ptr<Module> module, unsigned int mix_rate) :
     module_{ std::move(module) },
-    mixer_{ [this] {return this->tick(); }, module_->header_.default_bpm, mixrate },
+    mixer_{ [this] {return this->tick(); }, module_->header_.default_bpm, mix_rate },
     global_volume_{ 64 },
     tick_{ 0 },
     ticks_per_row_{ module_->header_.default_tempo },
@@ -838,6 +838,6 @@ PlayerState::PlayerState(std::unique_ptr<Module> module, unsigned int mixrate) :
 {
     for (int channel_index = 0; channel_index < static_cast<int>(module_->header_.channels_count); channel_index++)
     {
-        FMUSIC_Channel[channel_index].index = channel_index;
+        channels_[channel_index].index = channel_index;
     }
 }
