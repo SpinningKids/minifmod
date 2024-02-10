@@ -110,7 +110,7 @@ void Channel::reset(int new_volume, int new_pan) noexcept
 void Channel::processVolumeByteNote(int volume_byte) noexcept
 {
 #ifdef FMUSIC_XM_VOLUMEBYTE_ACTIVE
-    // NOTE: Having this if makes code actually smaller than using the switch.
+    // NOTE: Having this makes code actually smaller than using the switch.
     if (volume_byte >= 0x10 && volume_byte <= 0x50)
     {
         volume = volume_byte - 0x10;

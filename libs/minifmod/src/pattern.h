@@ -9,7 +9,7 @@
 class Pattern
 {
 	int size_;
-	XMNote data_[256][32]; // uninitialized on purpose
+	XMPatternCell data_[256][32]; // uninitialized on purpose
 public:
 	Pattern() noexcept : size_{ 64 } {}
 

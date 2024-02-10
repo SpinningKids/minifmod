@@ -25,7 +25,7 @@ struct Channel
 {
 	int				index;
 
-	int				note;  				// last note set in channel
+	XMNote			note;  				// last note set in channel
 
 	bool			trigger;
 	bool			stop;
@@ -42,7 +42,7 @@ struct Channel
 	bool			keyoff;				// flag whether keyoff has been hit or not)
 
 	int				inst;				// last instrument set in channel
-	int			  	realnote;  			// last realnote set in channel
+	XMNote		  	realnote;  			// last realnote set in channel
 	XMEffect		recenteffect;		// previous row's effect.. used to correct tremolo volume
 
 	unsigned int	sampleoffset;		// sample offset for this channel in SAMPLES

@@ -104,14 +104,32 @@ enum class XMSpecialEffect
 
 struct XMNote
 {
-	uint8_t note;				// note to play at     (0-133) 132=none,133=keyoff
+	static constexpr uint8_t KEYOFF = 97;
+	uint8_t value; // note to play at     (0-133) 132=none,133=keyoff <- This comment is WRONG.
+
+	bool isKeyOff() const { return value == KEYOFF; }
+	bool isValid() const { return value && value != KEYOFF; }
+
+	XMNote operator + (int8_t rel) const
+	{
+		return { (uint8_t)(value + rel) };
+	}
+
+	void turnOff() { value = KEYOFF; }
+};
+
+static_assert(sizeof(XMNote) == 1);
+
+struct XMPatternCell
+{
+	XMNote note;				
 	uint8_t sample_index;		// sample being played (0-99)
 	uint8_t volume;				// volume column value (0-64)  255=no volume
 	XMEffect effect;			// effect number       (0-1Ah)
 	uint8_t effect_parameter;	// effect parameter    (0-255)
 };
 
-static_assert(sizeof(XMNote) == 5);
+static_assert(sizeof(XMPatternCell) == 5);
 
 struct XMInstrumentHeader
 {
