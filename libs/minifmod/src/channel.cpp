@@ -243,34 +243,34 @@ void Channel::sendToMixer(Mixer& mixer, const Instrument& instrument, int global
     if (trigger)
     {
         // this swaps between channels to avoid sounds cutting each other off and causing a click
-        if (sound_channel.sptr != nullptr)
+        if (sound_channel.sample_ptr != nullptr)
         {
             MixerChannel& phaseout_sound_channel = mixer.getChannel(index + 32);
             phaseout_sound_channel = sound_channel;
 
             // this will cause the copy of the old channel to ramp out nicely.
-            phaseout_sound_channel.leftvolume = 0;
-            phaseout_sound_channel.rightvolume = 0;
+            phaseout_sound_channel.left_volume = 0;
+            phaseout_sound_channel.right_volume = 0;
         }
 
         const Sample& sample = instrument.getSample(note);
-        sound_channel.sptr = &sample;
+        sound_channel.sample_ptr = &sample;
 
         //==========================================================================================
         // START THE SOUND!
         //==========================================================================================
-        if (sound_channel.sampleoffset >= sample.header.loop_start + sample.header.loop_length)
+        if (sound_channel.sample_offset >= sample.header.loop_start + sample.header.loop_length)
         {
-            sound_channel.sampleoffset = 0;
+            sound_channel.sample_offset = 0;
         }
 
-        sound_channel.mixpos = static_cast<float>(sound_channel.sampleoffset);
-        sound_channel.speeddir = MixDir::Forwards;
-        sound_channel.sampleoffset = 0;	// reset it (in case other samples come in and get corrupted etc)
+        sound_channel.mix_position = static_cast<float>(sound_channel.sample_offset);
+        sound_channel.speed_direction = MixDir::Forwards;
+        sound_channel.sample_offset = 0;	// reset it (in case other samples come in and get corrupted etc)
 
         // volume ramping
-        sound_channel.filtered_leftvolume = 0;
-        sound_channel.filtered_rightvolume = 0;
+        sound_channel.filtered_left_volume = 0;
+        sound_channel.filtered_right_volume = 0;
     }
     constexpr float norm = 1.0f / 68451041280.0f; // 2^27 (volume normalization) * 255.0 (pan scale) (*2 for safety?!?)
     float high_precision_volume = static_cast<float>((volume + voldelta) * fadeoutvol * globalvolume) * norm;
@@ -282,8 +282,8 @@ void Channel::sendToMixer(Mixer& mixer, const Instrument& instrument, int global
     high_precision_pan += pan_envelope() * static_cast<float>(128 - abs(pan - 128));
 #endif
     high_precision_pan = std::clamp(high_precision_pan, 0.0f, 255.0f);
-    sound_channel.leftvolume = high_precision_volume * high_precision_pan;
-    sound_channel.rightvolume = high_precision_volume * (255 - high_precision_pan);
+    sound_channel.left_volume = high_precision_volume * high_precision_pan;
+    sound_channel.right_volume = high_precision_volume * (255 - high_precision_pan);
     if (const int actual_period = period + period_delta; actual_period != 0)
     {
         const float freq = std::max(
@@ -296,7 +296,7 @@ void Channel::sendToMixer(Mixer& mixer, const Instrument& instrument, int global
     }
     if (stop)
     {
-        sound_channel.mixpos = 0;
-        sound_channel.sampleoffset = 0;	// if this channel gets stolen it will be safe
+        sound_channel.mix_position = 0;
+        sound_channel.sample_offset = 0;	// if this channel gets stolen it will be safe
     }
 }
