@@ -28,8 +28,8 @@ namespace minifmod {
         FFileSeek* seek;
         FFileTell* tell;
     };
-}
 
-inline minifmod::FileAccess FSOUND_File;
+    inline FileAccess file_access;
+}
 
 #endif

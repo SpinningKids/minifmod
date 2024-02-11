@@ -44,11 +44,11 @@ namespace {
 */
 Module* FMUSIC_LoadSong(const char *name, SAMPLELOADCALLBACK sampleloadcallback)
 {
-    if (void* fp = FSOUND_File.open(name))
+    if (void* fp = minifmod::file_access.open(name))
     {
         // create a mod instance
-		auto mod = std::make_unique<Module>(FSOUND_File, fp, sampleloadcallback);
-        FSOUND_File.close(fp);
+		auto mod = std::make_unique<Module>(minifmod::file_access, fp, sampleloadcallback);
+		minifmod::file_access.close(fp);
         return mod.release();
     }
     return {};
@@ -235,9 +235,9 @@ float FSOUND_TimeFromSamples() noexcept
 
 void FSOUND_File_SetCallbacks(void* (*OpenCallback)(const char* name), void	(*CloseCallback)(void* handle), int (*ReadCallback)(void* buffer, int size, void* handle), void (*SeekCallback)(void*, int pos, int mode), int (*TellCallback)(void* handle)) noexcept
 {
-	FSOUND_File.open = OpenCallback;
-	FSOUND_File.close = CloseCallback;
-	FSOUND_File.read = ReadCallback;
-	FSOUND_File.seek = SeekCallback;
-	FSOUND_File.tell = TellCallback;
+	minifmod::file_access.open = OpenCallback;
+	minifmod::file_access.close = CloseCallback;
+	minifmod::file_access.read = ReadCallback;
+	minifmod::file_access.seek = SeekCallback;
+	minifmod::file_access.tell = TellCallback;
 }
