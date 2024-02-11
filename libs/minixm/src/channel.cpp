@@ -1,7 +1,9 @@
 
-#include "channel.h"
-#include "xmeffects.h"
+#include <minixm/channel.h>
+
 #include <numbers>
+
+#include <minixm/xmeffects.h>
 
 namespace
 {

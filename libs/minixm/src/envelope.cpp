@@ -1,5 +1,5 @@
 
-#include "envelope.h"
+#include <minixm/envelope.h>
 
 void EnvelopeState::process(const EnvelopePoints& envelope, XMEnvelopeFlags flags, unsigned char loop_start_index, unsigned char loop_end_index, unsigned char sustain_index, bool keyoff) noexcept
 {

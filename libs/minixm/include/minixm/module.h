@@ -14,8 +14,7 @@
 
 #include <cassert>
 #include <cstdint>
-
-#include <minifmod/minifmod.h>
+#include <functional>
 
 #include "channel.h"
 #include "instrument.h"
@@ -29,9 +28,9 @@ struct Module final
 	Pattern		pattern_[256];		// patterns array for this song
 	Instrument	instrument_[128];	// instrument array for this song (not used in MOD/S3M)
 
-	Module(const minifmod::FileAccess& fileAccess, void* fp, SAMPLELOADCALLBACK sampleloadcallback);
+    Module(const minifmod::FileAccess& fileAccess, void* fp, std::function<void(int16_t*, size_t, int, int)> sampleloadcallback);
 
-	[[nodiscard]] const Instrument& getInstrument(int instrument) const noexcept
+    [[nodiscard]] const Instrument& getInstrument(int instrument) const noexcept
 	{
 		assert(instrument < header_.instruments_count);
 		return instrument_[instrument];

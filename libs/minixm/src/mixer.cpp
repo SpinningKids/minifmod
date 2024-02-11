@@ -1,5 +1,5 @@
 
-#include "mixer.h"
+#include <minixm/mixer.h>
 
 #include <cassert>
 #include <algorithm>
