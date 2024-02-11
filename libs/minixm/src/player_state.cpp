@@ -1,7 +1,8 @@
 
-#include "player_state.h"
+#include <minixm/player_state.h>
 
-#include "xmeffects.h"
+#include <minixm/xmeffects.h>
+#include <minixm/xmfile.h>
 
 namespace
 {

@@ -10,12 +10,12 @@
 /* C++ conversion and (heavy) refactoring by Pan/SpinningKids, 2022           */
 /******************************************************************************/
 
-#include "module.h"
+#include <minixm/module.h>
 
-#include "channel.h"
-#include "xmeffects.h"
+#include <minixm/channel.h>
+#include <minixm/xmeffects.h>
 
-Module::Module(const minifmod::FileAccess& fileAccess, void* fp, SAMPLELOADCALLBACK sampleloadcallback)
+Module::Module(const minifmod::FileAccess& fileAccess, void* fp, std::function<void(int16_t *, size_t, int, int)> sampleloadcallback)
 {
     fileAccess.seek(fp, 0, SEEK_SET);
     fileAccess.read(&header_, sizeof(header_), fp);

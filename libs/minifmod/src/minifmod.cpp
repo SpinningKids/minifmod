@@ -14,9 +14,9 @@
 
 #include <thread>
 
-#include "module.h"
-#include "player_state.h"
-#include "system_file.h"
+#include <minixm/module.h>
+#include <minixm/player_state.h>
+#include <minixm/system_file.h>
 
 namespace {
 	unsigned int FSOUND_MixRate = 44100;
@@ -231,4 +231,13 @@ bool FSOUND_Init(int mixrate, int /* vcmmode */) noexcept
 float FSOUND_TimeFromSamples() noexcept
 {
 	return FSOUND_last_player_state ? FSOUND_last_player_state->getMixer().timeFromSamples() : 0;
+}
+
+void FSOUND_File_SetCallbacks(void* (*OpenCallback)(const char* name), void	(*CloseCallback)(void* handle), int (*ReadCallback)(void* buffer, int size, void* handle), void (*SeekCallback)(void*, int pos, int mode), int (*TellCallback)(void* handle)) noexcept
+{
+	FSOUND_File.open = OpenCallback;
+	FSOUND_File.close = CloseCallback;
+	FSOUND_File.read = ReadCallback;
+	FSOUND_File.seek = SeekCallback;
+	FSOUND_File.tell = TellCallback;
 }
