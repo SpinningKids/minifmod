@@ -109,6 +109,7 @@ PlayerState* FMUSIC_PlaySong(Module* module)
 	}
 
 	FSOUND_last_player_state = new PlayerState(std::unique_ptr<Module>{ module }, FSOUND_MixRate);
+	FSOUND_last_player_state->start();
 	return FSOUND_last_player_state;
 }
 

@@ -16,6 +16,7 @@ set(PUBLIC_HEADER_FILES
   ${HEADER_DIR}/${TARGET_NAME}/mixer.h
   ${HEADER_DIR}/${TARGET_NAME}/module.h
   ${HEADER_DIR}/${TARGET_NAME}/pattern.h
+  ${HEADER_DIR}/${TARGET_NAME}/playback.h
   ${HEADER_DIR}/${TARGET_NAME}/player_state.h
   ${HEADER_DIR}/${TARGET_NAME}/portamento.h
   ${HEADER_DIR}/${TARGET_NAME}/position.h
@@ -33,6 +34,7 @@ set(SRC_FILES
   ${SRC_DIR}/envelope.cpp
   ${SRC_DIR}/mixer.cpp
   ${SRC_DIR}/module.cpp
+  ${SRC_DIR}/playback.cpp
   ${SRC_DIR}/player_state.cpp
 )
 

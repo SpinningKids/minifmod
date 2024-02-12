@@ -222,6 +222,8 @@ int main(int argc, char *argv[])
 	// ==========================================================================================
 
 	PlayerState player_state{ (std::move(mod)), mix_rate };
+
+	player_state.start();
 	
 	printf("Press any key to quit\n");
 	printf("=========================================================================\n");
