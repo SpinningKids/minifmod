@@ -38,6 +38,11 @@ private:
 public:
 	PlayerState(std::unique_ptr<Module> module, unsigned int mix_rate);
 
+	void start() noexcept
+	{
+		mixer_.start();
+	}
+
 	void setBPM(unsigned int bpm) noexcept
 	{
 		mixer_.setBPM(bpm);
