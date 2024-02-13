@@ -12,8 +12,6 @@
 
 #include <minifmod/minifmod.h>
 
-#include <thread>
-
 #include <minixm/module.h>
 #include <minixm/player_state.h>
 #include <minixm/system_file.h>

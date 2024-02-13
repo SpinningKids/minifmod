@@ -4,11 +4,6 @@
 #include <cassert>
 #include <algorithm>
 
-#ifdef WIN32
-#define NOMINMAX
-#include <Windows.h>
-#endif
-
 namespace
 {
     void MixerClipCopy_Float32(int16_t* dest, const float* src, size_t len) noexcept
