@@ -6,11 +6,9 @@ Copyright Firelight Technologies, 1999-2003.
 
 CMake adaption and heavy refactoring/cleanup/rewrite by Pan/SpinningKids 2022
 
-DOCUMENTATION 
-==============
+## DOCUMENTATION 
 
-Disclaimer and legal (from original author)
-----------------------------
+### Disclaimer and legal (from original author)
 - *MiniFMOD is not FMOD*.  The code is a complete hack, and does 
   by no way represent the source contained within the main FMOD library.  
   I stripped and copied code around, took out functions and
@@ -29,46 +27,44 @@ Disclaimer and legal (from original author)
 AGAIN : DONT NAG ME WITH QUESTIONS ABOUT THE SOURCE, ASK SOMEONE ELSE. 
         (i recommend #coders on ircnet.)
 
-Note (Pan/SpinningKids): This is the original README, for the new C++ version please see the branch minifmod++
-
-General Usage Instructions ~~just using minifmod.lib IMPORTANT (no source recompile)~~
---------------------------------------------------------------------------
-- See MAIN.CPP for an example of how to use MINIFMOD.
+### Usage Instructions
+- See `apps` subdirectory for an example of how to use minifmod and minixm.
 - You MUST set file IO callbacks for FMOD to use.  This is a very flexible way to
   work, and saves having multiple file routines for file, memory or wad loading!
   Just rip the sample if you dont know what it is about, or get the full FMOD 3 API and
   read the documentation entries on the functions in the help file provided.
 - There are no error codes.  All functions return true or false, and it should be obvious why they fail.
-- FSOUND_Init will fail if no IO callbacks are set.
 - Compile your exe with SIZE optimizations ON. (like the test example)
-- Compress your exe with UPX.  It is the best exe packer around.  It is at ~~http://www.nexus.hu/upx/~~
-  https://upx.github.io/
+- Compress your exe with UPX or other packer. You can find UPX at https://upx.github.io/
+
+#### minifmod
 - Pass a callback function to FMUSIC_LoadSong or NULL.  This will allow you to get a 
   callback when each sample is loaded in a song.  Here you can then fill in the data for
   the sample yourself.  Note if you set callbacks, the samples are not loaded from file,
   and will be just silence if not filled in.
-- If rewriting C standard libraries you need to supply pow() for fmod music playback routine.
+- If rewriting C standard libraries you need to supply some functions for fmod music playback routine.
   FMUSIC_XMLINEARPERIOD2HZ uses pow and not a lookup table because it would bloat the size.
 
+#### minixm
+- This library has a C++ interface, and it has a slightly more efficient interface (size-wise).
+- 
+- If rewriting C standard libraries you need to supply some functions for fmod music playback routine.
+  For example, `XMLinearPeriod2Frequency` uses `exp2f` and not a lookup table because it would bloat the size.
 
-Making your exe even smaller with XMEFFECTS.H and FEXP.EXE!
+#### Making your exe even smaller with XMEFFECTS.H and FEXP.EXE!
 ------------------------------------------------------------
 - Note all the effects in the xm replay code are wrapped with #ifdef's.  They are defined in 
   xmeffects.h.
-- Have a look in the ~~/lib~~ /tools directory .. There is an executable called FEXP.EXE
-- Use FEXP.EXE on an xm file and it will generate xmeffects.h for you!
-- Recompile the minifmod library with the new xmeffects.h
+- Have a look in the `/tools` directory: There is an executable called `FEXP.EXE`
+- Use `FEXP.EXE` on an xm file and it will generate `xmeffects.h` for you!
+- Recompile the library with the new `xmeffects.h`
 - See your exe size go down AGAIN!
 - (only play the song you fexp'ed or it will screw up on other songs probably :) ..)
-
-Greets! :)
------------
-Hi's go out to sulphur, gaffer, Nix, gyr, zoon, pheon, and gay russian aktion.
 
 Revision History.
 ------------------
 
-Version 1.99.99 (WIP as of 2022/02/09 Pan/SK)
+Version 1.99.99 (WIP as of 2024/02/13 Pan/SK)
 -----------
 - Conversion to C++
     - Adoption of selected parts of the standard library (std::thread, std::min, std::max, std::clamp)
