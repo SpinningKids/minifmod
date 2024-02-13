@@ -1,4 +1,5 @@
 
+#include <algorithm>
 #include <minixm/channel.h>
 
 #include <numbers>

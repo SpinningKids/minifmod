@@ -168,7 +168,7 @@ Module* FMUSIC_StopSong(PlayerState* player_state)
 */
 int FMUSIC_GetOrder() noexcept
 {
-	return FSOUND_last_player_state ? FSOUND_last_player_state->getMixer().getTimeInfo().position.order : 0;
+	return FSOUND_last_player_state ? FSOUND_last_player_state->getTimeInfo().position.order : 0;
 }
 
 
@@ -192,7 +192,7 @@ int FMUSIC_GetOrder() noexcept
 */
 int FMUSIC_GetRow() noexcept
 {
-	return FSOUND_last_player_state ? FSOUND_last_player_state->getMixer().getTimeInfo().position.row : 0;
+	return FSOUND_last_player_state ? FSOUND_last_player_state->getTimeInfo().position.row : 0;
 }
 
 
@@ -220,18 +220,13 @@ int FMUSIC_GetRow() noexcept
 */
 int FMUSIC_GetTime() noexcept
 {
-	return static_cast<int>(FSOUND_last_player_state ? FSOUND_last_player_state->getMixer().getTimeInfo().samples * 1000ull / FSOUND_MixRate : 0);
+	return static_cast<int>(FSOUND_last_player_state ? FSOUND_last_player_state->getTimeInfo().samples * 1000ull / FSOUND_MixRate : 0);
 }
 
 bool FSOUND_Init(int mixrate, int /* vcmmode */) noexcept
 {
 	FSOUND_MixRate = mixrate;
 	return true;
-}
-
-float FSOUND_TimeFromSamples() noexcept
-{
-	return FSOUND_last_player_state ? FSOUND_last_player_state->getMixer().timeFromSamples() : 0;
 }
 
 void FSOUND_File_SetCallbacks(void* (*OpenCallback)(const char* name), void	(*CloseCallback)(void* handle), int (*ReadCallback)(void* buffer, int size, void* handle), void (*SeekCallback)(void*, int pos, int mode), int (*TellCallback)(void* handle)) noexcept

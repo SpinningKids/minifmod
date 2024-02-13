@@ -3,7 +3,7 @@
 
 #include <cassert>
 
-#include "xmfile.h"
+#include <xmformat/pattern_cell.h>
 
 // pattern data type
 class Pattern

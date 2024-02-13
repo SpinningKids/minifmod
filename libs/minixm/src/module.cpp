@@ -11,9 +11,10 @@
 /******************************************************************************/
 
 #include <minixm/module.h>
-
 #include <minixm/channel.h>
 #include <minixm/xmeffects.h>
+
+#include <xmformat/pattern_header.h>
 
 Module::Module(const minifmod::FileAccess& fileAccess, void* fp, std::function<void(int16_t *, size_t, int, int)> sampleloadcallback)
 {

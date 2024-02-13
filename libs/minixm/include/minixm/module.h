@@ -20,7 +20,8 @@
 #include "instrument.h"
 #include "pattern.h"
 #include "system_file.h"
-#include "xmfile.h"
+
+#include <xmformat/file_header.h>
 
 struct Module final
 {

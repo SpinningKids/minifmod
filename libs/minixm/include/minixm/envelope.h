@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include "xmfile.h"
+#include <xmformat/envelope_flags.h>
 
 struct EnvelopePoint
 {

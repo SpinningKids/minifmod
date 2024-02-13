@@ -18,7 +18,8 @@
 #include "mixer.h"
 #include "portamento.h"
 #include "xmeffects.h"
-#include "xmfile.h"
+
+#include <xmformat/effect.h>
 
 // Channel type - contains information on a mod channel
 struct Channel

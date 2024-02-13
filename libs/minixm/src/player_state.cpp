@@ -1,8 +1,8 @@
 
 #include <minixm/player_state.h>
-
 #include <minixm/xmeffects.h>
-#include <minixm/xmfile.h>
+
+#include <xmformat/sample_header.h>
 
 namespace
 {

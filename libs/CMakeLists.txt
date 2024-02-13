@@ -2,3 +2,4 @@
 
 add_subdirectory ("minifmod")
 add_subdirectory ("minixm")
+add_subdirectory ("xmformat")

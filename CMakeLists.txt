@@ -20,6 +20,9 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 		"$<$<CONFIG:RELEASE>:/EHs-c->"
 		"$<$<CONFIG:RELEASE>:/sdl->"
 		"$<$<CONFIG:RELEASE>:/vd0>"
+		"$<$<CONFIG:RELEASE>:/fpcvt:BC>"
+		"$<$<CONFIG:RELEASE>:/fp:except->"
+
 		#"/d2noftol3" # it actually makes the code bigger!
 	)
 	add_link_options(
