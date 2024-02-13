@@ -40,12 +40,12 @@ public:
 
 	void start() noexcept
 	{
-		mixer_.start();
+	    mixer_.start();
 	}
 
 	void setBPM(unsigned int bpm) noexcept
 	{
-		mixer_.setBPM(bpm);
+	    mixer_.setBPM(bpm);
 	}
 
 	std::unique_ptr<Module> stop() noexcept
@@ -54,8 +54,8 @@ public:
 		return std::move(module_);
 	}
 
-	[[nodiscard]] const Mixer& getMixer() const noexcept
+    TimeInfo getTimeInfo() const noexcept
 	{
-		return mixer_;
+	    return mixer_.getTimeInfo();
 	}
 };

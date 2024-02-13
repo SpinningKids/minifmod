@@ -18,7 +18,7 @@ namespace
         for (size_t i = 0; i < len * 2; i++)
         {
             *dest++ = static_cast<int16_t>(std::clamp(
-                static_cast<int>(*src++), 
+                static_cast<int>(*src++),
                 static_cast<int>(std::numeric_limits<int16_t>::min()),
                 static_cast<int>(std::numeric_limits<int16_t>::max())));
         }
@@ -26,20 +26,46 @@ namespace
 }
 
 Mixer::Mixer(std::function<Position()>&& tick_callback, uint16_t bpm, unsigned int mix_rate, unsigned int buffer_size_ms, unsigned int latency, float volume_filter_time_constant) noexcept :
-    tick_callback_{std::move(tick_callback)},
-    playback_{ mix_rate, buffer_size_ms, latency, std::bind(&Mixer::fill, this, std::placeholders::_1) },
-    volume_filter_k_{1.f / (1.f + static_cast<float>(playback_.getMixRate()) * volume_filter_time_constant)},
-    mix_buffer_{std::make_unique_for_overwrite<float[]>(static_cast<size_t>(playback_.getBlockSize()) * 2)},
+    tick_callback_{ std::move(tick_callback) },
+    driver_{ IPlaybackDriver::create(mix_rate, buffer_size_ms, latency) },
+    time_info_{ new TimeInfo[driver_->blocks()] },
+    volume_filter_k_{ 1.f / (1.f + static_cast<float>(driver_->mix_rate()) * volume_filter_time_constant) },
+    mix_buffer_{ std::make_unique_for_overwrite<float[]>(driver_->block_size() * 2) },
     channel_{},
-    mixer_samples_left_{0},
+    mixer_samples_left_{ 0 },
     bpm_{ bpm },
-    samples_mixed_{0},
+    samples_mixed_{ 0 },
     last_position_{}
 {
     for (auto& channel_index : channel_)
     {
         channel_index.speed = 1.0f;
     }
+}
+
+unsigned Mixer::getMixRate() const noexcept
+{
+    return driver_->mix_rate();
+}
+
+TimeInfo Mixer::getTimeInfo() const noexcept
+{
+    return time_info_[driver_->current_block_played()];
+}
+
+void Mixer::start() noexcept
+{
+    driver_->start([this](size_t block, short data[]) { time_info_[block] = fill(data); });
+}
+
+void Mixer::stop() noexcept
+{
+    driver_->stop();
+}
+
+float Mixer::timeFromSamples() const noexcept
+{
+    return time_info_[driver_->current_block_played()].samples / driver_->mix_rate();
 }
 
 void Mixer::mix(float* mixptr, unsigned int len) noexcept
@@ -78,7 +104,7 @@ void Mixer::mix(float* mixptr, unsigned int len) noexcept
             // =========================================================================================
             // the following code sets up a mix counter. it sees what will happen first, will the output buffer
             // end be reached first or will the end of the sample be reached first?
-            // whatever is smallest will be the mixcount.
+            // whatever is smallest will be the mix_count.
             const unsigned int mix_count = std::min(len - sample_index, samples_to_mix_target);
 
             float speed = channel.speed;
@@ -148,8 +174,7 @@ void Mixer::mix(float* mixptr, unsigned int len) noexcept
 
 TimeInfo Mixer::fill(short target[]) noexcept
 {
-    unsigned int block_size = playback_.getBlockSize();
-
+    auto block_size = driver_->block_size();
     //==============================================================================
     // MIXBUFFER CLEAR
     //==============================================================================
@@ -170,7 +195,7 @@ TimeInfo Mixer::fill(short target[]) noexcept
         if (!mixer_samples_left_)
         {
             last_position_ = tick_callback_();	// update new mod tick
-            mixer_samples_left_ = playback_.getMixRate() * 5 / (bpm_ * 2);
+            mixer_samples_left_ = driver_->mix_rate() * 5 / (bpm_ * 2);
         }
 
         const unsigned int SamplesToMix = std::min(mixer_samples_left_, block_size - MixedSoFar);

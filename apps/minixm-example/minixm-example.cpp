@@ -239,7 +239,7 @@ int main(int argc, char *argv[])
 				key = getch();
 			}
 #endif
-            const auto time_info = player_state.getMixer().getTimeInfo();
+            const auto time_info = player_state.getTimeInfo();
 
 			printf("ord %2d row %2d seconds %5.02f %s      \r", time_info.position.order, time_info.position.row, static_cast<double>(time_info.samples) / mix_rate, (time_info.position.row % 8) ? "    " : "TICK");
 

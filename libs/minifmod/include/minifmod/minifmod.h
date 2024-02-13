@@ -44,7 +44,6 @@ typedef void (*SAMPLELOADCALLBACK)(short *buff, size_t length_samples, int instn
 typedef void (*FMUSIC_CALLBACK)(PlayerState *mod, unsigned char param);
 
 bool FSOUND_Init(int mixrate, int vcmmode = 0) MINIFMOD_NOEXCEPT;
-float FSOUND_TimeFromSamples() MINIFMOD_NOEXCEPT;
 
 /*
 [API]

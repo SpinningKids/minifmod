@@ -31,12 +31,19 @@ struct MixerChannel final
 	float			filtered_right_volume;
 };
 
+struct TimeInfo final
+{
+	Position position;
+	size_t samples;
+};
+
 class Mixer final
 {
 	// mixing info
 	std::function<Position()>	tick_callback_;
 
-	Playback					playback_;
+	std::unique_ptr<IPlaybackDriver> driver_;
+	std::unique_ptr<TimeInfo[]> time_info_;
 
 	float						volume_filter_k_;
 	std::unique_ptr<float[]>	mix_buffer_;			// mix output buffer (stereo 32bit float)
@@ -65,9 +72,10 @@ public:
 	[[nodiscard]] const MixerChannel& getChannel(int index) const { return channel_[index]; }
 	void setBPM(unsigned int bpm) { bpm_ = bpm; }
 
-	unsigned int getMixRate() const noexcept { return playback_.getMixRate(); }
-	TimeInfo getTimeInfo() const noexcept { return playback_.getTimeInfo(); }
-	void start() noexcept { playback_.start(); }
-	void stop() noexcept { playback_.stop(); }
-	float timeFromSamples() const noexcept { return playback_.timeFromSamples(); }
+	unsigned int getMixRate() const noexcept;
+    TimeInfo getTimeInfo() const noexcept;
+
+    void start() noexcept;
+    void stop() noexcept;
+    float timeFromSamples() const noexcept;
 };

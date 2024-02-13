@@ -23,7 +23,6 @@ set(PUBLIC_HEADER_FILES
   ${HEADER_DIR}/${TARGET_NAME}/sample.h
   ${HEADER_DIR}/${TARGET_NAME}/system_file.h
   ${HEADER_DIR}/${TARGET_NAME}/xmeffects.h
-  ${HEADER_DIR}/${TARGET_NAME}/xmfile.h
 )
 
 set(PRIVATE_HEADER_FILES
@@ -34,12 +33,12 @@ set(SRC_FILES
   ${SRC_DIR}/envelope.cpp
   ${SRC_DIR}/mixer.cpp
   ${SRC_DIR}/module.cpp
-  ${SRC_DIR}/playback.cpp
+  ${SRC_DIR}/winmm_playback.cpp
   ${SRC_DIR}/player_state.cpp
 )
 
 # Add source to this project's executable.
 add_library(${TARGET_NAME} STATIC ${PUBLIC_HEADER_FILES} ${PRIVATE_HEADER_FILES} ${SRC_FILES})
 target_include_directories(${TARGET_NAME} PUBLIC ${HEADER_DIR})
-target_link_libraries(${TARGET_NAME} PRIVATE winmm.lib)
+target_link_libraries(${TARGET_NAME} PUBLIC xmformat PRIVATE winmm.lib )
 set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD 20)
