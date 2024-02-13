@@ -29,6 +29,7 @@ Disclaimer and legal
 AGAIN : DONT NAG ME WITH QUESTIONS ABOUT THE SOURCE, ASK SOMEONE ELSE. 
         (i recommend #coders on ircnet.)
 
+Note (Pan/SpinningKids): This is the original README, for the new C++ version please see the branch minifmod++
 
 General Usage Instructions ~~just using minifmod.lib IMPORTANT (no source recompile)~~
 --------------------------------------------------------------------------
