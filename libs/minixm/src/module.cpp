@@ -16,7 +16,7 @@
 
 #include <xmformat/pattern_header.h>
 
-Module::Module(const minifmod::FileAccess& fileAccess, void* fp, std::function<void(int16_t *, size_t, int, int)> sampleloadcallback)
+Module::Module(const minifmod::FileAccess& fileAccess, void* fp, std::function<void(int16_t*, size_t, int, int)> sample_load_callback)
 {
     fileAccess.seek(fp, 0, SEEK_SET);
     fileAccess.read(&header_, sizeof(header_), fp);
@@ -89,25 +89,25 @@ Module::Module(const minifmod::FileAccess& fileAccess, void* fp, std::function<v
             fileAccess.read(&instrument.sample_header, sizeof(instrument.sample_header), fp);
 
             auto adjust_envelope = [](int count, const XMEnvelopePoint(&original_points)[12], int offset, float scale, XMEnvelopeFlags flags) noexcept
-            {
-                EnvelopePoints e;
-                e.count = (count < 2 || !(flags & XMEnvelopeFlagsOn)) ? 0 : count;
-                for (int i = 0; i < e.count; ++i)
                 {
-                    e.envelope[i].position = original_points[i].position;
-                    e.envelope[i].value = static_cast<float>(original_points[i].value - offset) / scale;
-                    if (i > 0)
+                    EnvelopePoints e;
+                    e.count = (count < 2 || !(flags & XMEnvelopeFlagsOn)) ? 0 : count;
+                    for (int i = 0; i < e.count; ++i)
                     {
-                        const int tickdiff = e.envelope[i].position - e.envelope[i - 1].position;
+                        e.envelope[i].position = original_points[i].position;
+                        e.envelope[i].value = static_cast<float>(original_points[i].value - offset) / scale;
+                        if (i > 0)
+                        {
+                            const int tickdiff = e.envelope[i].position - e.envelope[i - 1].position;
 
-                        e.envelope[i - 1].delta = tickdiff ? (e.envelope[i].value - e.envelope[i - 1].value) / static_cast<float>(tickdiff) : 0.f;
+                            e.envelope[i - 1].delta = tickdiff ? (e.envelope[i].value - e.envelope[i - 1].value) / static_cast<float>(tickdiff) : 0.f;
+                        }
                     }
-                }
-                if (e.count) {
-                    e.envelope[e.count - 1].delta = 0.f;
-                }
-                return e;
-            };
+                    if (e.count) {
+                        e.envelope[e.count - 1].delta = 0.f;
+                    }
+                    return e;
+                };
 #ifdef FMUSIC_XM_VOLUMEENVELOPE_ACTIVE
             instrument.volume_envelope = adjust_envelope(instrument.sample_header.volume_envelope_count, instrument.sample_header.volume_envelope, 0, 64, instrument.sample_header.volume_envelope_flags);
 #endif
@@ -152,9 +152,9 @@ Module::Module(const minifmod::FileAccess& fileAccess, void* fp, std::function<v
                 {
                     sample.buff.reset(new int16_t[sample.header.length + 8]);
 
-                    if (sampleloadcallback)
+                    if (sample_load_callback)
                     {
-                        sampleloadcallback(sample.buff.get(), sample.header.length, instrument_index, sample_index);
+                        sample_load_callback(sample.buff.get(), sample.header.length, instrument_index, sample_index);
                         fileAccess.seek(fp, static_cast<int>(sample.header.length * (sample.header.bits16 ? 2 : 1)), SEEK_CUR);
                     }
                     else

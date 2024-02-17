@@ -14,7 +14,6 @@ namespace
         //      Frequency = 8363*2^((6*12*16*4 - Period) / (12*16*4));
         // Simplified by taking log2(8363) inside the power and simplifying
         return exp2f(19.029805f - static_cast<float>(per) / 1536.0f);
-        //return (int)(8363.0f * powf(2.0f, (6.0f * 12.0f * 16.0f * 4.0f - per) / (float)(12 * 16 * 4)));
     }
 
     float Period2Frequency(int period)
@@ -45,26 +44,26 @@ void Channel::processInstrument(const Instrument& instrument) noexcept
 
     switch (instrument.sample_header.vibrato_type)
     {
-        case XMInstrumentVibratoType::Sine:
-        {
-            delta = static_cast<int>(sinf(static_cast<float>(ivibpos) * (2 * std::numbers::pi_v<float> / 256.0f)) * 256.0f);
-            break;
-        }
-        case XMInstrumentVibratoType::Square:
-        {
-            delta = 256 - (ivibpos & 128)*4;
-            break;
-        }
-        case XMInstrumentVibratoType::InverseSawTooth:
-        {
-            delta = (ivibpos & 128) * 4 - (ivibpos + 1);
-            break;
-        }
-        case XMInstrumentVibratoType::SawTooth:
-        {
-            delta = ivibpos + 1 - (ivibpos & 128) * 4;
-            break;
-        }
+    case XMInstrumentVibratoType::Sine:
+    {
+        delta = static_cast<int>(sinf(static_cast<float>(ivibpos) * (2 * std::numbers::pi_v<float> / 256.0f)) * 256.0f);
+        break;
+    }
+    case XMInstrumentVibratoType::Square:
+    {
+        delta = 256 - (ivibpos & 128) * 4;
+        break;
+    }
+    case XMInstrumentVibratoType::InverseSawTooth:
+    {
+        delta = (ivibpos & 128) * 4 - (ivibpos + 1);
+        break;
+    }
+    case XMInstrumentVibratoType::SawTooth:
+    {
+        delta = ivibpos + 1 - (ivibpos & 128) * 4;
+        break;
+    }
     }
 
     delta *= instrument.sample_header.vibrato_depth;
@@ -120,53 +119,53 @@ void Channel::processVolumeByteNote(int volume_byte) noexcept
     }
     else
     {
-        int volumey = volume_byte & 0xF;
+        const int volume_y = volume_byte & 0xF;
         switch (volume_byte >> 4)
         {
-            case 0x6:
-            case 0x8:
-            {
-                volume -= volumey;
-                break;
-            }
-            case 0x7:
-            case 0x9:
-            {
-                volume += volumey;
-                break;
-            }
-            case 0xa:
-            {
-                vibrato.setSpeed(volumey);
-                break;
-            }
-            case 0xb:
-            {
-                vibrato.setDepth(volumey * 16);
-                break;
-            }
-            case 0xc:
-            {
-                pan = volumey * 16;
-                break;
-            }
-            case 0xd:
-            {
-                pan -= volumey;
-                break;
-            }
-            case 0xe:
-            {
-                pan += volumey;
-                break;
-            }
-            case 0xf:
-            {
-                portamento.setTarget(period_target);
-                portamento.setSpeed(volumey * 2);
-                trigger = false;
-                break;
-            }
+        case 0x6:
+        case 0x8:
+        {
+            volume -= volume_y;
+            break;
+        }
+        case 0x7:
+        case 0x9:
+        {
+            volume += volume_y;
+            break;
+        }
+        case 0xa:
+        {
+            vibrato.setSpeed(volume_y);
+            break;
+        }
+        case 0xb:
+        {
+            vibrato.setDepth(volume_y * 16);
+            break;
+        }
+        case 0xc:
+        {
+            pan = volume_y * 16;
+            break;
+        }
+        case 0xd:
+        {
+            pan -= volume_y;
+            break;
+        }
+        case 0xe:
+        {
+            pan += volume_y;
+            break;
+        }
+        case 0xf:
+        {
+            portamento.setTarget(period_target);
+            portamento.setSpeed(volume_y * 2);
+            trigger = false;
+            break;
+        }
         }
     }
 #endif // #define FMUSIC_XM_VOLUMEBYTE_ACTIVE
@@ -175,44 +174,44 @@ void Channel::processVolumeByteNote(int volume_byte) noexcept
 void Channel::processVolumeByteTick(int volume_byte) noexcept
 {
 #ifdef FMUSIC_XM_VOLUMEBYTE_ACTIVE
-    int volumey = volume_byte & 0xF;
+    const int volume_y = volume_byte & 0xF;
     switch (volume_byte >> 4)
     {
-        case 0x6:
-        {
-            volume -= volumey;
-            break;
-        }
-        case 0x7:
-        {
-            volume += volumey;
-            break;
-        }
+    case 0x6:
+    {
+        volume -= volume_y;
+        break;
+    }
+    case 0x7:
+    {
+        volume += volume_y;
+        break;
+    }
 #ifdef FMUSIC_XM_VIBRATO_ACTIVE
-        case 0xb:
-        {
-            vibrato.setDepth(volumey * 16);
-            period_delta = vibrato();
-            vibrato.update();
-            break;
-        }
+    case 0xb:
+    {
+        vibrato.setDepth(volume_y * 16);
+        period_delta = vibrato();
+        vibrato.update();
+        break;
+    }
 #endif
-        case 0xd:
-        {
-            pan -= volumey;
-            break;
-        }
-        case 0xe:
-        {
-            pan += volumey;
-            break;
-        }
+    case 0xd:
+    {
+        pan -= volume_y;
+        break;
+    }
+    case 0xe:
+    {
+        pan += volume_y;
+        break;
+    }
 #ifdef FMUSIC_XM_PORTATO_ACTIVE
-        case 0xf:
-        {
-            updatePeriodFromPortamento();
-            break;
-        }
+    case 0xf:
+    {
+        updatePeriodFromPortamento();
+        break;
+    }
 #endif
     }
 #endif
@@ -240,7 +239,7 @@ void Channel::updateVolume() noexcept
     pan = std::clamp(pan, 0, 255);
 }
 
-void Channel::sendToMixer(Mixer& mixer, const Instrument& instrument, int globalvolume, bool linearfrequency) const noexcept
+void Channel::sendToMixer(Mixer& mixer, const Instrument& instrument, int global_volume, bool linear_frequency) const noexcept
 {
     MixerChannel& sound_channel = mixer.getChannel(index);
     if (trigger)
@@ -276,7 +275,7 @@ void Channel::sendToMixer(Mixer& mixer, const Instrument& instrument, int global
         sound_channel.filtered_right_volume = 0;
     }
     constexpr float norm = 1.0f / 68451041280.0f; // 2^27 (volume normalization) * 255.0 (pan scale) (*2 for safety?!?)
-    float high_precision_volume = static_cast<float>((volume + voldelta) * fadeoutvol * globalvolume) * norm;
+    float high_precision_volume = static_cast<float>((volume + voldelta) * fadeoutvol * global_volume) * norm;
 #ifdef FMUSIC_XM_VOLUMEENVELOPE_ACTIVE
     high_precision_volume *= volume_envelope();
 #endif
@@ -290,7 +289,7 @@ void Channel::sendToMixer(Mixer& mixer, const Instrument& instrument, int global
     if (const int actual_period = period + period_delta; actual_period != 0)
     {
         const float freq = std::max(
-            linearfrequency
+            linear_frequency
             ? XMLinearPeriod2Frequency(actual_period)
             : Period2Frequency(actual_period),
             100.0f);

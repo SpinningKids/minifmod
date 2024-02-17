@@ -31,7 +31,7 @@
 #include <minixm/player_state.h>
 
 // this is if you want to replace the samples with your own (in case you have compressed them)
-void sampleloadcallback(void *buff, int lenbytes, int numbits, int instno, int sampno)
+void sample_load_callback(void *buff, int lenbytes, int numbits, int instno, int sampno)
 {
 	printf("pointer = %p length = %d bits = %d instrument %d sample %d\n", buff, lenbytes, numbits, instno, sampno);
 }

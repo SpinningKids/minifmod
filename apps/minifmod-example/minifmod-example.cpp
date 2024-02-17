@@ -29,7 +29,7 @@
 #include <minifmod/minifmod.h>
 
 // this is if you want to replace the samples with your own (in case you have compressed them)
-void sampleloadcallback(void *buff, int lenbytes, int numbits, int instno, int sampno)
+void sample_load_callback(void *buff, int lenbytes, int numbits, int instno, int sampno)
 {
 	printf("pointer = %p length = %d bits = %d instrument %d sample %d\n", buff, lenbytes, numbits, instno, sampno);
 }
@@ -193,7 +193,7 @@ int main(int argc, char *argv[])
 	// ==========================================================================================
 	// LOAD SONG
 	// ==========================================================================================
-    const auto mod = FMUSIC_LoadSong(argv[1], nullptr); //sampleloadcallback);
+    const auto mod = FMUSIC_LoadSong(argv[1], nullptr); //sample_load_callback);
 	if (!mod)
 	{
 		printf("Error loading song\n");

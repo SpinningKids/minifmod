@@ -29,7 +29,7 @@ struct Module final
 	Pattern		pattern_[256];		// patterns array for this song
 	Instrument	instrument_[128];	// instrument array for this song (not used in MOD/S3M)
 
-    Module(const minifmod::FileAccess& fileAccess, void* fp, std::function<void(int16_t*, size_t, int, int)> sampleloadcallback);
+    Module(const minifmod::FileAccess& fileAccess, void* fp, std::function<void(int16_t*, size_t, int, int)> sample_load_callback);
 
     [[nodiscard]] const Instrument& getInstrument(int instrument) const noexcept
 	{

@@ -144,5 +144,5 @@ struct Channel
 #endif
 	}
 
-	void sendToMixer(Mixer& mixer, const Instrument& instrument, int globalvolume, bool linearfrequency) const noexcept;
+	void sendToMixer(Mixer& mixer, const Instrument& instrument, int global_volume, bool linear_frequency) const noexcept;
 };

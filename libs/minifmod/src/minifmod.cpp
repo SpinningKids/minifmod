@@ -40,12 +40,12 @@ namespace {
 	FMUSIC_FreeSong
 ]
 */
-Module* FMUSIC_LoadSong(const char *name, SAMPLELOADCALLBACK sampleloadcallback)
+Module* FMUSIC_LoadSong(const char *name, SAMPLE_LOAD_CALLBACK sample_load_callback)
 {
     if (void* fp = minifmod::file_access.open(name))
     {
         // create a mod instance
-		auto mod = std::make_unique<Module>(minifmod::file_access, fp, sampleloadcallback);
+		auto mod = std::make_unique<Module>(minifmod::file_access, fp, sample_load_callback);
 		minifmod::file_access.close(fp);
         return mod.release();
     }
