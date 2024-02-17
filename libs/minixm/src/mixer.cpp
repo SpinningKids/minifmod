@@ -23,7 +23,7 @@ namespace
 Mixer::Mixer(std::function<Position()>&& tick_callback, uint16_t bpm, unsigned int mix_rate, unsigned int buffer_size_ms, unsigned int latency, float volume_filter_time_constant) noexcept :
     tick_callback_{ std::move(tick_callback) },
     driver_{ IPlaybackDriver::create(mix_rate, buffer_size_ms, latency) },
-    time_info_{ new TimeInfo[driver_->blocks()] },
+    time_info_{ std::make_unique_for_overwrite<TimeInfo[]>(driver_->blocks()) },
     volume_filter_k_{ 1.f / (1.f + static_cast<float>(driver_->mix_rate()) * volume_filter_time_constant) },
     mix_buffer_{ std::make_unique_for_overwrite<float[]>(driver_->block_size() * 2) },
     channel_{},
@@ -60,10 +60,10 @@ void Mixer::stop() noexcept
 
 float Mixer::timeFromSamples() const noexcept
 {
-    return time_info_[driver_->current_block_played()].samples / driver_->mix_rate();
+    return static_cast<float>(static_cast<double>(time_info_[driver_->current_block_played()].samples) / driver_->mix_rate());
 }
 
-void Mixer::mix(float* mixptr, unsigned int len) noexcept
+void Mixer::mix(float* mixptr, uint32_t len) noexcept
 {
     //==============================================================================================
     // LOOP THROUGH CHANNELS
@@ -94,7 +94,7 @@ void Mixer::mix(float* mixptr, unsigned int len) noexcept
             }
 
             // Ensure that we don't try to mix a negative amount of samples
-            const auto samples_to_mix_target = static_cast<unsigned int>(std::max(0.f, ceil(samples_to_mix / fabs(channel.speed)))); // round up the division
+            const auto samples_to_mix_target = static_cast<unsigned int>(std::max(0.f, ceilf(samples_to_mix / fabsf(channel.speed)))); // round up the division
 
             // =========================================================================================
             // the following code sets up a mix counter. it sees what will happen first, will the output buffer
@@ -180,7 +180,7 @@ TimeInfo Mixer::fill(short target[]) noexcept
     // UPDATE MUSIC
     //==============================================================================
 
-    unsigned int MixedSoFar = 0;
+    uint32_t MixedSoFar = 0;
 
     // keep resetting the mix pointer to the beginning of this portion of the ring buffer
     float* MixPtr = mix_buffer_.get();
@@ -193,7 +193,7 @@ TimeInfo Mixer::fill(short target[]) noexcept
             mixer_samples_left_ = driver_->mix_rate() * 5 / (bpm_ * 2);
         }
 
-        const unsigned int SamplesToMix = std::min(mixer_samples_left_, block_size - MixedSoFar);
+        const uint32_t SamplesToMix = std::min(mixer_samples_left_, block_size - MixedSoFar);
 
         mix(MixPtr, SamplesToMix);
 

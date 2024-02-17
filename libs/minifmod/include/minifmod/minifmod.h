@@ -40,7 +40,7 @@ struct Module;
 // ==================================
 // Initialization / Global functions.
 // ==================================
-typedef void (*SAMPLELOADCALLBACK)(short *buff, size_t length_samples, int instno, int sampno);
+typedef void (*SAMPLE_LOAD_CALLBACK)(short *buff, size_t length_samples, int instno, int sampno);
 typedef void (*FMUSIC_CALLBACK)(PlayerState *mod, unsigned char param);
 
 bool FSOUND_Init(int mixrate, int vcmmode = 0) MINIFMOD_NOEXCEPT;
@@ -134,7 +134,7 @@ void FSOUND_File_SetCallbacks(void* (*OpenCallback)(const char* name),
 // Song management / playback functions.
 // =====================================
 
-Module*         FMUSIC_LoadSong(const char *name, SAMPLELOADCALLBACK sampleloadcallback);
+Module*         FMUSIC_LoadSong(const char *name, SAMPLE_LOAD_CALLBACK sample_load_callback);
 bool    		FMUSIC_FreeSong(Module* module);
 PlayerState*    FMUSIC_PlaySong(Module* module);
 Module*         FMUSIC_StopSong(PlayerState* player_state = nullptr);
