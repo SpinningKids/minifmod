@@ -34,7 +34,7 @@ struct MixerChannel final
 struct TimeInfo final
 {
     Position position;
-    size_t samples;
+    uint32_t samples;
 };
 
 class Mixer final
@@ -54,7 +54,7 @@ class Mixer final
     // thread control variables
     uint32_t					mixer_samples_left_;
     unsigned int				bpm_;
-    unsigned int				samples_mixed_;		// time passed in samples since song started
+    uint32_t					samples_mixed_;		// time passed in samples since song started
     Position					last_position_;
 
     TimeInfo fill(short target[]) noexcept;

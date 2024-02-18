@@ -70,7 +70,7 @@ void Mixer::mix(float* mixptr, uint32_t len) noexcept
     //==============================================================================================
     for (auto& channel : channel_)
     {
-        unsigned int sample_index = 0;
+        uint32_t sample_index = 0;
 
         //==============================================================================================
         // LOOP THROUGH CHANNELS
