@@ -29,8 +29,7 @@ Mixer::Mixer(std::function<Position()>&& tick_callback, uint16_t bpm, unsigned i
     channel_{},
     mixer_samples_left_{ 0 },
     bpm_{ bpm },
-    samples_mixed_{ 0 },
-    last_position_{}
+    last_mixed_time_info_{}
 {
     for (auto& channel_index : channel_)
     {
@@ -167,7 +166,7 @@ void Mixer::mix(float* mixptr, uint32_t len) noexcept
     }
 }
 
-TimeInfo Mixer::fill(short target[]) noexcept
+const TimeInfo &Mixer::fill(short target[]) noexcept
 {
     auto block_size = driver_->block_size();
     //==============================================================================
@@ -189,7 +188,7 @@ TimeInfo Mixer::fill(short target[]) noexcept
     {
         if (!mixer_samples_left_)
         {
-            last_position_ = tick_callback_();	// update new mod tick
+            last_mixed_time_info_.position = tick_callback_();	// update new mod tick
             mixer_samples_left_ = driver_->mix_rate() * 5 / (bpm_ * 2);
         }
 
@@ -203,12 +202,12 @@ TimeInfo Mixer::fill(short target[]) noexcept
 
     }
 
-    samples_mixed_ += MixedSoFar; // This is (and was before) approximated down by as much as 1ms per block
+    last_mixed_time_info_.samples += MixedSoFar; // This is (and was before) approximated down by as much as 1ms per block
 
     // ====================================================================================
     // CLIP AND COPY BLOCK TO OUTPUT BUFFER
     // ====================================================================================
     MixerClipCopy_Float32(target, mix_buffer_.get(), block_size);
 
-    return { last_position_, samples_mixed_ };
+    return last_mixed_time_info_;
 }
