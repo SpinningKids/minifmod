@@ -54,10 +54,9 @@ class Mixer final
     // thread control variables
     uint32_t					mixer_samples_left_;
     unsigned int				bpm_;
-    uint32_t					samples_mixed_;		// time passed in samples since song started
-    Position					last_position_;
+    TimeInfo                    last_mixed_time_info_;
 
-    TimeInfo fill(short target[]) noexcept;
+    const TimeInfo &fill(short target[]) noexcept;
     void mix(float* mixptr, uint32_t len) noexcept;
 public:
     explicit Mixer(
