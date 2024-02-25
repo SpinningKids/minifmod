@@ -6,7 +6,7 @@
 
 namespace
 {
-    int GetXMLinearPeriodFinetuned(XMNote note, int fine_tune)
+    int GetXMLinearPeriodFinetuned(XMNote note, int8_t fine_tune)
     {
         return 121*128 - note.value*128 - fine_tune;
     }
@@ -17,12 +17,12 @@ namespace
         return static_cast<int>(exp2f(15.824799333333333333333333333333f - static_cast<float>(note.value)));
     }
 
-    int GetAmigaPeriodFinetuned(XMNote note, int fine_tune) noexcept
+    int GetAmigaPeriodFinetuned(XMNote note, int8_t fine_tune) noexcept
     {
         int period = GetAmigaPeriod(note);
 
         // interpolate for finer tuning
-        const int direction = (fine_tune > 0) ? 1 : -1;
+        const int8_t direction = (fine_tune > 0) ? 1 : -1;
 
         period += direction * ((GetAmigaPeriod(note + direction) - period) * fine_tune / 128);
 
@@ -30,7 +30,7 @@ namespace
     }
 #endif
 
-    int GetPeriodFinetuned(XMNote note, int fine_tune, bool linear)
+    int GetPeriodFinetuned(XMNote note, int8_t fine_tune, bool linear)
     {
 #ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
         if (!linear)
@@ -39,7 +39,7 @@ namespace
         return GetXMLinearPeriodFinetuned(note, fine_tune);
     }
 
-    int GetPeriodDeltaFinetuned(XMNote note, int delta, int fine_tune, bool linear)
+    int GetPeriodDeltaFinetuned(XMNote note, int8_t delta, int8_t fine_tune, bool linear)
     {
 #ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
         if (!linear)
@@ -101,7 +101,7 @@ void PlayerState::updateNote() noexcept
         const int paramy = effect_parameter & 0xF;			// get effect param y
         const int slide = paramx ? paramx : -paramy;
 
-        const bool porta = effect == XMEffect::PORTATO || effect == XMEffect::PORTATOVOLSLIDE;
+        const bool porta = effect == XMEffect::PORTATO || effect == XMEffect::PORTATO_VOLUME_SLIDE;
         const bool valid_note = note.isValid();
 
         if (!porta)
@@ -167,7 +167,7 @@ void PlayerState::updateNote() noexcept
         channel.processVolumeByteNote(volume);
 
         //= PROCESS KEY OFF ============================================================================
-        if (note.isKeyOff() || effect == XMEffect::KEYOFF)
+        if (note.isKeyOff() || effect == XMEffect::KEY_OFF)
         {
             channel.keyoff = true;
         }
@@ -183,7 +183,7 @@ void PlayerState::updateNote() noexcept
         switch (effect)
         {
 #ifdef FMUSIC_XM_PORTAUP_ACTIVE
-            case XMEffect::PORTAUP:
+            case XMEffect::PORTA_UP:
             {
                 if (effect_parameter)
                 {
@@ -193,7 +193,7 @@ void PlayerState::updateNote() noexcept
             }
 #endif
 #ifdef FMUSIC_XM_PORTADOWN_ACTIVE
-            case XMEffect::PORTADOWN:
+            case XMEffect::PORTA_DOWN:
             {
                 if (effect_parameter)
                 {
@@ -221,7 +221,7 @@ void PlayerState::updateNote() noexcept
             }
 #endif
 #ifdef FMUSIC_XM_PORTATOVOLSLIDE_ACTIVE
-            case XMEffect::PORTATOVOLSLIDE:
+            case XMEffect::PORTATO_VOLUME_SLIDE:
             {
                 channel.portamento.setTarget(channel.period_target);
                 channel.setVolSlide(slide);
@@ -230,7 +230,7 @@ void PlayerState::updateNote() noexcept
             }
 #endif
 #ifdef FMUSIC_XM_VIBRATOVOLSLIDE_ACTIVE
-            case XMEffect::VIBRATOVOLSLIDE:
+            case XMEffect::VIBRATO_VOLUME_SLIDE:
             {
                 channel.setVolSlide(slide);
                 channel.period_delta = channel.vibrato();
@@ -246,14 +246,14 @@ void PlayerState::updateNote() noexcept
             }
 #endif
 #ifdef FMUSIC_XM_SETPANPOSITION_ACTIVE
-            case XMEffect::SETPANPOSITION:
+            case XMEffect::SET_PAN_POSITION:
             {
                 channel.pan = effect_parameter;
                 break;
             }
 #endif
 #ifdef FMUSIC_XM_SETSAMPLEOFFSET_ACTIVE
-            case XMEffect::SETSAMPLEOFFSET:
+            case XMEffect::SET_SAMPLE_OFFSET:
             {
                 channel.setSampleOffset(effect_parameter * 256);
                 if (channel.sampleoffset < sample_header.loop_start + sample_header.loop_length)
@@ -269,14 +269,14 @@ void PlayerState::updateNote() noexcept
             }
 #endif
 #ifdef FMUSIC_XM_VOLUMESLIDE_ACTIVE
-            case XMEffect::VOLUMESLIDE:
+            case XMEffect::VOLUME_SLIDE:
             {
                 channel.setVolSlide(slide);
                 break;
             }
 #endif
 #ifdef FMUSIC_XM_PATTERNJUMP_ACTIVE
-            case XMEffect::PATTERNJUMP: // --- 00 B00 : --- 00 D63 , should put us at ord=0, row=63
+            case XMEffect::PATTERN_JUMP: // --- 00 B00 : --- 00 D63 , should put us at ord=0, row=63
             {
                 next_.order = effect_parameter % module_->header_.song_length;
                 next_.row = 0;
@@ -285,14 +285,14 @@ void PlayerState::updateNote() noexcept
             }
 #endif
 #ifdef FMUSIC_XM_SETVOLUME_ACTIVE
-            case XMEffect::SETVOLUME:
+            case XMEffect::SET_VOLUME:
             {
                 channel.volume = effect_parameter;
                 break;
             }
 #endif
 #ifdef FMUSIC_XM_PATTERNBREAK_ACTIVE
-            case XMEffect::PATTERNBREAK:
+            case XMEffect::PATTERN_BREAK:
             {
                 next_.row = paramx * 10 + paramy;
                 if (next_.row > 63) // NOTE: This seems odd, as the pattern might be longer than 64
@@ -313,7 +313,7 @@ void PlayerState::updateNote() noexcept
                 switch ((XMSpecialEffect)paramx)
                 {
 #ifdef FMUSIC_XM_FINEPORTAUP_ACTIVE
-                    case XMSpecialEffect::FINEPORTAUP:
+                    case XMSpecialEffect::FINE_PORTA_UP:
                     {
                         if (paramy)
                         {
@@ -324,7 +324,7 @@ void PlayerState::updateNote() noexcept
                     }
 #endif
 #ifdef FMUSIC_XM_FINEPORTADOWN_ACTIVE
-                    case XMSpecialEffect::FINEPORTADOWN:
+                    case XMSpecialEffect::FINE_PORTA_DOWN:
                     {
                         if (paramy)
                         {
@@ -342,21 +342,21 @@ void PlayerState::updateNote() noexcept
                     }
 #endif
 #if defined(FMUSIC_XM_SETVIBRATOWAVE_ACTIVE) && (defined (FMUSIC_XM_VIBRATOVOLSLIDE_ACTIVE) || defined(FMUSIC_XM_VIBRATO_ACTIVE) || defined(FMUSIC_XM_VOLUMEBYTE_ACTIVE))
-                    case XMSpecialEffect::SETVIBRATOWAVE:
+                    case XMSpecialEffect::SET_VIBRATO_WAVE:
                     {
                         channel.vibrato.setFlags(paramy);
                         break;
                     }
 #endif
 #ifdef FMUSIC_XM_SETFINETUNE_ACTIVE
-                    case XMSpecialEffect::SETFINETUNE:
+                    case XMSpecialEffect::SET_FINE_TUNE:
                     {
                         channel.fine_tune = paramy;
                         break;
                     }
 #endif
 #ifdef FMUSIC_XM_PATTERNLOOP_ACTIVE
-                    case XMSpecialEffect::PATTERNLOOP:
+                    case XMSpecialEffect::PATTERN_LOOP:
                     {
                         if (paramy == 0)
                         {
@@ -383,21 +383,21 @@ void PlayerState::updateNote() noexcept
                     }
 #endif
 #if defined(FMUSIC_XM_TREMOLO_ACTIVE) && defined(FMUSIC_XM_SETTREMOLOWAVE_ACTIVE)
-                    case XMSpecialEffect::SETTREMOLOWAVE:
+                    case XMSpecialEffect::SET_TREMOLO_WAVE:
                     {
                         channel.tremolo.setFlags(paramy);
                         break;
                     }
 #endif
 #ifdef FMUSIC_XM_SETPANPOSITION16_ACTIVE
-                    case XMSpecialEffect::SETPANPOSITION16:
+                    case XMSpecialEffect::SET_PAN_POSITION_16:
                     {
                         channel.pan = paramy * 16;
                         break;
                     }
 #endif
 #ifdef FMUSIC_XM_FINEVOLUMESLIDEUP_ACTIVE
-                    case XMSpecialEffect::FINEVOLUMESLIDEUP:
+                    case XMSpecialEffect::FINE_VOLUME_SLIDE_UP:
                     {
                         if (paramy)
                         {
@@ -408,7 +408,7 @@ void PlayerState::updateNote() noexcept
                     }
 #endif
 #ifdef FMUSIC_XM_FINEVOLUMESLIDEDOWN_ACTIVE
-                    case XMSpecialEffect::FINEVOLUMESLIDEDOWN:
+                    case XMSpecialEffect::FINE_VOLUME_SLIDE_DOWN:
                     {
                         if (paramy)
                         {
@@ -419,7 +419,7 @@ void PlayerState::updateNote() noexcept
                     }
 #endif
 #ifdef FMUSIC_XM_NOTEDELAY_ACTIVE
-                    case XMSpecialEffect::NOTEDELAY:
+                    case XMSpecialEffect::NOTE_DELAY:
                     {
                         channel.volume = old_volume;
                         channel.period = old_period;
@@ -429,7 +429,7 @@ void PlayerState::updateNote() noexcept
                     }
 #endif
 #ifdef FMUSIC_XM_PATTERNDELAY_ACTIVE
-                    case XMSpecialEffect::PATTERNDELAY:
+                    case XMSpecialEffect::PATTERN_DELAY:
                     {
                         pattern_delay_ = ticks_per_row_ * paramy;
                         break;
@@ -439,7 +439,7 @@ void PlayerState::updateNote() noexcept
                 break;
             }
 #ifdef FMUSIC_XM_SETSPEED_ACTIVE
-            case XMEffect::SETSPEED:
+            case XMEffect::SET_SPEED:
             {
                 if (effect_parameter < 0x20)
                 {
@@ -453,14 +453,14 @@ void PlayerState::updateNote() noexcept
             }
 #endif
 #ifdef FMUSIC_XM_SETGLOBALVOLUME_ACTIVE
-            case XMEffect::SETGLOBALVOLUME:
+            case XMEffect::SET_GLOBAL_VOLUME:
             {
                 global_volume_ = effect_parameter;
                 break;
             }
 #endif
 #ifdef FMUSIC_XM_GLOBALVOLSLIDE_ACTIVE
-            case XMEffect::GLOBALVOLSLIDE:
+            case XMEffect::GLOBAL_VOLUME_SLIDE:
             {
                 if (slide)
                 {
@@ -470,21 +470,21 @@ void PlayerState::updateNote() noexcept
             }
 #endif
 #if defined(FMUSIC_XM_SETENVELOPEPOS_ACTIVE) && defined(FMUSIC_XM_VOLUMEENVELOPE_ACTIVE)
-            case XMEffect::SETENVELOPEPOS:
+            case XMEffect::SET_ENVELOPE_POSITION:
             {
                 channel.volume_envelope.setPosition(effect_parameter);
                 break;
             }
 #endif
 #ifdef FMUSIC_XM_PANSLIDE_ACTIVE
-            case XMEffect::PANSLIDE:
+            case XMEffect::PAN_SLIDE:
             {
                 channel.setPanSlide(slide);
                 break;
             }
 #endif
 #ifdef FMUSIC_XM_MULTIRETRIG_ACTIVE
-            case XMEffect::MULTIRETRIG:
+            case XMEffect::MULTI_RETRIGGER:
             {
                 if (effect_parameter)
                 {
@@ -507,7 +507,7 @@ void PlayerState::updateNote() noexcept
             }
 #endif
 #ifdef FMUSIC_XM_EXTRAFINEPORTA_ACTIVE
-            case XMEffect::EXTRAFINEPORTA:
+            case XMEffect::EXTRA_FINE_PORTA:
             {
                 switch (paramx)
                 {
@@ -582,7 +582,7 @@ void PlayerState::updateTick() noexcept
 #ifdef FMUSIC_XM_ARPEGGIO_ACTIVE
             case XMEffect::ARPEGGIO:
             {
-                int v = 0;
+                int8_t v = 0;
                 switch (tick_ % 3)
                 {
                     case 1:
@@ -597,7 +597,7 @@ void PlayerState::updateTick() noexcept
             }
 #endif
 #ifdef FMUSIC_XM_PORTAUP_ACTIVE
-            case XMEffect::PORTAUP:
+            case XMEffect::PORTA_UP:
             {
                 channel.period_delta = 0;
                 channel.period = std::max(channel.period - (channel.portaup * 8), 112); // subtract period and stop at B#8
@@ -605,7 +605,7 @@ void PlayerState::updateTick() noexcept
             }
 #endif
 #ifdef FMUSIC_XM_PORTADOWN_ACTIVE
-            case XMEffect::PORTADOWN:
+            case XMEffect::PORTA_DOWN:
             {
                 channel.period_delta = 0;
                 channel.period += channel.portadown * 8; // subtract period
@@ -613,7 +613,7 @@ void PlayerState::updateTick() noexcept
             }
 #endif
 #ifdef FMUSIC_XM_PORTATOVOLSLIDE_ACTIVE
-            case XMEffect::PORTATOVOLSLIDE:
+            case XMEffect::PORTATO_VOLUME_SLIDE:
             {
                 channel.volume += channel.volslide;
 #endif
@@ -632,7 +632,7 @@ void PlayerState::updateTick() noexcept
             }
 #endif
 #ifdef FMUSIC_XM_VIBRATOVOLSLIDE_ACTIVE
-            case XMEffect::VIBRATOVOLSLIDE:
+            case XMEffect::VIBRATO_VOLUME_SLIDE:
             {
                 channel.volume += channel.volslide;
 #endif
@@ -659,7 +659,7 @@ void PlayerState::updateTick() noexcept
             }
 #endif
 #ifdef FMUSIC_XM_VOLUMESLIDE_ACTIVE
-            case XMEffect::VOLUMESLIDE:
+            case XMEffect::VOLUME_SLIDE:
             {
                 channel.volume += channel.volslide;
                 break;
@@ -671,7 +671,7 @@ void PlayerState::updateTick() noexcept
                 switch ((XMSpecialEffect)paramx)
                 {
 #ifdef FMUSIC_XM_NOTEDELAY_ACTIVE
-                    case XMSpecialEffect::NOTEDELAY:
+                    case XMSpecialEffect::NOTE_DELAY:
                     {
                         if (tick_ == paramy)
                         {
@@ -686,7 +686,7 @@ void PlayerState::updateTick() noexcept
                     }
 #endif
 #ifdef FMUSIC_XM_RETRIG_ACTIVE
-                    case XMSpecialEffect::RETRIG:
+                    case XMSpecialEffect::RETRIGGER:
                     {
                         if (paramy && tick_ % paramy == 0)
                         {
@@ -696,7 +696,7 @@ void PlayerState::updateTick() noexcept
                     }
 #endif
 #ifdef FMUSIC_XM_NOTECUT_ACTIVE
-                    case XMSpecialEffect::NOTECUT:
+                    case XMSpecialEffect::NOTE_CUT:
                     {
                         if (tick_ == paramy)
                         {
@@ -709,30 +709,26 @@ void PlayerState::updateTick() noexcept
                 break;
             }
 #ifdef FMUSIC_XM_GLOBALVOLSLIDE_ACTIVE
-            case XMEffect::GLOBALVOLSLIDE:
+            case XMEffect::GLOBAL_VOLUME_SLIDE:
             {
                 global_volume_ += global_volume_slide_;
                 break;
             }
 #endif
 #ifdef FMUSIC_XM_PANSLIDE_ACTIVE
-            case XMEffect::PANSLIDE:
+            case XMEffect::PAN_SLIDE:
             {
                 channel.pan += channel.panslide;
                 break;
             }
 #endif
 #ifdef FMUSIC_XM_MULTIRETRIG_ACTIVE
-            case XMEffect::MULTIRETRIG:
+            case XMEffect::MULTI_RETRIGGER:
             {
                 if (channel.retrigy && !(tick_ % channel.retrigy))
                 {
                     switch (channel.retrigx)
                     {
-                        case 0:
-                        {
-                            break;
-                        }
                         case 1:
                         {
                             channel.volume--;
@@ -766,11 +762,6 @@ void PlayerState::updateTick() noexcept
                         case 7:
                         {
                             channel.volume /= 2;
-                            break;
-                        }
-                        case 8:
-                        {
-                            // ?
                             break;
                         }
                         case 9:

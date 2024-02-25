@@ -47,7 +47,7 @@ struct Channel
 	XMEffect		recenteffect;		// previous row's effect.. used to correct tremolo volume
 
 	unsigned int	sampleoffset;		// sample offset for this channel in SAMPLES
-	int				fine_tune;
+	int8_t			fine_tune;
 
 #ifdef FMUSIC_XM_INSTRUMENTVIBRATO_ACTIVE
 	int				ivibpos;   			// instrument vibrato position
