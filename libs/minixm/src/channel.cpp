@@ -8,7 +8,7 @@
 
 namespace
 {
-    float XMLinearPeriod2Frequency(int per)
+    float XMLinearPeriod2Frequency(int per) noexcept
     {
         // From XM.TXT:
         //      Frequency = 8363*2^((6*12*16*4 - Period) / (12*16*4));
@@ -22,7 +22,7 @@ namespace
         return 535232.f * exp2f(- per/1536.f);
     }
 
-    float Period2Frequency(int period)
+    float Period2Frequency(int period) noexcept
     {
         // From XM.TXT:
         //      Frequency = 8363*1712/Period;
@@ -30,7 +30,7 @@ namespace
     }
 }
 
-void Channel::processInstrument(const Instrument& instrument) noexcept
+void Channel::processInstrument(const Instrument& instrument)
 {
     //= PROCESS ENVELOPES ==========================================================================
 #ifdef FMUSIC_XM_VOLUMEENVELOPE_ACTIVE
@@ -52,7 +52,7 @@ void Channel::processInstrument(const Instrument& instrument) noexcept
     {
     case XMInstrumentVibratoType::Sine:
     {
-        delta = static_cast<int>(sinf(static_cast<float>(ivibpos) * (2 * std::numbers::pi_v<float> / 256.0f)) * 256.0f);
+        delta = static_cast<int>(sinf(static_cast<float>(ivibpos) * (std::numbers::pi_v<float> / 128.0f)) * 256.0f);
         break;
     }
     case XMInstrumentVibratoType::Square:
@@ -245,7 +245,7 @@ void Channel::updateVolume() noexcept
     pan = std::clamp(pan, 0, 255);
 }
 
-void Channel::sendToMixer(Mixer& mixer, const Instrument& instrument, int global_volume, bool linear_frequency) const noexcept
+void Channel::sendToMixer(Mixer& mixer, const Instrument& instrument, int global_volume, bool linear_frequency) const
 {
     MixerChannel& sound_channel = mixer.getChannel(index);
     if (trigger)

@@ -19,16 +19,16 @@ class LFO final
 	int speed_;
 	int depth_;
 public:
-	void setSpeed(int speed) { if (speed) speed_ = speed; }
-	void setDepth(int depth) { if (depth) depth_ = depth; }
+	void setSpeed(int speed) noexcept { if (speed) speed_ = speed; }
+	void setDepth(int depth) noexcept { if (depth) depth_ = depth; }
 
-    void setFlags(int flags)
+    void setFlags(int flags) noexcept
 	{
 		wave_control_ = static_cast<WaveControl>(flags & 3);
 		continue_ = (flags & 4) != 0;
 	}
 
-	void reset()
+	void reset() noexcept
 	{
 		if (!continue_)
 		{
@@ -36,7 +36,7 @@ public:
 		}
 	}
 
-	void update()
+	void update() noexcept
 	{
 		position_ += speed_;
 		while (position_ > 31)
@@ -45,12 +45,12 @@ public:
 		}
 	}
 
-	[[nodiscard]] int operator () () const
+	[[nodiscard]] int operator () () const noexcept
 	{
 		switch (wave_control_)
 		{
 		case WaveControl::Sine:
-			return static_cast<int>(sinf(static_cast<float>(position_) * (2 * std::numbers::pi_v<float> / 64.0f)) * static_cast<float>(depth_));
+			return static_cast<int>(sinf(static_cast<float>(position_) * (std::numbers::pi_v<float> / 32.0f)) * static_cast<float>(depth_));
 		case WaveControl::SawTooth:
 			return -(position_ * 2 + 1) * depth_ / 63;
 		default:

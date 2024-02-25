@@ -127,7 +127,7 @@ struct Channel
     int				finevsldown;		// parameter for fine volume slide down
 #endif
 
-	void processInstrument(const Instrument& instrument) noexcept;
+	void processInstrument(const Instrument& instrument);
 	void reset(int new_volume, int new_pan) noexcept;
 	void processVolumeByteNote(int volume_byte) noexcept;
 	void processVolumeByteTick(int volume_byte) noexcept;
@@ -144,5 +144,5 @@ struct Channel
 #endif
 	}
 
-	void sendToMixer(Mixer& mixer, const Instrument& instrument, int global_volume, bool linear_frequency) const noexcept;
+	void sendToMixer(Mixer& mixer, const Instrument& instrument, int global_volume, bool linear_frequency) const;
 };

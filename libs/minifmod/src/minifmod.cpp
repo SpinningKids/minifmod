@@ -164,7 +164,7 @@ Module* FMUSIC_StopSong(PlayerState* player_state)
 	FMUSIC_GetPattern
 ]
 */
-int FMUSIC_GetOrder() noexcept
+int FMUSIC_GetOrder()
 {
 	return FSOUND_last_player_state ? FSOUND_last_player_state->getTimeInfo().position.order : 0;
 }
@@ -188,7 +188,7 @@ int FMUSIC_GetOrder() noexcept
 	[SEE_ALSO]
 ]
 */
-int FMUSIC_GetRow() noexcept
+int FMUSIC_GetRow()
 {
 	return FSOUND_last_player_state ? FSOUND_last_player_state->getTimeInfo().position.row : 0;
 }
@@ -216,7 +216,7 @@ int FMUSIC_GetRow() noexcept
 	[SEE_ALSO]
 ]
 */
-int FMUSIC_GetTime() noexcept
+int FMUSIC_GetTime()
 {
 	return static_cast<int>(FSOUND_last_player_state ? FSOUND_last_player_state->getTimeInfo().samples * 1000ull / FSOUND_MixRate : 0);
 }

@@ -6,15 +6,22 @@
 
 namespace
 {
-    int GetXMLinearPeriodFinetuned(XMNote note, int8_t fine_tune)
+    int GetXMLinearPeriodFinetuned(XMNote note, int8_t fine_tune) noexcept
     {
         return 121*128 - note.value*128 - fine_tune;
     }
 
 #ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
-    int GetAmigaPeriod(XMNote note)
+    int GetAmigaPeriod(XMNote note) noexcept
     {
-        return static_cast<int>(exp2f(15.824799333333333333333333333333f - static_cast<float>(note.value)));
+        // Original:
+        //     int period = (int)(powf(2.0f, (float)(132 - note) / 12.0f) * 13.375f);
+        // in math
+        //     period = (2^((132 - note) / 12.0f)*13.375
+        // expanded
+        //     period = 13.375 * 2^(132/12 - note/12)
+        //     period = 2^11 * 13.375 * 2^(note/12)
+        return static_cast<int>(27392.f*exp2f(- note.value/12.f));
     }
 
     int GetAmigaPeriodFinetuned(XMNote note, int8_t fine_tune) noexcept
@@ -30,7 +37,7 @@ namespace
     }
 #endif
 
-    int GetPeriodFinetuned(XMNote note, int8_t fine_tune, bool linear)
+    int GetPeriodFinetuned(XMNote note, int8_t fine_tune, bool linear) noexcept
     {
 #ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
         if (!linear)
@@ -39,7 +46,7 @@ namespace
         return GetXMLinearPeriodFinetuned(note, fine_tune);
     }
 
-    int GetPeriodDeltaFinetuned(XMNote note, int8_t delta, int8_t fine_tune, bool linear)
+    int GetPeriodDeltaFinetuned(XMNote note, int8_t delta, int8_t fine_tune, bool linear) noexcept
     {
 #ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
         if (!linear)
@@ -49,7 +56,7 @@ namespace
     }
 }
 
-Position PlayerState::tick() noexcept
+Position PlayerState::tick()
 {
     if (tick_ == 0)									// new note
     {
@@ -79,7 +86,7 @@ Position PlayerState::tick() noexcept
     return current_;
 }
 
-void PlayerState::updateNote() noexcept
+void PlayerState::updateNote()
 {
     // process any rows commands to set the next order/row
     current_ = next_;
@@ -552,7 +559,7 @@ void PlayerState::updateNote() noexcept
     }
 }
 
-void PlayerState::updateTick() noexcept
+void PlayerState::updateTick()
 {
     // Point our note pointer to the correct pattern buffer, and to the
     // correct offset in this buffer indicated by row and number of channels

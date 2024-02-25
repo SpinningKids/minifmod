@@ -32,7 +32,7 @@ public:
         if (software_thread_exit_) {
             software_thread_exit_ = false;
             software_thread_ = std::thread{
-                [this, fill = std::move(fill)]() noexcept
+                [this, fill = std::move(fill)]()
                 {
                     software_thread_exit_ = false;
 
@@ -121,7 +121,7 @@ public:
         stop();
     }
 
-    size_t current_block_played() const noexcept override
+    size_t current_block_played() const override
     {
         MMTIME	mmt{
             .wType = TIME_SAMPLES

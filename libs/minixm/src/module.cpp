@@ -88,7 +88,7 @@ Module::Module(const minifmod::FileAccess& fileAccess, void* fp, std::function<v
         {
             fileAccess.read(&instrument.sample_header, sizeof(instrument.sample_header), fp);
 
-            auto adjust_envelope = [](int count, const XMEnvelopePoint(&original_points)[12], int offset, float scale, XMEnvelopeFlags flags) noexcept
+            auto adjust_envelope = [](int count, const XMEnvelopePoint(&original_points)[12], int offset, float scale, XMEnvelopeFlags flags)
                 {
                     EnvelopePoints e;
                     e.count = (count < 2 || !(flags & XMEnvelopeFlagsOn)) ? 0 : count;

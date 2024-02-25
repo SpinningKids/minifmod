@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include <cassert>
 #include <functional>
 
 #include "playback.h"
@@ -56,8 +57,8 @@ class Mixer final
     unsigned int				bpm_;
     TimeInfo                    last_mixed_time_info_;
 
-    const TimeInfo &fill(short target[]) noexcept;
-    void mix(float* mixptr, uint32_t len) noexcept;
+    const TimeInfo &fill(short target[]);
+    void mix(float* mixptr, uint32_t len);
 public:
     explicit Mixer(
         std::function<Position()>&& tick_callback,
@@ -65,16 +66,24 @@ public:
         unsigned int mix_rate = 44100,
         unsigned int buffer_size_ms = 1000,
         unsigned int latency = 20,
-        float volume_filter_time_constant = 0.003) noexcept;
+        float volume_filter_time_constant = 0.003);
 
-    [[nodiscard]] MixerChannel& getChannel(int index) noexcept { return channel_[index]; }
-    [[nodiscard]] const MixerChannel& getChannel(int index) const { return channel_[index]; }
-    void setBPM(unsigned int bpm) { bpm_ = bpm; }
+    [[nodiscard]] MixerChannel& getChannel(int index)
+    {
+        assert(index >= 0 && index < std::size(channel_));
+        return channel_[index];
+    }
+    [[nodiscard]] const MixerChannel& getChannel(int index) const
+    {
+        assert(index >= 0 && index < std::size(channel_));
+        return channel_[index];
+    }
+    void setBPM(unsigned int bpm) noexcept { bpm_ = bpm; }
 
     unsigned int getMixRate() const noexcept;
-    TimeInfo getTimeInfo() const noexcept;
+    TimeInfo getTimeInfo() const;
 
-    void start() noexcept;
-    void stop() noexcept;
-    float timeFromSamples() const noexcept;
+    void start();
+    void stop();
+    float timeFromSamples() const;
 };

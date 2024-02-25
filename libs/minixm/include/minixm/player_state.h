@@ -26,19 +26,19 @@ private:
 	int				global_volume_slide_ = 0;			// global mod volume
 #endif
 
-	void updateNote() noexcept;
-	void updateTick() noexcept;
+	void updateNote();
+	void updateTick();
 
 	void clampGlobalVolume() noexcept
 	{
 		global_volume_ = std::clamp(global_volume_, 0, 64);
 	}
 
-	Position tick() noexcept;
+	Position tick();
 public:
 	PlayerState(std::unique_ptr<Module> module, unsigned int mix_rate);
 
-	void start() noexcept
+	void start()
 	{
 	    mixer_.start();
 	}
@@ -48,13 +48,13 @@ public:
 	    mixer_.setBPM(bpm);
 	}
 
-	std::unique_ptr<Module> stop() noexcept
+	std::unique_ptr<Module> stop()
 	{
 		mixer_.stop();
 		return std::move(module_);
 	}
 
-    TimeInfo getTimeInfo() const noexcept
+    TimeInfo getTimeInfo() const
 	{
 	    return mixer_.getTimeInfo();
 	}

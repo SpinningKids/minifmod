@@ -8,8 +8,8 @@ class Portamento
 	int target_;
 	int speed_;
 public:
-	void setTarget(int target) { target_ = target; }
-	void setSpeed(int speed) { if (speed) speed_ = speed; }
+	void setTarget(int target) noexcept { target_ = target; }
+	void setSpeed(int speed) noexcept { if (speed) speed_ = speed; }
 
 	int operator ()(int period) const noexcept
 	{

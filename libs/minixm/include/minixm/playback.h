@@ -30,5 +30,5 @@ public:
 	virtual void start(std::function<void(size_t block, short data[])>&& fill) = 0;
 	virtual void stop() = 0;
 
-	virtual size_t current_block_played() const noexcept = 0;
+	virtual size_t current_block_played() const = 0;
 };

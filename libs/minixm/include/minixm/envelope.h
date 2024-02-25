@@ -21,13 +21,13 @@ class EnvelopeState
 	int position_;
 	float value_;
 public:
-	void reset(float value)
+	void reset(float value) noexcept
 	{
 		position_ = 0;
 		value_ = value;
 	}
 
-	void process(const EnvelopePoints& envelope, XMEnvelopeFlags flags, unsigned char loop_start_index, unsigned char loop_end_index, unsigned char sustain_index, bool keyoff) noexcept;
-	float operator()() const { return value_; }
-	void setPosition(int position) { position_ = position; }
+	void process(const EnvelopePoints& envelope, XMEnvelopeFlags flags, unsigned char loop_start_index, unsigned char loop_end_index, unsigned char sustain_index, bool keyoff);
+	float operator()() const noexcept { return value_; }
+	void setPosition(int position) noexcept { position_ = position; }
 };
