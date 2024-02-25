@@ -12,8 +12,14 @@ namespace
     {
         // From XM.TXT:
         //      Frequency = 8363*2^((6*12*16*4 - Period) / (12*16*4));
-        // Simplified by taking log2(8363) inside the power and simplifying
-        return exp2f(19.029805f - static_cast<float>(per) / 1536.0f);
+        // in our case period is multiplied by 2, so everything else should be multiplied as well:
+        //      Frequency = 8363*2^((6*1536 - Period) / 1536);
+        // which can be simplified to
+        //      Frequency = 8363*2^(6 - Period/ 1536);
+        // and then separated into
+        //      Frequency = 8363 * 2^6 * 2^(-Period/1536);
+        // and therefore
+        return 535232.f * exp2f(- per/1536.f);
     }
 
     float Period2Frequency(int period)
