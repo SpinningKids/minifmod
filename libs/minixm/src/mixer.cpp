@@ -6,7 +6,7 @@
 
 namespace
 {
-    void MixerClipCopy_Float32(int16_t* dest, const float* src, size_t len) noexcept
+    void MixerClipCopy_Float32(int16_t* dest, const float* src, size_t len)
     {
         assert(src);
         assert(dest);
@@ -20,7 +20,7 @@ namespace
     }
 }
 
-Mixer::Mixer(std::function<Position()>&& tick_callback, uint16_t bpm, unsigned int mix_rate, unsigned int buffer_size_ms, unsigned int latency, float volume_filter_time_constant) noexcept :
+Mixer::Mixer(std::function<Position()>&& tick_callback, uint16_t bpm, unsigned int mix_rate, unsigned int buffer_size_ms, unsigned int latency, float volume_filter_time_constant) :
     tick_callback_{ std::move(tick_callback) },
     driver_{ IPlaybackDriver::create(mix_rate, buffer_size_ms, latency) },
     time_info_{ std::make_unique_for_overwrite<TimeInfo[]>(driver_->blocks()) },
@@ -42,27 +42,27 @@ unsigned Mixer::getMixRate() const noexcept
     return driver_->mix_rate();
 }
 
-TimeInfo Mixer::getTimeInfo() const noexcept
+TimeInfo Mixer::getTimeInfo() const
 {
     return time_info_[driver_->current_block_played()];
 }
 
-void Mixer::start() noexcept
+void Mixer::start()
 {
     driver_->start([this](size_t block, short data[]) { time_info_[block] = fill(data); });
 }
 
-void Mixer::stop() noexcept
+void Mixer::stop()
 {
     driver_->stop();
 }
 
-float Mixer::timeFromSamples() const noexcept
+float Mixer::timeFromSamples() const
 {
     return static_cast<float>(static_cast<double>(time_info_[driver_->current_block_played()].samples) / driver_->mix_rate());
 }
 
-void Mixer::mix(float* mixptr, uint32_t len) noexcept
+void Mixer::mix(float* mixptr, uint32_t len)
 {
     //==============================================================================================
     // LOOP THROUGH CHANNELS
@@ -166,7 +166,7 @@ void Mixer::mix(float* mixptr, uint32_t len) noexcept
     }
 }
 
-const TimeInfo &Mixer::fill(short target[]) noexcept
+const TimeInfo &Mixer::fill(short target[])
 {
     auto block_size = driver_->block_size();
     //==============================================================================

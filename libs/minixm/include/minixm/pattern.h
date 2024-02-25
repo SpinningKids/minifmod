@@ -16,19 +16,19 @@ public:
 	[[nodiscard]] int size() const noexcept { return size_; }
 	void resize(int size)
 	{
-		assert(size <= 256);
+		assert(size >= 0 && size <= 256);
 		size_ = size;
 	}
 
-	[[nodiscard]] auto operator[](int row) const noexcept -> decltype(data_[row])
+	[[nodiscard]] auto operator[](int row) const -> decltype(data_[row])
 	{
-		assert(row < size_);
+		assert(row >= 0 && row < size_);
 		return data_[row];
 	}
 
-	[[nodiscard]] auto operator[](int row) noexcept -> decltype(data_[row])
+	[[nodiscard]] auto operator[](int row) -> decltype(data_[row])
 	{
-		assert(row < size_);
+		assert(row >= 0 && row < size_);
 		return data_[row];
 	}
 };

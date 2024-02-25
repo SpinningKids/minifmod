@@ -23,11 +23,11 @@ struct Instrument final
 #endif
 	Sample						sample[16];		// 16 samples per instrument
 
-	[[nodiscard]] const Sample& getSample(XMNote note) const noexcept
+	[[nodiscard]] const Sample& getSample(XMNote note) const
 	{
-		assert(note.isValid());
+		assert(note.isValid() && note.value < XMNote::KEY_OFF);
 		const int note_sample = sample_header.note_sample_number[note.value - 1];
-		assert(note_sample < 16);
+		assert(note_sample >= 0 && note_sample < 16);
 		return sample[note_sample];
 	}
 };
