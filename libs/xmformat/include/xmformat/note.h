@@ -19,6 +19,11 @@ struct XMNote
 		return { (uint8_t)(value + rel) };
 	}
 
+	XMNote operator - (int8_t rel) const noexcept
+	{
+		return { (uint8_t)(value - rel) };
+	}
+
 	void turnOff() noexcept { value = KEY_OFF; }
 };
 
