@@ -7,7 +7,7 @@
 class IPlaybackDriver
 {
 	uint32_t mix_rate_;			// mixing rate in hz.
-	uint32_t block_size_;			// LATENCY ms worth of samples
+	uint32_t block_size_;		// LATENCY ms worth of samples
 	uint32_t total_blocks_;
     uint32_t buffer_size_;		// size of 1 'latency' ms buffer in bytes
 protected:

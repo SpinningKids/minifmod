@@ -72,7 +72,7 @@ Position PlayerState::tick()
     {
         Channel& channel = channels_[channel_index];
         channel.updateVolume();
-        const Instrument& instrument = module_->getInstrument(channel.inst);
+        const Instrument& instrument = module_->getInstrument(channel.instrument_index);
         channel.processInstrument(instrument);
         channel.sendToMixer(mixer_, instrument, global_volume_, module_->header_.flags & FMUSIC_XMFLAGS_LINEARFREQUENCY);
     }
@@ -101,7 +101,7 @@ void PlayerState::updateNote()
     // Loop through each channel in the row until we have finished
     for (int channel_index = 0; channel_index < module_->header_.channels_count; channel_index++)
     {
-        const auto& [note, sample_index, volume, effect, effect_parameter] = row[channel_index];
+        const auto& [note, instrument_number, volume, effect, effect_parameter] = row[channel_index];
         Channel& channel = channels_[channel_index];
 
         const int paramx = effect_parameter >> 4;			// get effect param x
@@ -114,9 +114,9 @@ void PlayerState::updateNote()
         if (!porta)
         {
             // first store note and instrument number if there was one
-            if (sample_index)							//  bugfix 3.20 (&& !porta)
+            if (instrument_number)							//  bugfix 3.20 (&& !porta)
             {
-                channel.inst = sample_index - 1;						// remember the Instrument #
+                channel.instrument_index = instrument_number - 1;						// remember the Instrument #
             }
 
             if (valid_note) //  bugfix 3.20 (&& !porta)
@@ -125,7 +125,7 @@ void PlayerState::updateNote()
             }
         }
 
-        const Instrument& instrument = module_->getInstrument(channel.inst);
+        const Instrument& instrument = module_->getInstrument(channel.instrument_index);
         const XMSampleHeader& sample_header = instrument.getSample(channel.note).header;
 
         if (valid_note) {
@@ -137,13 +137,13 @@ void PlayerState::updateNote()
         const int old_pan = channel.pan;
 
         // if there is no more tremolo, set volume to volume + last tremolo delta
-        if (channel.recenteffect == XMEffect::TREMOLO && effect != XMEffect::TREMOLO)
+        if (channel.last_effect == XMEffect::TREMOLO && effect != XMEffect::TREMOLO)
         {
-            channel.volume += channel.voldelta;
+            channel.volume += channel.volume_delta;
         }
-        channel.recenteffect = effect;
+        channel.last_effect = effect;
 
-        channel.voldelta = 0;
+        channel.volume_delta = 0;
         channel.trigger = valid_note;
         channel.period_delta = 0;				// this is for vibrato / arpeggio etc
         channel.stop = false;
@@ -152,10 +152,10 @@ void PlayerState::updateNote()
         if (valid_note)
         {
             // get note according to relative note
-            channel.realnote = note + sample_header.relative_note;
+            channel.real_note = note + sample_header.relative_note;
 
             // get period according to realnote and fine_tune
-            channel.period_target = GetPeriodFinetuned(channel.realnote, channel.fine_tune, module_->header_.flags & FMUSIC_XMFLAGS_LINEARFREQUENCY);
+            channel.period_target = GetPeriodFinetuned(channel.real_note, channel.fine_tune, module_->header_.flags & FMUSIC_XMFLAGS_LINEARFREQUENCY);
 
             // frequency only changes if there are no portamento effects
             if (!porta)
@@ -165,7 +165,7 @@ void PlayerState::updateNote()
         }
 
         //= PROCESS INSTRUMENT NUMBER ==================================================================
-        if (sample_index)
+        if (instrument_number)
         {
             channel.reset(sample_header.default_volume, sample_header.default_panning);
         }
@@ -176,11 +176,11 @@ void PlayerState::updateNote()
         //= PROCESS KEY OFF ============================================================================
         if (note.isKeyOff() || effect == XMEffect::KEY_OFF)
         {
-            channel.keyoff = true;
+            channel.key_off = true;
         }
 
 #ifdef FMUSIC_XM_VOLUMEENVELOPE_ACTIVE
-        if (instrument.volume_envelope.count == 0 && channel.keyoff)
+        if (instrument.volume_envelope.count == 0 && channel.key_off)
         {
             channel.volume_envelope.reset(0.0f);
         }
@@ -194,7 +194,7 @@ void PlayerState::updateNote()
             {
                 if (effect_parameter)
                 {
-                    channel.portaup = effect_parameter;
+                    channel.porta_up = effect_parameter;
                 }
                 break;
             }
@@ -204,7 +204,7 @@ void PlayerState::updateNote()
             {
                 if (effect_parameter)
                 {
-                    channel.portadown = effect_parameter;
+                    channel.porta_down = effect_parameter;
                 }
                 break;
             }
@@ -262,10 +262,10 @@ void PlayerState::updateNote()
 #ifdef FMUSIC_XM_SETSAMPLEOFFSET_ACTIVE
             case XMEffect::SET_SAMPLE_OFFSET:
             {
-                channel.setSampleOffset(effect_parameter * 256);
-                if (channel.sampleoffset < sample_header.loop_start + sample_header.loop_length)
+                const auto sample_offset = static_cast<uint32_t>(effect_parameter) * 256;
+                if (sample_offset < sample_header.loop_start + sample_header.loop_length)
                 {
-                    mixer_.getChannel(channel.index).sample_offset = channel.sampleoffset;
+                    mixer_.getChannel(channel.index).sample_offset = sample_offset;
                 }
                 else
                 {
@@ -317,16 +317,16 @@ void PlayerState::updateNote()
             // extended PT effects
             case XMEffect::SPECIAL:
             {
-                switch ((XMSpecialEffect)paramx)
+                switch (static_cast<XMSpecialEffect>(paramx))
                 {
 #ifdef FMUSIC_XM_FINEPORTAUP_ACTIVE
                     case XMSpecialEffect::FINE_PORTA_UP:
                     {
                         if (paramy)
                         {
-                            channel.fineportaup = paramy;
+                            channel.fine_porta_up = paramy;
                         }
-                        channel.period -= channel.fineportaup * 8;
+                        channel.period -= channel.fine_porta_up * 8;
                         break;
                     }
 #endif
@@ -335,9 +335,9 @@ void PlayerState::updateNote()
                     {
                         if (paramy)
                         {
-                            channel.fineportadown = paramy;
+                            channel.fine_porta_down = paramy;
                         }
-                        channel.period += channel.fineportadown * 8;
+                        channel.period += channel.fine_porta_down * 8;
                         break;
                     }
 #endif
@@ -367,21 +367,21 @@ void PlayerState::updateNote()
                     {
                         if (paramy == 0)
                         {
-                            channel.patlooprow = current_.row;
+                            channel.pattern_loop_row = current_.row;
                         }
                         else
                         {
-                            if (channel.patloopno > 0)
+                            if (channel.pattern_loop_count == 0)
                             {
-                                channel.patloopno = paramy;
+                                channel.pattern_loop_count = paramy;
                             }
                             else
                             {
-                                channel.patloopno--;
+                                channel.pattern_loop_count--;
                             }
-                            if (channel.patloopno)
+                            if (channel.pattern_loop_count)
                             {
-                                next_.row = channel.patlooprow;
+                                next_.row = channel.pattern_loop_row;
                                 //nextorder = order; // This is not needed, as we initially set order = nextorder;
                                 row_set = true;
                             }
@@ -408,9 +408,9 @@ void PlayerState::updateNote()
                     {
                         if (paramy)
                         {
-                            channel.finevslup = paramy;
+                            channel.fine_volume_slide_up = paramy;
                         }
-                        channel.volume += channel.finevslup;
+                        channel.volume += channel.fine_volume_slide_up;
                         break;
                     }
 #endif
@@ -419,9 +419,9 @@ void PlayerState::updateNote()
                     {
                         if (paramy)
                         {
-                            channel.finevsldown = paramy;
+                            channel.fine_volume_slide_down = paramy;
                         }
-                        channel.volume -= channel.finevsldown;
+                        channel.volume -= channel.fine_volume_slide_down;
                         break;
                     }
 #endif
@@ -495,8 +495,8 @@ void PlayerState::updateNote()
             {
                 if (effect_parameter)
                 {
-                    channel.retrigx = paramx;
-                    channel.retrigy = paramy;
+                    channel.retrigger_volume_operator = static_cast<XMRetriggerVolumeOperation>(paramx);
+                    channel.retrigger_tick = paramy;
                 }
                 break;
             }
@@ -506,8 +506,8 @@ void PlayerState::updateNote()
             {
                 if (effect_parameter)
                 {
-                    channel.tremoron = paramx + 1;
-                    channel.tremoroff = paramy + 1;
+                    channel.tremor_on = paramx + 1;
+                    channel.tremor_off = paramy + 1;
                 }
                 channel.tremor();
                 break;
@@ -522,18 +522,18 @@ void PlayerState::updateNote()
                     {
                         if (paramy)
                         {
-                            channel.xtraportaup = paramy;
+                            channel.extra_fine_porta_up = paramy;
                         }
-                        channel.period -= channel.xtraportaup * 2;
+                        channel.period -= channel.extra_fine_porta_up * 2;
                         break;
                     }
                     case 2:
                     {
                         if (paramy)
                         {
-                            channel.xtraportadown = paramy;
+                            channel.extra_fine_porta_down = paramy;
                         }
-                        channel.period += channel.xtraportadown * 2;
+                        channel.period += channel.extra_fine_porta_down * 2;
                         break;
                     }
                 }
@@ -575,7 +575,7 @@ void PlayerState::updateTick()
         const int paramx = effect_parameter >> 4;			// get effect param x
         const int paramy = effect_parameter & 0xF;			// get effect param y
 
-        channel.voldelta = 0;
+        channel.volume_delta = 0;
         channel.trigger = false;
         channel.period_delta = 0;				// this is for vibrato / arpeggio etc
         channel.stop = false;
@@ -599,7 +599,7 @@ void PlayerState::updateTick()
                         v = paramy;
                         break;
                 }
-                channel.period_delta = GetPeriodDeltaFinetuned(channel.realnote, v, channel.fine_tune, module_->header_.flags & FMUSIC_XMFLAGS_LINEARFREQUENCY);
+                channel.period_delta = GetPeriodDeltaFinetuned(channel.real_note, v, channel.fine_tune, module_->header_.flags & FMUSIC_XMFLAGS_LINEARFREQUENCY);
                 break;
             }
 #endif
@@ -607,7 +607,7 @@ void PlayerState::updateTick()
             case XMEffect::PORTA_UP:
             {
                 channel.period_delta = 0;
-                channel.period = std::max(channel.period - (channel.portaup * 8), 112); // subtract period and stop at B#8
+                channel.period = std::max(channel.period - (channel.porta_up * 8), 112); // subtract period and stop at B#8
                 break;
             }
 #endif
@@ -615,14 +615,14 @@ void PlayerState::updateTick()
             case XMEffect::PORTA_DOWN:
             {
                 channel.period_delta = 0;
-                channel.period += channel.portadown * 8; // subtract period
+                channel.period += channel.porta_down * 8; // subtract period
                 break;
             }
 #endif
 #ifdef FMUSIC_XM_PORTATOVOLSLIDE_ACTIVE
             case XMEffect::PORTATO_VOLUME_SLIDE:
             {
-                channel.volume += channel.volslide;
+                channel.volume += channel.volume_slide;
 #endif
 #if defined(FMUSIC_XM_PORTATOVOLSLIDE_ACTIVE) && defined(FMUSIC_XM_PORTATO_ACTIVE)
             }
@@ -641,7 +641,7 @@ void PlayerState::updateTick()
 #ifdef FMUSIC_XM_VIBRATOVOLSLIDE_ACTIVE
             case XMEffect::VIBRATO_VOLUME_SLIDE:
             {
-                channel.volume += channel.volslide;
+                channel.volume += channel.volume_slide;
 #endif
 #if defined (FMUSIC_XM_VIBRATOVOLSLIDE_ACTIVE) && defined(FMUSIC_XM_VIBRATO_ACTIVE)
             }
@@ -660,7 +660,7 @@ void PlayerState::updateTick()
 #ifdef FMUSIC_XM_TREMOLO_ACTIVE
             case XMEffect::TREMOLO:
             {
-                channel.voldelta = channel.tremolo();
+                channel.volume_delta = channel.tremolo();
                 channel.tremolo.update();
                 break;
             }
@@ -668,14 +668,14 @@ void PlayerState::updateTick()
 #ifdef FMUSIC_XM_VOLUMESLIDE_ACTIVE
             case XMEffect::VOLUME_SLIDE:
             {
-                channel.volume += channel.volslide;
+                channel.volume += channel.volume_slide;
                 break;
             }
 #endif
             // extended PT effects
             case XMEffect::SPECIAL:
             {
-                switch ((XMSpecialEffect)paramx)
+                switch (static_cast<XMSpecialEffect>(paramx))
                 {
 #ifdef FMUSIC_XM_NOTEDELAY_ACTIVE
                     case XMSpecialEffect::NOTE_DELAY:
@@ -683,7 +683,7 @@ void PlayerState::updateTick()
                         if (tick_ == paramy)
                         {
                             //= PROCESS INSTRUMENT NUMBER ==================================================================
-                            const XMSampleHeader& sample_header = module_->getInstrument(channel.inst).getSample(channel.note).header;
+                            const XMSampleHeader& sample_header = module_->getInstrument(channel.instrument_index).getSample(channel.note).header;
                             channel.reset(sample_header.default_volume, sample_header.default_panning);
                             channel.period = channel.period_target;
                             channel.processVolumeByteNote(volume);
@@ -725,83 +725,87 @@ void PlayerState::updateTick()
 #ifdef FMUSIC_XM_PANSLIDE_ACTIVE
             case XMEffect::PAN_SLIDE:
             {
-                channel.pan += channel.panslide;
+                channel.pan += channel.pan_slide;
                 break;
             }
 #endif
 #ifdef FMUSIC_XM_MULTIRETRIG_ACTIVE
             case XMEffect::MULTI_RETRIGGER:
             {
-                if (channel.retrigy && !(tick_ % channel.retrigy))
+                if (channel.retrigger_tick && !(tick_ % channel.retrigger_tick))
                 {
-                    switch (channel.retrigx)
+                    switch (channel.retrigger_volume_operator)
                     {
-                        case 1:
+                        case XMRetriggerVolumeOperation::NONE:
+                        {
+                            break;
+                        }
+                        case XMRetriggerVolumeOperation::DECREASE_1:
                         {
                             channel.volume--;
                             break;
                         }
-                        case 2:
+                        case XMRetriggerVolumeOperation::DECREASE_2:
                         {
                             channel.volume -= 2;
                             break;
                         }
-                        case 3:
+                        case XMRetriggerVolumeOperation::DECREASE_4:
                         {
                             channel.volume -= 4;
                             break;
                         }
-                        case 4:
+                        case XMRetriggerVolumeOperation::DECREASE_8:
                         {
                             channel.volume -= 8;
                             break;
                         }
-                        case 5:
+                        case XMRetriggerVolumeOperation::DECREASE_16:
                         {
                             channel.volume -= 16;
                             break;
                         }
-                        case 6:
+                        case XMRetriggerVolumeOperation::SUBTRACT_33_PERCENT:
                         {
                             channel.volume = channel.volume * 2 / 3;
                             break;
                         }
-                        case 7:
+                        case XMRetriggerVolumeOperation::HALVE:
                         {
                             channel.volume /= 2;
                             break;
                         }
-                        case 9:
+                        case XMRetriggerVolumeOperation::INCREASE_1:
                         {
                             channel.volume++;
                             break;
                         }
-                        case 0xA:
+                        case XMRetriggerVolumeOperation::INCREASE_2:
                         {
                             channel.volume += 2;
                             break;
                         }
-                        case 0xB:
+                        case XMRetriggerVolumeOperation::INCREASE_4:
                         {
                             channel.volume += 4;
                             break;
                         }
-                        case 0xC:
+                        case XMRetriggerVolumeOperation::INCREASE_8:
                         {
                             channel.volume += 8;
                             break;
                         }
-                        case 0xD:
+                        case XMRetriggerVolumeOperation::INCREASE_16:
                         {
                             channel.volume += 16;
                             break;
                         }
-                        case 0xE:
+                        case XMRetriggerVolumeOperation::ADD_50_PERCENT:
                         {
                             channel.volume = channel.volume * 3 / 2;
                             break;
                         }
-                        case 0xF:
+                        case XMRetriggerVolumeOperation::DOUBLE:
                         {
                             channel.volume *= 2;
                             break;

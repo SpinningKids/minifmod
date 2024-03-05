@@ -14,7 +14,7 @@
 struct Instrument final
 {
 	XMInstrumentHeader			header;
-	XMInstrumentSampleHeader	sample_header;
+	XMInstrumentSampleHeader	instrument_sample_header;
 #ifdef FMUSIC_XM_VOLUMEENVELOPE_ACTIVE
 	EnvelopePoints				volume_envelope;
 #endif
@@ -26,7 +26,7 @@ struct Instrument final
 	[[nodiscard]] const Sample& getSample(XMNote note) const
 	{
 		assert(note.isValid() && note.value < XMNote::KEY_OFF);
-		const int note_sample = sample_header.note_sample_number[note.value - 1];
+		const int note_sample = instrument_sample_header.note_sample_number[note.value - 1];
 		assert(note_sample >= 0 && note_sample < 16);
 		return sample[note_sample];
 	}

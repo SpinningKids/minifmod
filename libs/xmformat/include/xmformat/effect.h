@@ -70,4 +70,23 @@ enum class XMSpecialEffect : uint8_t
 
 static_assert(sizeof(XMSpecialEffect) == 1);
 
+enum class XMRetriggerVolumeOperation : uint8_t
+{
+	NONE,
+	DECREASE_1,
+	DECREASE_2,
+	DECREASE_4,
+	DECREASE_8,
+	DECREASE_16,
+	SUBTRACT_33_PERCENT,
+	HALVE,
+	INCREASE_1,
+	INCREASE_2,
+	INCREASE_4,
+	INCREASE_8,
+	INCREASE_16,
+	ADD_50_PERCENT,
+	DOUBLE,
+};
+
 #pragma pack(pop)

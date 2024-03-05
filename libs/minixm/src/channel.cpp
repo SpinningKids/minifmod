@@ -34,54 +34,54 @@ void Channel::processInstrument(const Instrument& instrument)
 {
     //= PROCESS ENVELOPES ==========================================================================
 #ifdef FMUSIC_XM_VOLUMEENVELOPE_ACTIVE
-    volume_envelope.process(instrument.volume_envelope, instrument.sample_header.volume_envelope_flags, instrument.sample_header.volume_loop_start_index, instrument.sample_header.volume_loop_end_index, instrument.sample_header.volume_sustain_index, keyoff);
+    volume_envelope.process(instrument.volume_envelope, instrument.instrument_sample_header.volume_envelope_flags, instrument.instrument_sample_header.volume_loop_start_index, instrument.instrument_sample_header.volume_loop_end_index, instrument.instrument_sample_header.volume_sustain_index, key_off);
 #endif
 #ifdef FMUSIC_XM_PANENVELOPE_ACTIVE
-    pan_envelope.process(instrument.pan_envelope, instrument.sample_header.pan_envelope_flags, instrument.sample_header.pan_loop_start_index, instrument.sample_header.pan_loop_end_index, instrument.sample_header.pan_sustain_index, keyoff);
+    pan_envelope.process(instrument.pan_envelope, instrument.instrument_sample_header.pan_envelope_flags, instrument.instrument_sample_header.pan_loop_start_index, instrument.instrument_sample_header.pan_loop_end_index, instrument.instrument_sample_header.pan_sustain_index, key_off);
 #endif
     //= PROCESS VOLUME FADEOUT =====================================================================
-    if (keyoff)
+    if (key_off)
     {
-        fadeoutvol = std::max(fadeoutvol - instrument.sample_header.volume_fadeout, 0);
+        fade_out_volume = std::max(fade_out_volume - instrument.instrument_sample_header.volume_fadeout, 0);
     }
     //= INSTRUMENT VIBRATO ============================================================================
 #ifdef FMUSIC_XM_INSTRUMENTVIBRATO_ACTIVE
     int delta = 0;
 
-    switch (instrument.sample_header.vibrato_type)
+    switch (instrument.instrument_sample_header.vibrato_type)
     {
     case XMInstrumentVibratoType::Sine:
     {
-        delta = static_cast<int>(sinf(static_cast<float>(ivibpos) * (std::numbers::pi_v<float> / 128.0f)) * 256.0f);
+        delta = static_cast<int>(sinf(static_cast<float>(instrument_vibrato_position) * (std::numbers::pi_v<float> / 128.0f)) * 256.0f);
         break;
     }
     case XMInstrumentVibratoType::Square:
     {
-        delta = 256 - (ivibpos & 128) * 4;
+        delta = 256 - (instrument_vibrato_position & 128) * 4;
         break;
     }
     case XMInstrumentVibratoType::InverseSawTooth:
     {
-        delta = (ivibpos & 128) * 4 - (ivibpos + 1);
+        delta = (instrument_vibrato_position & 128) * 4 - (instrument_vibrato_position + 1);
         break;
     }
     case XMInstrumentVibratoType::SawTooth:
     {
-        delta = ivibpos + 1 - (ivibpos & 128) * 4;
+        delta = instrument_vibrato_position + 1 - (instrument_vibrato_position & 128) * 4;
         break;
     }
     }
 
-    delta *= instrument.sample_header.vibrato_depth;
-    if (instrument.sample_header.vibrato_sweep)
+    delta *= instrument.instrument_sample_header.vibrato_depth;
+    if (instrument.instrument_sample_header.vibrato_sweep)
     {
-        delta *= ivibsweeppos;
-        delta /= instrument.sample_header.vibrato_sweep;
+        delta *= instrument_vibrato_sweep_position;
+        delta /= instrument.instrument_sample_header.vibrato_sweep;
     }
     period_delta += delta / 128;
 
-    ivibsweeppos = std::min(ivibsweeppos + 1, static_cast<int>(instrument.sample_header.vibrato_sweep));
-    ivibpos += instrument.sample_header.vibrato_rate;
+    instrument_vibrato_sweep_position = std::min(instrument_vibrato_sweep_position + 1, static_cast<int>(instrument.instrument_sample_header.vibrato_sweep));
+    instrument_vibrato_position += instrument.instrument_sample_header.vibrato_rate;
 #endif	// FMUSIC_XM_INSTRUMENTVIBRATO_ACTIVE
 }
 
@@ -96,12 +96,12 @@ void Channel::reset(int new_volume, int new_pan) noexcept
     pan_envelope.reset(0.0);
 #endif
 
-    keyoff = false;
-    fadeoutvol = 32768;
+    key_off = false;
+    fade_out_volume = 32768;
 
 #ifdef FMUSIC_XM_INSTRUMENTVIBRATO_ACTIVE
-    ivibsweeppos = 0;
-    ivibpos = 0;
+    instrument_vibrato_sweep_position = 0;
+    instrument_vibrato_position = 0;
 #endif
     // retrigger tremolo and vibrato waveforms
 #if defined (FMUSIC_XM_VIBRATOVOLSLIDE_ACTIVE) || defined(FMUSIC_XM_VIBRATO_ACTIVE)
@@ -111,7 +111,7 @@ void Channel::reset(int new_volume, int new_pan) noexcept
     tremolo.reset();
 #endif
 #ifdef FMUSIC_XM_TREMOR_ACTIVE
-    tremorpos = 0;								// retrigger tremor count
+    tremor_position = 0;								// retrigger tremor count
 #endif
 }
 
@@ -226,14 +226,14 @@ void Channel::processVolumeByteTick(int volume_byte) noexcept
 void Channel::tremor() noexcept
 {
 #ifdef FMUSIC_XM_TREMOR_ACTIVE
-    if (tremorpos >= tremoron)
+    if (tremor_position >= tremor_on)
     {
-        voldelta = -volume;
+        volume_delta = -volume;
     }
-    tremorpos++;
-    if (tremorpos >= tremoron + tremoroff)
+    tremor_position++;
+    if (tremor_position >= tremor_on + tremor_off)
     {
-        tremorpos = 0;
+        tremor_position = 0;
     }
 #endif
 }
@@ -241,7 +241,7 @@ void Channel::tremor() noexcept
 void Channel::updateVolume() noexcept
 {
     volume = std::clamp(volume, 0, 64);
-    voldelta = std::clamp(voldelta, -volume, 64 - volume);
+    volume_delta = std::clamp(volume_delta, -volume, 64 - volume);
     pan = std::clamp(pan, 0, 255);
 }
 
@@ -280,8 +280,8 @@ void Channel::sendToMixer(Mixer& mixer, const Instrument& instrument, int global
         sound_channel.filtered_left_volume = 0;
         sound_channel.filtered_right_volume = 0;
     }
-    constexpr float norm = 1.0f / 68451041280.0f; // 2^27 (volume normalization) * 255.0 (pan scale) (*2 for safety?!?)
-    float high_precision_volume = static_cast<float>((volume + voldelta) * fadeoutvol * global_volume) * norm;
+    constexpr static float norm = 1.0f / 68451041280.0f; // 2^27 (volume normalization) * 255.0 (pan scale) (*2 for safety?!?)
+    float high_precision_volume = static_cast<float>((volume + volume_delta) * fade_out_volume * global_volume) * norm;
 #ifdef FMUSIC_XM_VOLUMEENVELOPE_ACTIVE
     high_precision_volume *= volume_envelope();
 #endif

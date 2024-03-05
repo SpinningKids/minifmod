@@ -37,21 +37,20 @@ struct Channel
 
     int				volume;				// current mod volume for this channel
 	int				pan;				// current mod pan for this channel
-	int				voldelta;			// delta for volume commands.. tremolo/tremor etc
+	int				volume_delta;		// delta for volume commands.. tremolo/tremor etc
 
-	int				fadeoutvol;			// volume fade out
-	bool			keyoff;				// flag whether keyoff has been hit or not)
+	int				fade_out_volume;	// volume fade out
+	bool			key_off;			// flag whether keyoff has been hit or not)
 
-	int				inst;				// last instrument set in channel
-	XMNote		  	realnote;  			// last realnote set in channel
-	XMEffect		recenteffect;		// previous row's effect.. used to correct tremolo volume
+	int				instrument_index;	// last instrument set in channel (0-127)
+	XMNote		  	real_note;  		// last real note set in channel
+	XMEffect		last_effect;		// previous row's effect.. used to correct tremolo volume
 
-	unsigned int	sampleoffset;		// sample offset for this channel in SAMPLES
 	int8_t			fine_tune;
 
 #ifdef FMUSIC_XM_INSTRUMENTVIBRATO_ACTIVE
-	int				ivibpos;   			// instrument vibrato position
-	int				ivibsweeppos;		// instrument vibrato sweep position
+	int				instrument_vibrato_position;   			// instrument vibrato position
+	int				instrument_vibrato_sweep_position;		// instrument vibrato sweep position
 #endif
 
 #ifdef FMUSIC_XM_VOLUMEENVELOPE_ACTIVE
@@ -67,35 +66,35 @@ struct Channel
 #endif
 
 #ifdef FMUSIC_XM_TREMOR_ACTIVE
-	int				tremorpos; 			// tremor position (XM + S3M)
-	int			 	tremoron;   		// remembered parameters for tremor (XM + S3M)
-	int			 	tremoroff;   		// remembered parameters for tremor (XM + S3M)
+	int				tremor_position;	// tremor position (XM + S3M)
+	int			 	tremor_on;   		// remembered parameters for tremor (XM + S3M)
+	int			 	tremor_off;   		// remembered parameters for tremor (XM + S3M)
 #endif
 
 #if defined(FMUSIC_XM_PORTATOVOLSLIDE_ACTIVE) || defined(FMUSIC_XM_VIBRATOVOLSLIDE_ACTIVE) || defined(FMUSIC_XM_VOLUMESLIDE_ACTIVE)
-	int				volslide;   		// last volume slide value
+	int				volume_slide;   	// last volume slide value
 #endif
 
 #ifdef FMUSIC_XM_PORTAUP_ACTIVE
-	int				portaup;   			// last porta up value (XM)
+	int				porta_up;   		// last porta up value (XM)
 #endif
 
 #ifdef FMUSIC_XM_PORTADOWN_ACTIVE
-	int				portadown;  		// last porta down value (XM)
+	int				porta_down;  		// last porta down value (XM)
 #endif
 
 #ifdef FMUSIC_XM_EXTRAFINEPORTA_ACTIVE
-	int				xtraportadown;		// last porta down value (XM)
-	int				xtraportaup;  		// last porta up value (XM)
+	int				extra_fine_porta_down;	// last porta down value (XM)
+	int				extra_fine_porta_up;  	// last porta up value (XM)
 #endif
 
 #ifdef FMUSIC_XM_PANSLIDE_ACTIVE
-	int				panslide;			// pan slide value
+	int				pan_slide;			// pan slide value
 #endif
 
 #ifdef FMUSIC_XM_MULTIRETRIG_ACTIVE
-	int				retrigx;   			// last retrig volume slide used (XM + S3M)
-	int				retrigy;   			// last retrig tick count used (XM + S3M)
+	XMRetriggerVolumeOperation	retrigger_volume_operator; 	// type of retrigger volume operation
+	int							retrigger_tick;   			// last retrig tick count used (XM + S3M)
 #endif
 
 #if defined(FMUSIC_XM_PORTATOVOLSLIDE_ACTIVE) || defined(FMUSIC_XM_PORTATO_ACTIVE) || defined(FMUSIC_XM_VOLUMEBYTE_ACTIVE)
@@ -107,24 +106,24 @@ struct Channel
 #endif
 
 #ifdef FMUSIC_XM_FINEPORTAUP_ACTIVE
-	int				fineportaup;		// parameter for fine porta slide up
+	int				fine_porta_up;		// parameter for fine porta slide up
 #endif
 
 #ifdef FMUSIC_XM_FINEPORTADOWN_ACTIVE
-	int				fineportadown;		// parameter for fine porta slide down
+	int				fine_porta_down;		// parameter for fine porta slide down
 #endif
 
 #ifdef FMUSIC_XM_PATTERNLOOP_ACTIVE
-	int				patlooprow;
-	int		 		patloopno;  		// pattern loop variables for effect  E6x
+	int				pattern_loop_row;   // where the loop will start
+	int		 		pattern_loop_count;	// repetition count
 #endif
 
 #ifdef FMUSIC_XM_FINEVOLUMESLIDEUP_ACTIVE
-	int				finevslup;			// parameter for fine volume slide up
+	int				fine_volume_slide_up;	// parameter for fine volume slide up
 #endif
 
 #ifdef FMUSIC_XM_FINEVOLUMESLIDEDOWN_ACTIVE
-    int				finevsldown;		// parameter for fine volume slide down
+    int				fine_volume_slide_down;	// parameter for fine volume slide down
 #endif
 
 	void processInstrument(const Instrument& instrument);
@@ -134,9 +133,8 @@ struct Channel
 	void tremor() noexcept;
 	void updateVolume() noexcept;
 
-	void setVolSlide(int value) noexcept { if (value) volslide = value; }
-	void setPanSlide(int value) noexcept { if (value) panslide = value; }
-	void setSampleOffset(int value) noexcept { if (value) sampleoffset = value; }
+	void setVolSlide(int value) noexcept { if (value) volume_slide = value; }
+	void setPanSlide(int value) noexcept { if (value) pan_slide = value; }
 	void updatePeriodFromPortamento() noexcept
 	{
 #if defined(FMUSIC_XM_PORTATOVOLSLIDE_ACTIVE) || defined(FMUSIC_XM_PORTATO_ACTIVE) || defined(FMUSIC_XM_VOLUMEBYTE_ACTIVE)
