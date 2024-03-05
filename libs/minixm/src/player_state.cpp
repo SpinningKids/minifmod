@@ -12,28 +12,19 @@ namespace
     }
 
 #ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
-    int GetAmigaPeriod(XMNote note) noexcept
-    {
-        // Original:
-        //     int period = (int)(powf(2.0f, (float)(132 - note) / 12.0f) * 13.375f);
-        // in math
-        //     period = (2^((132 - note) / 12.0f)*13.375
-        // expanded
-        //     period = 13.375 * 2^(132/12 - note/12)
-        //     period = 2^11 * 13.375 * 2^(note/12)
-        return static_cast<int>(27392.f*exp2f(- note.value/12.f));
-    }
-
     int GetAmigaPeriodFinetuned(XMNote note, int8_t fine_tune) noexcept
     {
-        int period = GetAmigaPeriod(note);
+        if (fine_tune < 0) return GetAmigaPeriodFinetuned(note - 1, static_cast<int8_t>(128 - fine_tune));
+
+        static constexpr int16_t amiga_periods[13] = { 27392, 25855, 24403, 23034, 21741, 20521, 19369, 18282, 17256, 16287, 15373, 14510, 13696 };
+
+        const uint8_t tone = note.value % 12;
+        const uint8_t octave = note.value / 12;
+
+        const int base_period = amiga_periods[tone];
 
         // interpolate for finer tuning
-        const int8_t direction = (fine_tune > 0) ? 1 : -1;
-
-        period += direction * ((GetAmigaPeriod(note + direction) - period) * fine_tune / 128);
-
-        return period;
+        return (base_period + (((amiga_periods[tone+1] - base_period) * fine_tune) >> 7)) >> octave;
     }
 #endif
 
