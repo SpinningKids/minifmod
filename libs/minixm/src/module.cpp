@@ -52,7 +52,7 @@ Module::Module(const minifmod::FileAccess& fileAccess, void* fp, std::function<v
                     if (dat & 0x80)
                     {
                         if (dat & 1)  fileAccess.read(&pattern_cell.note, 1, fp);
-                        if (dat & 2)  fileAccess.read(&pattern_cell.sample_index, 1, fp);
+                        if (dat & 2)  fileAccess.read(&pattern_cell.instrument_number, 1, fp);
                         if (dat & 4)  fileAccess.read(&pattern_cell.volume, 1, fp);
                         if (dat & 8)  fileAccess.read(&pattern_cell.effect, 1, fp);
                         if (dat & 16) fileAccess.read(&pattern_cell.effect_parameter, 1, fp);
@@ -63,9 +63,9 @@ Module::Module(const minifmod::FileAccess& fileAccess, void* fp, std::function<v
                         fileAccess.read(reinterpret_cast<char*>(&pattern_cell) + 1, sizeof(XMPatternCell) - 1, fp);
                     }
 
-                    if (pattern_cell.sample_index > 0x80)
+                    if (pattern_cell.instrument_number > 0x80)
                     {
-                        pattern_cell.sample_index = 0;
+                        pattern_cell.instrument_number = 0;
                     }
                 }
             }
@@ -86,7 +86,7 @@ Module::Module(const minifmod::FileAccess& fileAccess, void* fp, std::function<v
 
         if (instrument.header.samples_count > 0)
         {
-            fileAccess.read(&instrument.sample_header, sizeof(instrument.sample_header), fp);
+            fileAccess.read(&instrument.instrument_sample_header, sizeof(instrument.instrument_sample_header), fp);
 
             auto adjust_envelope = [](int count, const XMEnvelopePoint(&original_points)[12], int offset, float scale, XMEnvelopeFlags flags)
                 {
@@ -109,10 +109,10 @@ Module::Module(const minifmod::FileAccess& fileAccess, void* fp, std::function<v
                     return e;
                 };
 #ifdef FMUSIC_XM_VOLUMEENVELOPE_ACTIVE
-            instrument.volume_envelope = adjust_envelope(instrument.sample_header.volume_envelope_count, instrument.sample_header.volume_envelope, 0, 64, instrument.sample_header.volume_envelope_flags);
+            instrument.volume_envelope = adjust_envelope(instrument.instrument_sample_header.volume_envelope_count, instrument.instrument_sample_header.volume_envelope, 0, 64, instrument.instrument_sample_header.volume_envelope_flags);
 #endif
 #ifdef FMUSIC_XM_PANENVELOPE_ACTIVE
-            instrument.pan_envelope = adjust_envelope(instrument.sample_header.pan_envelope_count, instrument.sample_header.pan_envelope, 32, 32, instrument.sample_header.pan_envelope_flags);
+            instrument.pan_envelope = adjust_envelope(instrument.instrument_sample_header.pan_envelope_count, instrument.instrument_sample_header.pan_envelope, 32, 32, instrument.instrument_sample_header.pan_envelope_flags);
 #endif
 
 
@@ -197,7 +197,7 @@ Module::Module(const minifmod::FileAccess& fileAccess, void* fp, std::function<v
         }
         else
         {
-            instrument.sample_header = XMInstrumentSampleHeader{};
+            instrument.instrument_sample_header = XMInstrumentSampleHeader{};
             fileAccess.seek(fp, first_sample_offset, SEEK_SET);
         }
     }
