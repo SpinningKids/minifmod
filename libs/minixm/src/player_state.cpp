@@ -63,7 +63,7 @@ Position PlayerState::tick()
     {
         Channel& channel = channels_[channel_index];
         channel.updateVolume();
-        const Instrument& instrument = module_->getInstrument(channel.instrument_index);
+        Instrument& instrument = module_->getInstrument(channel.instrument_index);
         channel.processInstrument(instrument);
         channel.sendToMixer(mixer_, instrument, global_volume_, module_->header_.flags & FMUSIC_XMFLAGS_LINEARFREQUENCY);
     }
@@ -116,7 +116,7 @@ void PlayerState::updateNote()
             }
         }
 
-        const Instrument& instrument = module_->getInstrument(channel.instrument_index);
+        Instrument& instrument = module_->getInstrument(channel.instrument_index);
         const XMSampleHeader& sample_header = instrument.getSample(channel.note).header;
 
         if (valid_note) {
@@ -159,6 +159,7 @@ void PlayerState::updateNote()
         if (instrument_number)
         {
             channel.reset(sample_header.default_volume, sample_header.default_panning);
+            instrument.reset();
         }
 
         //= PROCESS VOLUME BYTE ========================================================================

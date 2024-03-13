@@ -22,15 +22,17 @@ namespace
         return 535232.f * exp2f(- per/1536.f);
     }
 
+#ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
     float Period2Frequency(int period) noexcept
     {
         // From XM.TXT:
         //      Frequency = 8363*1712/Period;
         return 28634912.0f / static_cast<float>(period);
     }
+#endif
 }
 
-void Channel::processInstrument(const Instrument& instrument)
+void Channel::processInstrument(Instrument& instrument)
 {
     //= PROCESS ENVELOPES ==========================================================================
 #ifdef FMUSIC_XM_VOLUMEENVELOPE_ACTIVE
@@ -46,42 +48,7 @@ void Channel::processInstrument(const Instrument& instrument)
     }
     //= INSTRUMENT VIBRATO ============================================================================
 #ifdef FMUSIC_XM_INSTRUMENTVIBRATO_ACTIVE
-    int delta = 0;
-
-    switch (instrument.instrument_sample_header.vibrato_type)
-    {
-    case XMInstrumentVibratoType::Sine:
-    {
-        delta = static_cast<int>(sinf(static_cast<float>(instrument_vibrato_position) * (std::numbers::pi_v<float> / 128.0f)) * 256.0f);
-        break;
-    }
-    case XMInstrumentVibratoType::Square:
-    {
-        delta = 256 - (instrument_vibrato_position & 128) * 4;
-        break;
-    }
-    case XMInstrumentVibratoType::InverseSawTooth:
-    {
-        delta = (instrument_vibrato_position & 128) * 4 - (instrument_vibrato_position + 1);
-        break;
-    }
-    case XMInstrumentVibratoType::SawTooth:
-    {
-        delta = instrument_vibrato_position + 1 - (instrument_vibrato_position & 128) * 4;
-        break;
-    }
-    }
-
-    delta *= instrument.instrument_sample_header.vibrato_depth;
-    if (instrument.instrument_sample_header.vibrato_sweep)
-    {
-        delta *= instrument_vibrato_sweep_position;
-        delta /= instrument.instrument_sample_header.vibrato_sweep;
-    }
-    period_delta += delta / 128;
-
-    instrument_vibrato_sweep_position = std::min(instrument_vibrato_sweep_position + 1, static_cast<int>(instrument.instrument_sample_header.vibrato_sweep));
-    instrument_vibrato_position += instrument.instrument_sample_header.vibrato_rate;
+    period_delta += instrument.getInstrumentVibratoDelta();
 #endif	// FMUSIC_XM_INSTRUMENTVIBRATO_ACTIVE
 }
 
@@ -99,10 +66,6 @@ void Channel::reset(int new_volume, int new_pan) noexcept
     key_off = false;
     fade_out_volume = 32768;
 
-#ifdef FMUSIC_XM_INSTRUMENTVIBRATO_ACTIVE
-    instrument_vibrato_sweep_position = 0;
-    instrument_vibrato_position = 0;
-#endif
     // retrigger tremolo and vibrato waveforms
 #if defined (FMUSIC_XM_VIBRATOVOLSLIDE_ACTIVE) || defined(FMUSIC_XM_VIBRATO_ACTIVE)
     vibrato.reset();
@@ -295,10 +258,10 @@ void Channel::sendToMixer(Mixer& mixer, const Instrument& instrument, int global
     if (const int actual_period = period + period_delta; actual_period != 0)
     {
         const float freq = std::max(
-            linear_frequency
-            ? XMLinearPeriod2Frequency(actual_period)
-            : Period2Frequency(actual_period),
-            100.0f);
+#ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
+        (!linear_frequency) ? Period2Frequency(actual_period) :
+#endif
+            XMLinearPeriod2Frequency(actual_period), 100.0f);
 
         sound_channel.speed = freq / static_cast<float>(mixer.getMixRate());
     }

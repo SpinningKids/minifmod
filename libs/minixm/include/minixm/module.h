@@ -36,4 +36,10 @@ struct Module final
 		assert(instrument >= 0 && instrument < header_.instruments_count);
 		return instrument_[instrument];
 	}
+
+    [[nodiscard]] Instrument& getInstrument(int instrument)
+	{
+		assert(instrument >= 0 && instrument < header_.instruments_count);
+		return instrument_[instrument];
+	}
 };
