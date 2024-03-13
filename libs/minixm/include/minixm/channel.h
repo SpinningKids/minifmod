@@ -48,11 +48,6 @@ struct Channel
 
 	int8_t			fine_tune;
 
-#ifdef FMUSIC_XM_INSTRUMENTVIBRATO_ACTIVE
-	int				instrument_vibrato_position;   			// instrument vibrato position
-	int				instrument_vibrato_sweep_position;		// instrument vibrato sweep position
-#endif
-
 #ifdef FMUSIC_XM_VOLUMEENVELOPE_ACTIVE
 	EnvelopeState   volume_envelope;
 #endif
@@ -126,7 +121,7 @@ struct Channel
     int				fine_volume_slide_down;	// parameter for fine volume slide down
 #endif
 
-	void processInstrument(const Instrument& instrument);
+	void processInstrument(Instrument& instrument);
 	void reset(int new_volume, int new_pan) noexcept;
 	void processVolumeByteNote(int volume_byte) noexcept;
 	void processVolumeByteTick(int volume_byte) noexcept;
