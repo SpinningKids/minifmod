@@ -16,7 +16,7 @@
 
 #include <xmformat/pattern_header.h>
 
-Module::Module(const minifmod::FileAccess& fileAccess, void* fp, std::function<void(int16_t*, size_t, int, int)> sample_load_callback)
+Module::Module(const minifmod::FileAccess& fileAccess, void* fp, const std::function<void(int16_t*, size_t, int, int)>& sample_load_callback)
 {
     fileAccess.seek(fp, 0, SEEK_SET);
     fileAccess.read(&header_, sizeof(header_), fp);

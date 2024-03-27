@@ -22,13 +22,13 @@ public:
 	IPlaybackDriver& operator = (IPlaybackDriver&&) = delete;
 	virtual ~IPlaybackDriver() = default;
 
-	uint32_t blocks() const noexcept { return total_blocks_; }
-	uint32_t block_size() const noexcept { return block_size_; }
-	uint32_t mix_rate() const noexcept { return mix_rate_; }
-	uint32_t buffer_size() const noexcept { return buffer_size_; }
+	[[nodiscard]] uint32_t blocks() const noexcept { return total_blocks_; }
+	[[nodiscard]] uint32_t block_size() const noexcept { return block_size_; }
+	[[nodiscard]] uint32_t mix_rate() const noexcept { return mix_rate_; }
+	[[nodiscard]] uint32_t buffer_size() const noexcept { return buffer_size_; }
 
 	virtual void start(std::function<void(size_t block, short data[])>&& fill) = 0;
 	virtual void stop() = 0;
 
-	virtual size_t current_block_played() const = 0;
+	[[nodiscard]] virtual size_t current_block_played() const = 0;
 };

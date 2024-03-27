@@ -119,7 +119,6 @@ bool FSOUND_Init(int mixrate, int vcmmode = 0) MINIFMOD_NOEXCEPT;
 	You must support SEEK_SET, SEEK_CUR and SEEK_END properly, or FMOD will not work properly.  See standard I/O help files on how these work under fseek().
 	Read the documentation in REMARKS and do exactly what it says.  See the 'simple' example for how it is
 	used properly.
-]
 */
 void FSOUND_File_SetCallbacks(void* (*OpenCallback)(const char* name),
 	void			(*CloseCallback)(void* handle),

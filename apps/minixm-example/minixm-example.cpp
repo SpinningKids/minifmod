@@ -111,7 +111,7 @@ void memclose(void* handle)
     const auto memfile = static_cast<MEMFILE*>(handle);
 
 #ifndef USEMEMLOADRESOURCE
-	free(memfile->data);			// dont free it if it was initialized with LockResource
+	free(memfile->data);			// don't free it if it was initialized with LockResource
 #endif
 
 	free(memfile);
@@ -175,7 +175,7 @@ void songcallback(PlayerState *mod, unsigned char param)
 */
 int main(int argc, char *argv[])
 {
-	unsigned int mix_rate = 96000;
+	constexpr unsigned int mix_rate = 96000;
 #ifndef USEMEMLOAD
 	minifmod::file_access.open = fileopen;
 	minifmod::file_access.close = fileclose;
@@ -239,9 +239,9 @@ int main(int argc, char *argv[])
 				key = getch();
 			}
 #endif
-            const auto time_info = player_state.getTimeInfo();
+            const auto [position, samples] = player_state.getTimeInfo();
 
-			printf("ord %2d row %2d seconds %5.02f %s      \r", time_info.position.order, time_info.position.row, static_cast<double>(time_info.samples) / mix_rate, (time_info.position.row % 8) ? "    " : "TICK");
+			printf("ord %2d row %2d seconds %5.02f %s      \r", position.order, position.row, static_cast<double>(samples) / mix_rate, (position.row % 8) ? "    " : "TICK");
 
 		} while (key != 27);
 	}

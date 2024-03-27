@@ -54,7 +54,7 @@ public:
 		return std::move(module_);
 	}
 
-    TimeInfo getTimeInfo() const
+	[[nodiscard]] TimeInfo getTimeInfo() const
 	{
 	    return mixer_.getTimeInfo();
 	}

@@ -2,8 +2,6 @@
 #include <algorithm>
 #include <minixm/channel.h>
 
-#include <numbers>
-
 #include <minixm/xmeffects.h>
 
 namespace
@@ -19,7 +17,7 @@ namespace
         // and then separated into
         //      Frequency = 8363 * 2^6 * 2^(-Period/1536);
         // and therefore
-        return 535232.f * exp2f(- per/1536.f);
+        return 535232.f * exp2f(-static_cast<float>(per)/1536.f);
     }
 
 #ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
@@ -237,7 +235,7 @@ void Channel::sendToMixer(Mixer& mixer, const Instrument& instrument, int global
 
         sound_channel.mix_position = static_cast<float>(sound_channel.sample_offset);
         sound_channel.speed_direction = MixDir::Forwards;
-        sound_channel.sample_offset = 0;	// reset it (in case other samples come in and get corrupted etc)
+        sound_channel.sample_offset = 0;	// reset it (in case other samples come in and get corrupted etc...)
 
         // volume ramping
         sound_channel.filtered_left_volume = 0;

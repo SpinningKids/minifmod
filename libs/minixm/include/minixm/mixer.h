@@ -66,7 +66,7 @@ public:
         unsigned int mix_rate = 44100,
         unsigned int buffer_size_ms = 1000,
         unsigned int latency = 20,
-        float volume_filter_time_constant = 0.003);
+        float volume_filter_time_constant = 0.003f);
 
     [[nodiscard]] MixerChannel& getChannel(int index)
     {
@@ -80,10 +80,10 @@ public:
     }
     void setBPM(unsigned int bpm) noexcept { bpm_ = bpm; }
 
-    unsigned int getMixRate() const noexcept;
-    TimeInfo getTimeInfo() const;
+    [[nodiscard]] unsigned int getMixRate() const noexcept;
+    [[nodiscard]] TimeInfo getTimeInfo() const;
 
     void start();
     void stop();
-    float timeFromSamples() const;
+    [[nodiscard]] float timeFromSamples() const;
 };
