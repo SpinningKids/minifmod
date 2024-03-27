@@ -121,7 +121,7 @@ public:
         stop();
     }
 
-    size_t current_block_played() const override
+    [[nodiscard]] size_t current_block_played() const override
     {
         MMTIME	mmt{
             .wType = TIME_SAMPLES

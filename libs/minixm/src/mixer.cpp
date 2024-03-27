@@ -31,9 +31,9 @@ Mixer::Mixer(std::function<Position()>&& tick_callback, uint16_t bpm, unsigned i
     bpm_{ bpm },
     last_mixed_time_info_{}
 {
-    for (auto& channel_index : channel_)
+    for (auto& channel : channel_)
     {
-        channel_index.speed = 1.0f;
+        channel.speed = 1.0f;
     }
 }
 
@@ -139,7 +139,8 @@ void Mixer::mix(float* mixptr, uint32_t len)
                 }
                 else if (channel.sample_ptr->header.loop_mode == XMLoopMode::Bidi)
                 {
-                    do {
+                    do
+                    {
                         if (channel.speed_direction != MixDir::Forwards)
                         {
                             //BidiBackwards
@@ -168,7 +169,7 @@ void Mixer::mix(float* mixptr, uint32_t len)
 
 const TimeInfo &Mixer::fill(short target[])
 {
-    auto block_size = driver_->block_size();
+	const auto block_size = driver_->block_size();
     //==============================================================================
     // MIXBUFFER CLEAR
     //==============================================================================
