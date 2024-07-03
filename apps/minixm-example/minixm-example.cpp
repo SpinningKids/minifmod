@@ -1,9 +1,9 @@
 //===============================================================================================
-// SIMPLE.EXE
-// Copyright (c), Firelight Technologies, 2000-2004.
+// minixm-example
+// Pan/SpinningKids, 2022-2024.
 //
-// This is a simple but descriptive way to get FMOD going, by loading a song and a few wav files
-// and then playing them back.  It also shows how to do device enumeration and how to tweak
+// This is a simple but descriptive way to get minixm going, by loading a song and a few wav 
+// files and then playing them back.  It also shows how to do device enumeration and how to tweak
 // various playback settings.
 //
 //===============================================================================================
@@ -194,7 +194,7 @@ int main(int argc, char *argv[])
 	{
 		printf("-------------------------------------------------------------\n");
 		printf("MINIFMOD example XM player.\n");
-		printf("Copyright (c) Firelight Technologies, 2000-2004.\n");
+		printf("Pan/SpinningKids, 2022-2024.\n");
 		printf("-------------------------------------------------------------\n");
 		printf("Syntax: simplest infile.xm\n\n");
 		return 0;

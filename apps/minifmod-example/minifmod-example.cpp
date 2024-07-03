@@ -1,9 +1,9 @@
 //===============================================================================================
-// SIMPLE.EXE
+// minifmod-example
 // Copyright (c), Firelight Technologies, 2000-2004.
 //
-// This is a simple but descriptive way to get FMOD going, by loading a song and a few wav files
-// and then playing them back.  It also shows how to do device enumeration and how to tweak
+// This is a simple but descriptive way to get MiniFMOD going, by loading a song and a few wav 
+// files and then playing them back.  It also shows how to do device enumeration and how to tweak
 // various playback settings.
 //
 //===============================================================================================

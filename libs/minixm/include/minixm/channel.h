@@ -7,7 +7,7 @@
 /* Firelight Technologies is a registered company.                            */
 /* This source must not be redistributed without this notice.                 */
 /******************************************************************************/
-/* C++ conversion and (heavy) refactoring by Pan/SpinningKids, 2022           */
+/* This library (minixm) is maintained by Pan/SpinningKids, 2022-2024         */
 /******************************************************************************/
 
 #pragma once
