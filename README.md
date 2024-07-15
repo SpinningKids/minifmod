@@ -4,7 +4,7 @@ MiniFMOD 2.0.0 C++ version
 
 Copyright Firelight Technologies, 1999-2003.
 
-CMake adaption and heavy refactoring/cleanup/rewrite by Pan/SpinningKids 2022
+CMake adaption and heavy refactoring/cleanup/rewrite by Pan/SpinningKids 2022-2024
 
 ## DOCUMENTATION 
 
@@ -89,7 +89,7 @@ Update since v2.0.0:
 
 ## Revision History
 
-### Version 2.0.0 (2024/07/03 Pan/SK)
+### Version 2.0.0 (2024/07/16 Pan/SK)
 
 - Conversion to C++
     - Adoption of selected parts of the standard library (std::thread, std::min, std::max, std::clamp)

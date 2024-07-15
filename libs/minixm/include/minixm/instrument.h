@@ -37,10 +37,13 @@ struct Instrument final
 
 	[[nodiscard]] const Sample& getSample(XMNote note) const
 	{
-		assert(note.isValid() && note.value < XMNote::KEY_OFF);
-		const int note_sample = instrument_sample_header.note_sample_number[note.value - 1];
-		assert(note_sample >= 0 && note_sample < 16);
-		return sample[note_sample];
+        if (note.isValid()) {
+            assert(note.value < XMNote::KEY_OFF);
+            const int note_sample = instrument_sample_header.note_sample_number[note.value - 1];
+            assert(note_sample >= 0 && note_sample < 16);
+            return sample[note_sample];
+        }
+        return sample[0];
 	}
 
 #ifdef FMUSIC_XM_INSTRUMENTVIBRATO_ACTIVE

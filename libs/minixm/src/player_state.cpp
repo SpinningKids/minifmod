@@ -130,10 +130,6 @@ void PlayerState::updateNote()
         Instrument& instrument = module_->getInstrument(channel.instrument_index);
         const XMSampleHeader& sample_header = instrument.getSample(channel.note).header;
 
-        if (valid_note) {
-            channel.fine_tune = sample_header.fine_tune;
-        }
-
         const int old_volume = channel.volume;
         const int old_period = channel.period;
         const int old_pan = channel.pan;
@@ -150,10 +146,12 @@ void PlayerState::updateNote()
         channel.period_delta = 0;				// this is for vibrato / arpeggio etc
         channel.stop = false;
 
-        //= PROCESS NOTE ===============================================================================
+    	//= PROCESS NOTE ===============================================================================
         if (valid_note)
         {
-            // get note according to relative note
+        	channel.fine_tune = sample_header.fine_tune;
+
+        	// get note according to relative note
             channel.real_note = note + sample_header.relative_note;
 
             // get period according to realnote and fine_tune

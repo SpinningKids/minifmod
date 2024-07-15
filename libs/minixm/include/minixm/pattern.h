@@ -19,10 +19,10 @@
 // pattern data type
 class Pattern
 {
-	int size_;
-	XMPatternCell data_[256][32]; // uninitialized on purpose
+	int size_{ 64 };
+	XMPatternCell data_[256][32]{}; // uninitialized on purpose
 public:
-	Pattern() noexcept : size_{ 64 } {}
+	Pattern() noexcept = default;
 
 	[[nodiscard]] int size() const noexcept { return size_; }
 	void resize(int size)
