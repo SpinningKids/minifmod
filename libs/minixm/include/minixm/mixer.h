@@ -82,13 +82,13 @@ public:
 
     [[nodiscard]] MixerChannel& getChannel(int index)
     {
-        assert(index >= 0 && index < std::size(channel_));
+        assert(index >= 0 && static_cast<size_t>(index) < std::size(channel_));
         return channel_[index];
     }
 
     [[nodiscard]] const MixerChannel& getChannel(int index) const
     {
-        assert(index >= 0 && index < std::size(channel_));
+        assert(index >= 0 && static_cast<size_t>(index) < std::size(channel_));
         return channel_[index];
     }
 
