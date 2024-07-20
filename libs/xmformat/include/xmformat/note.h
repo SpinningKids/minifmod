@@ -19,23 +19,23 @@
 
 struct XMNote
 {
-	static constexpr uint8_t KEY_OFF = 97;
-	uint8_t value{}; // note to play at     (0-133) 132=none,133=keyoff <- This comment is WRONG.
+    static constexpr uint8_t KEY_OFF = 97;
+    uint8_t value{}; // note to play at     (0-133) 132=none,133=keyoff <- This comment is WRONG.
 
-	[[nodiscard]] bool isKeyOff() const noexcept { return value == KEY_OFF; }
-	[[nodiscard]] bool isValid() const noexcept { return value && value != KEY_OFF; }
+    [[nodiscard]] bool isKeyOff() const noexcept { return value == KEY_OFF; }
+    [[nodiscard]] bool isValid() const noexcept { return value && value != KEY_OFF; }
 
-	[[nodiscard]] XMNote operator + (int8_t rel) const noexcept
-	{
-		return { static_cast<uint8_t>(value + rel) };
-	}
+    [[nodiscard]] XMNote operator +(int8_t rel) const noexcept
+    {
+        return {static_cast<uint8_t>(value + rel)};
+    }
 
-	[[nodiscard]] XMNote operator - (int8_t rel) const noexcept
-	{
-		return { static_cast<uint8_t>(value - rel) };
-	}
+    [[nodiscard]] XMNote operator -(int8_t rel) const noexcept
+    {
+        return {static_cast<uint8_t>(value - rel)};
+    }
 
-	void turnOff() noexcept { value = KEY_OFF; }
+    void turnOff() noexcept { value = KEY_OFF; }
 };
 
 static_assert(sizeof(XMNote) == 1);

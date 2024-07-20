@@ -22,8 +22,8 @@ static_assert(std::endian::native == std::endian::little); // this will only wor
 
 struct XMEnvelopePoint
 {
-	uint16_t position;
-	uint16_t value;
+    uint16_t position;
+    uint16_t value;
 };
 
 static_assert(sizeof(XMEnvelopePoint) == 4);

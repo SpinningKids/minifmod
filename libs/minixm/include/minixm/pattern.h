@@ -19,27 +19,28 @@
 // pattern data type
 class Pattern
 {
-	int size_{ 64 };
-	XMPatternCell data_[256][32]{}; // uninitialized on purpose
+    int size_{64};
+    XMPatternCell data_[256][32]{}; // uninitialized on purpose
 public:
-	Pattern() noexcept = default;
+    Pattern() noexcept = default;
 
-	[[nodiscard]] int size() const noexcept { return size_; }
-	void resize(int size)
-	{
-		assert(size >= 0 && size <= 256);
-		size_ = size;
-	}
+    [[nodiscard]] int size() const noexcept { return size_; }
 
-	[[nodiscard]] auto operator[](int row) const -> decltype(data_[row])
-	{
-		assert(row >= 0 && row < size_);
-		return data_[row];
-	}
+    void resize(int size)
+    {
+        assert(size >= 0 && size <= 256);
+        size_ = size;
+    }
 
-	[[nodiscard]] auto operator[](int row) -> decltype(data_[row])
-	{
-		assert(row >= 0 && row < size_);
-		return data_[row];
-	}
+    [[nodiscard]] auto operator[](int row) const -> decltype(data_[row])
+    {
+        assert(row >= 0 && row < size_);
+        return data_[row];
+    }
+
+    [[nodiscard]] auto operator[](int row) -> decltype(data_[row])
+    {
+        assert(row >= 0 && row < size_);
+        return data_[row];
+    }
 };

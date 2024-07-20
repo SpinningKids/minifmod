@@ -27,20 +27,20 @@ enum class MixDir
 
 struct MixerChannel final
 {
-    unsigned int 	sample_offset;			// sample offset (sample starts playing from here).
+    unsigned int sample_offset; // sample offset (sample starts playing from here).
 
-    const Sample* 	sample_ptr;				// currently playing sample
+    const Sample* sample_ptr; // currently playing sample
 
     // software mixer stuff
-    float			left_volume;			// mixing information. adjusted volume for left channel (panning involved)
-    float			right_volume;			// mixing information. adjusted volume for right channel (panning involved)
-    float			mix_position;			// mixing information. floating point fractional position in sample.
-    float			speed;					// mixing information. playback rate - floating point.
-    MixDir			speed_direction;		// mixing information. playback direction - forwards or backwards
+    float left_volume; // mixing information. adjusted volume for left channel (panning involved)
+    float right_volume; // mixing information. adjusted volume for right channel (panning involved)
+    float mix_position; // mixing information. floating point fractional position in sample.
+    float speed; // mixing information. playback rate - floating point.
+    MixDir speed_direction; // mixing information. playback direction - forwards or backwards
 
     // software mixer volume ramping stuff
-    float			filtered_left_volume;
-    float			filtered_right_volume;
+    float filtered_left_volume;
+    float filtered_right_volume;
 };
 
 struct TimeInfo final
@@ -52,24 +52,25 @@ struct TimeInfo final
 class Mixer final
 {
     // mixing info
-    std::function<Position()>	tick_callback_;
+    std::function<Position()> tick_callback_;
 
     std::unique_ptr<IPlaybackDriver> driver_;
     std::unique_ptr<TimeInfo[]> time_info_;
 
-    float						volume_filter_k_;
-    std::unique_ptr<float[]>	mix_buffer_;			// mix output buffer (stereo 32bit float)
+    float volume_filter_k_;
+    std::unique_ptr<float[]> mix_buffer_; // mix output buffer (stereo 32bit float)
 
     //= VARIABLE EXTERNS ==========================================================================
-    MixerChannel				channel_[64];			// channel pool
+    MixerChannel channel_[64]; // channel pool
 
     // thread control variables
-    uint32_t					mixer_samples_left_;
-    unsigned int				bpm_;
-    TimeInfo                    last_mixed_time_info_;
+    uint32_t mixer_samples_left_;
+    unsigned int bpm_;
+    TimeInfo last_mixed_time_info_;
 
-    const TimeInfo &fill(short target[]);
+    const TimeInfo& fill(short target[]);
     void mix(float* mixptr, uint32_t len);
+
 public:
     explicit Mixer(
         std::function<Position()>&& tick_callback,
@@ -84,11 +85,13 @@ public:
         assert(index >= 0 && index < std::size(channel_));
         return channel_[index];
     }
+
     [[nodiscard]] const MixerChannel& getChannel(int index) const
     {
         assert(index >= 0 && index < std::size(channel_));
         return channel_[index];
     }
+
     void setBPM(unsigned int bpm) noexcept { bpm_ = bpm; }
 
     [[nodiscard]] unsigned int getMixRate() const noexcept;

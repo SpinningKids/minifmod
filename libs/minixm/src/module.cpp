@@ -16,7 +16,8 @@
 
 #include <xmformat/pattern_header.h>
 
-Module::Module(const minifmod::FileAccess& fileAccess, void* fp, const std::function<void(int16_t*, size_t, int, int)>& sample_load_callback)
+Module::Module(const minifmod::FileAccess& fileAccess, void* fp,
+               const std::function<void(int16_t*, size_t, int, int)>& sample_load_callback)
 {
     fileAccess.seek(fp, 0, SEEK_SET);
     fileAccess.read(&header_, sizeof(header_), fp);
@@ -51,15 +52,15 @@ Module::Module(const minifmod::FileAccess& fileAccess, void* fp, const std::func
                     fileAccess.read(&dat, 1, fp);
                     if (dat & 0x80)
                     {
-                        if (dat & 1)  fileAccess.read(&pattern_cell.note, 1, fp);
-                        if (dat & 2)  fileAccess.read(&pattern_cell.instrument_number, 1, fp);
-                        if (dat & 4)  fileAccess.read(&pattern_cell.volume, 1, fp);
-                        if (dat & 8)  fileAccess.read(&pattern_cell.effect, 1, fp);
+                        if (dat & 1) fileAccess.read(&pattern_cell.note, 1, fp);
+                        if (dat & 2) fileAccess.read(&pattern_cell.instrument_number, 1, fp);
+                        if (dat & 4) fileAccess.read(&pattern_cell.volume, 1, fp);
+                        if (dat & 8) fileAccess.read(&pattern_cell.effect, 1, fp);
                         if (dat & 16) fileAccess.read(&pattern_cell.effect_parameter, 1, fp);
                     }
                     else
                     {
-                        pattern_cell.note = XMNote{ dat };
+                        pattern_cell.note = XMNote{dat};
                         fileAccess.read(reinterpret_cast<char*>(&pattern_cell) + 1, sizeof(XMPatternCell) - 1, fp);
                     }
 
@@ -79,7 +80,7 @@ Module::Module(const minifmod::FileAccess& fileAccess, void* fp, const std::func
         Instrument& instrument = instrument_[instrument_index];
 
         int first_sample_offset = fileAccess.tell(fp);
-        fileAccess.read(&instrument.header, sizeof(instrument.header), fp);				// instrument size
+        fileAccess.read(&instrument.header, sizeof(instrument.header), fp); // instrument size
         first_sample_offset += static_cast<int>(instrument.header.header_size);
 
         assert(instrument.header.samples_count <= 16);
@@ -88,31 +89,40 @@ Module::Module(const minifmod::FileAccess& fileAccess, void* fp, const std::func
         {
             fileAccess.read(&instrument.instrument_sample_header, sizeof(instrument.instrument_sample_header), fp);
 
-            auto adjust_envelope = [](int count, const XMEnvelopePoint(&original_points)[12], int offset, float scale, XMEnvelopeFlags flags)
+            auto adjust_envelope = [](int count, const XMEnvelopePoint (&original_points)[12], int offset, float scale,
+                                      XMEnvelopeFlags flags)
+            {
+                EnvelopePoints e;
+                e.count = (count < 2 || !(flags & XMEnvelopeFlagsOn)) ? 0 : count;
+                for (int i = 0; i < e.count; ++i)
                 {
-                    EnvelopePoints e;
-                    e.count = (count < 2 || !(flags & XMEnvelopeFlagsOn)) ? 0 : count;
-                    for (int i = 0; i < e.count; ++i)
+                    e.envelope[i].position = original_points[i].position;
+                    e.envelope[i].value = static_cast<float>(original_points[i].value - offset) / scale;
+                    if (i > 0)
                     {
-                        e.envelope[i].position = original_points[i].position;
-                        e.envelope[i].value = static_cast<float>(original_points[i].value - offset) / scale;
-                        if (i > 0)
-                        {
-                            const int tickdiff = e.envelope[i].position - e.envelope[i - 1].position;
+                        const int tickdiff = e.envelope[i].position - e.envelope[i - 1].position;
 
-                            e.envelope[i - 1].delta = tickdiff ? (e.envelope[i].value - e.envelope[i - 1].value) / static_cast<float>(tickdiff) : 0.f;
-                        }
+                        e.envelope[i - 1].delta = tickdiff
+                                                      ? (e.envelope[i].value - e.envelope[i - 1].value) / static_cast<
+                                                          float>(tickdiff)
+                                                      : 0.f;
                     }
-                    if (e.count) {
-                        e.envelope[e.count - 1].delta = 0.f;
-                    }
-                    return e;
-                };
+                }
+                if (e.count)
+                {
+                    e.envelope[e.count - 1].delta = 0.f;
+                }
+                return e;
+            };
 #ifdef FMUSIC_XM_VOLUMEENVELOPE_ACTIVE
-            instrument.volume_envelope = adjust_envelope(instrument.instrument_sample_header.volume_envelope_count, instrument.instrument_sample_header.volume_envelope, 0, 64, instrument.instrument_sample_header.volume_envelope_flags);
+            instrument.volume_envelope = adjust_envelope(instrument.instrument_sample_header.volume_envelope_count,
+                                                         instrument.instrument_sample_header.volume_envelope, 0, 64,
+                                                         instrument.instrument_sample_header.volume_envelope_flags);
 #endif
 #ifdef FMUSIC_XM_PANENVELOPE_ACTIVE
-            instrument.pan_envelope = adjust_envelope(instrument.instrument_sample_header.pan_envelope_count, instrument.instrument_sample_header.pan_envelope, 32, 32, instrument.instrument_sample_header.pan_envelope_flags);
+            instrument.pan_envelope = adjust_envelope(instrument.instrument_sample_header.pan_envelope_count,
+                                                      instrument.instrument_sample_header.pan_envelope, 32, 32,
+                                                      instrument.instrument_sample_header.pan_envelope_flags);
 #endif
 
 
@@ -138,7 +148,6 @@ Module::Module(const minifmod::FileAccess& fileAccess, void* fp, const std::func
                     sample_header.loop_length = sample_header.length;
                     sample_header.loop_mode = XMLoopMode::Off;
                 }
-
             }
 
             // Load sample data
@@ -155,13 +164,15 @@ Module::Module(const minifmod::FileAccess& fileAccess, void* fp, const std::func
                     if (sample_load_callback)
                     {
                         sample_load_callback(sample.buff.get(), sample.header.length, instrument_index, sample_index);
-                        fileAccess.seek(fp, static_cast<int>(sample.header.length * (sample.header.bits16 ? 2 : 1)), SEEK_CUR);
+                        fileAccess.seek(fp, static_cast<int>(sample.header.length * (sample.header.bits16 ? 2 : 1)),
+                                        SEEK_CUR);
                     }
                     else
                     {
                         if (sample.header.bits16)
                         {
-                            fileAccess.read(sample.buff.get(), static_cast<int>(sample.header.length * sizeof(short)), fp);
+                            fileAccess.read(sample.buff.get(), static_cast<int>(sample.header.length * sizeof(short)),
+                                            fp);
                         }
                         else
                         {
@@ -186,11 +197,13 @@ Module::Module(const minifmod::FileAccess& fileAccess, void* fp, const std::func
                     // BUGFIX 1.3 - removed click for end of non looping sample (also size optimized a bit)
                     if (sample.header.loop_mode == XMLoopMode::Bidi)
                     {
-                        sample.buff[sample.header.loop_start + sample.header.loop_length] = sample.buff[sample.header.loop_start + sample.header.loop_length - 1];// fix it
+                        sample.buff[sample.header.loop_start + sample.header.loop_length] = sample.buff[sample.header.
+                            loop_start + sample.header.loop_length - 1]; // fix it
                     }
                     else if (sample.header.loop_mode == XMLoopMode::Normal)
                     {
-                        sample.buff[sample.header.loop_start + sample.header.loop_length] = sample.buff[sample.header.loop_start];// fix it
+                        sample.buff[sample.header.loop_start + sample.header.loop_length] = sample.buff[sample.header.
+                            loop_start]; // fix it
                     }
                 }
             }

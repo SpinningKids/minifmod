@@ -28,7 +28,7 @@ namespace
         // and then separated into
         //      Frequency = 8363 * 2^6 * 2^(-Period/1536);
         // and therefore
-        return 535232.f * exp2f(-static_cast<float>(per)/1536.f);
+        return 535232.f * exp2f(-static_cast<float>(per) / 1536.f);
     }
 
 #ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
@@ -45,10 +45,16 @@ void Channel::processInstrument(Instrument& instrument)
 {
     //= PROCESS ENVELOPES ==========================================================================
 #ifdef FMUSIC_XM_VOLUMEENVELOPE_ACTIVE
-    volume_envelope.process(instrument.volume_envelope, instrument.instrument_sample_header.volume_envelope_flags, instrument.instrument_sample_header.volume_loop_start_index, instrument.instrument_sample_header.volume_loop_end_index, instrument.instrument_sample_header.volume_sustain_index, key_off);
+    volume_envelope.process(instrument.volume_envelope, instrument.instrument_sample_header.volume_envelope_flags,
+                            instrument.instrument_sample_header.volume_loop_start_index,
+                            instrument.instrument_sample_header.volume_loop_end_index,
+                            instrument.instrument_sample_header.volume_sustain_index, key_off);
 #endif
 #ifdef FMUSIC_XM_PANENVELOPE_ACTIVE
-    pan_envelope.process(instrument.pan_envelope, instrument.instrument_sample_header.pan_envelope_flags, instrument.instrument_sample_header.pan_loop_start_index, instrument.instrument_sample_header.pan_loop_end_index, instrument.instrument_sample_header.pan_sustain_index, key_off);
+    pan_envelope.process(instrument.pan_envelope, instrument.instrument_sample_header.pan_envelope_flags,
+                         instrument.instrument_sample_header.pan_loop_start_index,
+                         instrument.instrument_sample_header.pan_loop_end_index,
+                         instrument.instrument_sample_header.pan_sustain_index, key_off);
 #endif
     //= PROCESS VOLUME FADEOUT =====================================================================
     if (key_off)
@@ -83,7 +89,7 @@ void Channel::reset(int new_volume, int new_pan) noexcept
     tremolo.reset();
 #endif
 #ifdef FMUSIC_XM_TREMOR_ACTIVE
-    tremor_position = 0;								// retrigger tremor count
+    tremor_position = 0; // retrigger tremor count
 #endif
 }
 
@@ -102,48 +108,48 @@ void Channel::processVolumeByteNote(int volume_byte) noexcept
         {
         case 0x6:
         case 0x8:
-        {
-            volume -= volume_y;
-            break;
-        }
+            {
+                volume -= volume_y;
+                break;
+            }
         case 0x7:
         case 0x9:
-        {
-            volume += volume_y;
-            break;
-        }
+            {
+                volume += volume_y;
+                break;
+            }
         case 0xa:
-        {
-            vibrato.setSpeed(volume_y);
-            break;
-        }
+            {
+                vibrato.setSpeed(volume_y);
+                break;
+            }
         case 0xb:
-        {
-            vibrato.setDepth(volume_y * 16);
-            break;
-        }
+            {
+                vibrato.setDepth(volume_y * 16);
+                break;
+            }
         case 0xc:
-        {
-            pan = volume_y * 16;
-            break;
-        }
+            {
+                pan = volume_y * 16;
+                break;
+            }
         case 0xd:
-        {
-            pan -= volume_y;
-            break;
-        }
+            {
+                pan -= volume_y;
+                break;
+            }
         case 0xe:
-        {
-            pan += volume_y;
-            break;
-        }
+            {
+                pan += volume_y;
+                break;
+            }
         case 0xf:
-        {
-            portamento.setTarget(period_target);
-            portamento.setSpeed(volume_y * 2);
-            trigger = false;
-            break;
-        }
+            {
+                portamento.setTarget(period_target);
+                portamento.setSpeed(volume_y * 2);
+                trigger = false;
+                break;
+            }
         }
     }
 #endif // #define FMUSIC_XM_VOLUMEBYTE_ACTIVE
@@ -156,40 +162,40 @@ void Channel::processVolumeByteTick(int volume_byte) noexcept
     switch (volume_byte >> 4)
     {
     case 0x6:
-    {
-        volume -= volume_y;
-        break;
-    }
+        {
+            volume -= volume_y;
+            break;
+        }
     case 0x7:
-    {
-        volume += volume_y;
-        break;
-    }
+        {
+            volume += volume_y;
+            break;
+        }
 #ifdef FMUSIC_XM_VIBRATO_ACTIVE
     case 0xb:
-    {
-        vibrato.setDepth(volume_y * 16);
-        period_delta = vibrato();
-        vibrato.update();
-        break;
-    }
+        {
+            vibrato.setDepth(volume_y * 16);
+            period_delta = vibrato();
+            vibrato.update();
+            break;
+        }
 #endif
     case 0xd:
-    {
-        pan -= volume_y;
-        break;
-    }
+        {
+            pan -= volume_y;
+            break;
+        }
     case 0xe:
-    {
-        pan += volume_y;
-        break;
-    }
+        {
+            pan += volume_y;
+            break;
+        }
 #ifdef FMUSIC_XM_PORTATO_ACTIVE
     case 0xf:
-    {
-        updatePeriodFromPortamento();
-        break;
-    }
+        {
+            updatePeriodFromPortamento();
+            break;
+        }
 #endif
     }
 #endif
@@ -246,13 +252,14 @@ void Channel::sendToMixer(Mixer& mixer, const Instrument& instrument, int global
 
         sound_channel.mix_position = static_cast<float>(sound_channel.sample_offset);
         sound_channel.speed_direction = MixDir::Forwards;
-        sound_channel.sample_offset = 0;	// reset it (in case other samples come in and get corrupted etc...)
+        sound_channel.sample_offset = 0; // reset it (in case other samples come in and get corrupted etc...)
 
         // volume ramping
         sound_channel.filtered_left_volume = 0;
         sound_channel.filtered_right_volume = 0;
     }
-    constexpr static float norm = 1.0f / 68451041280.0f; // 2^27 (volume normalization) * 255.0 (pan scale) (*2 for safety?!?)
+    constexpr static float norm = 1.0f / 68451041280.0f;
+    // 2^27 (volume normalization) * 255.0 (pan scale) (*2 for safety?!?)
     float high_precision_volume = static_cast<float>((volume + volume_delta) * fade_out_volume * global_volume) * norm;
 #ifdef FMUSIC_XM_VOLUMEENVELOPE_ACTIVE
     high_precision_volume *= volume_envelope();
@@ -268,15 +275,17 @@ void Channel::sendToMixer(Mixer& mixer, const Instrument& instrument, int global
     {
         const float freq = std::max(
 #ifdef FMUSIC_XM_AMIGAPERIODS_ACTIVE
-        (!linear_frequency) ? Period2Frequency(actual_period) :
+            (!linear_frequency)
+                ? Period2Frequency(actual_period)
+                :
 #endif
-            XMLinearPeriod2Frequency(actual_period), 100.0f);
+                XMLinearPeriod2Frequency(actual_period), 100.0f);
 
         sound_channel.speed = freq / static_cast<float>(mixer.getMixRate());
     }
     if (stop)
     {
         sound_channel.mix_position = 0;
-        sound_channel.sample_offset = 0;	// if this channel gets stolen it will be safe
+        sound_channel.sample_offset = 0; // if this channel gets stolen it will be safe
     }
 }

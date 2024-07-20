@@ -20,27 +20,28 @@ class WindowsPlayback final : public IPlaybackDriver
 {
     std::unique_ptr<short[]> buffer_;
 
-    HWAVEOUT					wave_out_handle_ = nullptr;
+    HWAVEOUT wave_out_handle_ = nullptr;
 
-    std::thread					software_thread_;
-    bool						software_thread_exit_ = true;		// mixing thread termination flag
+    std::thread software_thread_;
+    bool software_thread_exit_ = true; // mixing thread termination flag
 
 public:
-
     WindowsPlayback() = delete;
     WindowsPlayback(const WindowsPlayback&) = delete;
     WindowsPlayback(WindowsPlayback&&) = delete;
-    WindowsPlayback& operator = (const WindowsPlayback&) = delete;
-    WindowsPlayback& operator = (WindowsPlayback&&) = delete;
+    WindowsPlayback& operator =(const WindowsPlayback&) = delete;
+    WindowsPlayback& operator =(WindowsPlayback&&) = delete;
 
     explicit WindowsPlayback(unsigned int mix_rate, unsigned int buffer_size_ms, unsigned int latency) :
         IPlaybackDriver(mix_rate, buffer_size_ms, latency),
-        buffer_{ std::make_unique_for_overwrite<short[]>(buffer_size() * 2) }
-    {}
+        buffer_{std::make_unique_for_overwrite<short[]>(buffer_size() * 2)}
+    {
+    }
 
     void start(std::function<void(size_t block, short data[])>&& fill) override
     {
-        if (software_thread_exit_) {
+        if (software_thread_exit_)
+        {
             software_thread_exit_ = false;
             software_thread_ = std::thread{
                 [this, fill = std::move(fill)]()
@@ -69,7 +70,7 @@ public:
                     // PREFILL THE MIXER BUFFER
                     // ========================================================================================================
 
-                    WAVEHDR		wave_header{
+                    WAVEHDR wave_header{
                         .lpData = reinterpret_cast<LPSTR>(buffer_.get()),
                         .dwBufferLength = buffer_size() * sizeof(short) * 2,
                         .dwFlags = WHDR_BEGINLOOP | WHDR_ENDLOOP,
@@ -110,7 +111,6 @@ public:
                     waveOutReset(wave_out_handle_);
                     waveOutClose(wave_out_handle_);
                     wave_out_handle_ = nullptr;
-
                 }
             };
         }
@@ -134,7 +134,7 @@ public:
 
     [[nodiscard]] size_t current_block_played() const override
     {
-        MMTIME	mmt{
+        MMTIME mmt{
             .wType = TIME_SAMPLES
         };
         waveOutGetPosition(wave_out_handle_, &mmt, sizeof(MMTIME));
@@ -142,15 +142,16 @@ public:
     }
 };
 
-std::unique_ptr<IPlaybackDriver> IPlaybackDriver::create(unsigned int mix_rate, unsigned int buffer_size_ms, unsigned int latency)
+std::unique_ptr<IPlaybackDriver> IPlaybackDriver::create(unsigned int mix_rate, unsigned int buffer_size_ms,
+                                                         unsigned int latency)
 {
     return std::make_unique<WindowsPlayback>(mix_rate, buffer_size_ms, latency);
 }
 
 IPlaybackDriver::IPlaybackDriver(unsigned int mix_rate, unsigned int buffer_size_ms, unsigned int latency) :
-    mix_rate_{ mix_rate },
-    block_size_{ (((mix_rate_ * latency / 1000) + 3) & 0xFFFFFFFC) },
-    total_blocks_{ (buffer_size_ms / latency) * 2 },
-    buffer_size_{ block_size_ * total_blocks_ }
+    mix_rate_{mix_rate},
+    block_size_{(((mix_rate_ * latency / 1000) + 3) & 0xFFFFFFFC)},
+    total_blocks_{(buffer_size_ms / latency) * 2},
+    buffer_size_{block_size_ * total_blocks_}
 {
 }

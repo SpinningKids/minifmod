@@ -16,37 +16,39 @@
 #include <minixm/player_state.h>
 #include <minixm/system_file.h>
 
-namespace {
-	unsigned int FSOUND_MixRate = 44100;
-	PlayerState* FSOUND_last_player_state = nullptr;
+namespace
+{
+    unsigned int FSOUND_MixRate = 44100;
+    PlayerState* FSOUND_last_player_state = nullptr;
 }
+
 //= API FUNCTIONS ==============================================================================
 
 /*
 [API]
 [
-	[DESCRIPTION]
-	To load a module with a given filename.  Supports loading of
-	.XM  (fasttracker 2 modules)
+    [DESCRIPTION]
+    To load a module with a given filename.  Supports loading of
+    .XM  (fasttracker 2 modules)
 
-	[PARAMETERS]
-	'name'		Filename of module to load.
+    [PARAMETERS]
+    'name'		Filename of module to load.
 
-	[RETURN_VALUE]
-	On success, a pointer to a PlayerState handle is returned.
-	On failure, nullptr is returned.
+    [RETURN_VALUE]
+    On success, a pointer to a PlayerState handle is returned.
+    On failure, nullptr is returned.
 
-	[SEE_ALSO]
-	FMUSIC_FreeSong
+    [SEE_ALSO]
+    FMUSIC_FreeSong
 ]
 */
-Module* FMUSIC_LoadSong(const char *name, SAMPLE_LOAD_CALLBACK sample_load_callback)
+Module* FMUSIC_LoadSong(const char* name, SAMPLE_LOAD_CALLBACK sample_load_callback)
 {
     if (void* fp = minifmod::file_access.open(name))
     {
         // create a mod instance
-		auto mod = std::make_unique<Module>(minifmod::file_access, fp, sample_load_callback);
-		minifmod::file_access.close(fp);
+        auto mod = std::make_unique<Module>(minifmod::file_access, fp, sample_load_callback);
+        minifmod::file_access.close(fp);
         return mod.release();
     }
     return {};
@@ -55,92 +57,92 @@ Module* FMUSIC_LoadSong(const char *name, SAMPLE_LOAD_CALLBACK sample_load_callb
 /*
 [API]
 [
-	[DESCRIPTION]
-	Frees memory allocated for a song and removes it from the FMUSIC system.
+    [DESCRIPTION]
+    Frees memory allocated for a song and removes it from the FMUSIC system.
 
-	[PARAMETERS]
-	'mod'		Pointer to the song to be freed.
+    [PARAMETERS]
+    'mod'		Pointer to the song to be freed.
 
-	[RETURN_VALUE]
-	void
+    [RETURN_VALUE]
+    void
 
-	[REMARKS]
+    [REMARKS]
 
-	[SEE_ALSO]
-	FMUSIC_LoadSong
+    [SEE_ALSO]
+    FMUSIC_LoadSong
 ]
 */
 bool FMUSIC_FreeSong(Module* module)
 {
-	if (module)
-	{
-		delete module;
-		return true;
-	}
-	return false;
+    if (module)
+    {
+        delete module;
+        return true;
+    }
+    return false;
 }
 
 /*
 [API]
 [
-	[DESCRIPTION]
-	Starts a song playing.
+    [DESCRIPTION]
+    Starts a song playing.
 
-	[PARAMETERS]
-	'mod'		Pointer to the song to be played.
+    [PARAMETERS]
+    'mod'		Pointer to the song to be played.
 
-	[RETURN_VALUE]
-	true		song succeeded playing
-	false		song failed playing
+    [RETURN_VALUE]
+    true		song succeeded playing
+    false		song failed playing
 
-	[REMARKS]
+    [REMARKS]
 
-	[SEE_ALSO]
-	FMUSIC_StopSong
+    [SEE_ALSO]
+    FMUSIC_StopSong
 ]
 */
 PlayerState* FMUSIC_PlaySong(Module* module)
 {
-	if (!module)
-	{
-		return nullptr;
-	}
+    if (!module)
+    {
+        return nullptr;
+    }
 
-	FSOUND_last_player_state = new PlayerState(std::unique_ptr<Module>{ module }, FSOUND_MixRate);
-	FSOUND_last_player_state->start();
-	return FSOUND_last_player_state;
+    FSOUND_last_player_state = new PlayerState(std::unique_ptr<Module>{module}, FSOUND_MixRate);
+    FSOUND_last_player_state->start();
+    return FSOUND_last_player_state;
 }
 
 
 /*
 [API]
 [
-	[DESCRIPTION]
-	Stops a song from playing.
+    [DESCRIPTION]
+    Stops a song from playing.
 
-	[PARAMETERS]
-	'mod'		Pointer to the song to be stopped.
+    [PARAMETERS]
+    'mod'		Pointer to the song to be stopped.
 
-	[RETURN_VALUE]
-	void
+    [RETURN_VALUE]
+    void
 
-	[REMARKS]
+    [REMARKS]
 
-	[SEE_ALSO]
-	FMUSIC_PlaySong
+    [SEE_ALSO]
+    FMUSIC_PlaySong
 ]
 */
 Module* FMUSIC_StopSong(PlayerState* player_state)
 {
-	std::unique_ptr<Module> module;
-	if (!player_state) player_state = FSOUND_last_player_state;
-	if (player_state)
-	{
-		module = player_state->stop();
-		if (FSOUND_last_player_state == player_state) FSOUND_last_player_state = nullptr;
-		delete player_state;
-	}
-	return module.release();
+    std::unique_ptr<Module> module;
+    if (!player_state) player_state = FSOUND_last_player_state;
+    if (player_state)
+    {
+        module = player_state->stop();
+        if (FSOUND_last_player_state == player_state) FSOUND_last_player_state = nullptr;
+        delete player_state;
+    }
+    return module.release();
 }
 
 //= INFORMATION FUNCTIONS ======================================================================
@@ -148,90 +150,95 @@ Module* FMUSIC_StopSong(PlayerState* player_state)
 /*
 [API]
 [
-	[DESCRIPTION]
-	Returns the song's current order number
+    [DESCRIPTION]
+    Returns the song's current order number
 
-	[PARAMETERS]
-	'mod'		Pointer to the song to retrieve current order number from.
+    [PARAMETERS]
+    'mod'		Pointer to the song to retrieve current order number from.
 
-	[RETURN_VALUE]
-	The song's current order number.
-	On failure, 0 is returned.
+    [RETURN_VALUE]
+    The song's current order number.
+    On failure, 0 is returned.
 
-	[REMARKS]
+    [REMARKS]
 
-	[SEE_ALSO]
-	FMUSIC_GetPattern
+    [SEE_ALSO]
+    FMUSIC_GetPattern
 ]
 */
 int FMUSIC_GetOrder()
 {
-	return FSOUND_last_player_state ? FSOUND_last_player_state->getTimeInfo().position.order : 0;
+    return FSOUND_last_player_state ? FSOUND_last_player_state->getTimeInfo().position.order : 0;
 }
 
 
 /*
 [API]
 [
-	[DESCRIPTION]
-	Returns the song's current row number.
+    [DESCRIPTION]
+    Returns the song's current row number.
 
-	[PARAMETERS]
- 	'mod'		Pointer to the song to retrieve current row from.
+    [PARAMETERS]
+    'mod'		Pointer to the song to retrieve current row from.
 
-	[RETURN_VALUE]
-	On success, the song's current row number is returned.
-	On failure, 0 is returned.
+    [RETURN_VALUE]
+    On success, the song's current row number is returned.
+    On failure, 0 is returned.
 
-	[REMARKS]
+    [REMARKS]
 
-	[SEE_ALSO]
+    [SEE_ALSO]
 ]
 */
 int FMUSIC_GetRow()
 {
-	return FSOUND_last_player_state ? FSOUND_last_player_state->getTimeInfo().position.row : 0;
+    return FSOUND_last_player_state ? FSOUND_last_player_state->getTimeInfo().position.row : 0;
 }
 
 
 /*
 [API]
 [
-	[DESCRIPTION]
-	Returns the time in milliseconds since the song was started.  This is useful for
-	synchronizing purposes because it will be exactly the same every time, and it is
-	reliably retriggered upon starting the song.  Trying to synchronize using other
-	windows timers can lead to varying results, and inexact performance.  This fixes that
-	problem by actually using the number of samples sent to the soundcard as a reference.
+    [DESCRIPTION]
+    Returns the time in milliseconds since the song was started.  This is useful for
+    synchronizing purposes because it will be exactly the same every time, and it is
+    reliably retriggered upon starting the song.  Trying to synchronize using other
+    windows timers can lead to varying results, and inexact performance.  This fixes that
+    problem by actually using the number of samples sent to the soundcard as a reference.
 
-	[PARAMETERS]
-	'mod'		Pointer to the song to get time from.
+    [PARAMETERS]
+    'mod'		Pointer to the song to get time from.
 
-	[RETURN_VALUE]
-	On success, the time played in milliseconds is returned.
-	On failure, 0 is returned.
+    [RETURN_VALUE]
+    On success, the time played in milliseconds is returned.
+    On failure, 0 is returned.
 
-	[REMARKS]
+    [REMARKS]
 
-	[SEE_ALSO]
+    [SEE_ALSO]
 ]
 */
 int FMUSIC_GetTime()
 {
-	return static_cast<int>(FSOUND_last_player_state ? FSOUND_last_player_state->getTimeInfo().samples * 1000ull / FSOUND_MixRate : 0);
+    return static_cast<int>(FSOUND_last_player_state
+                                ? FSOUND_last_player_state->getTimeInfo().samples * 1000ull / FSOUND_MixRate
+                                : 0);
 }
 
 bool FSOUND_Init(int mixrate, int /* vcmmode */) noexcept
 {
-	FSOUND_MixRate = mixrate;
-	return true;
+    FSOUND_MixRate = mixrate;
+    return true;
 }
 
-void FSOUND_File_SetCallbacks(void* (*OpenCallback)(const char* name), void	(*CloseCallback)(void* handle), int (*ReadCallback)(void* buffer, int size, void* handle), void (*SeekCallback)(void*, int pos, int mode), int (*TellCallback)(void* handle)) noexcept
+void FSOUND_File_SetCallbacks(void* (*OpenCallback)(const char* name), void (*CloseCallback)(void* handle),
+                              int (*ReadCallback)(void* buffer, int size, void* handle),
+                              void (*SeekCallback)(void*, int pos, int mode),
+                              int (*TellCallback)(void* handle)) noexcept
 {
-	minifmod::file_access.open = OpenCallback;
-	minifmod::file_access.close = CloseCallback;
-	minifmod::file_access.read = ReadCallback;
-	minifmod::file_access.seek = SeekCallback;
-	minifmod::file_access.tell = TellCallback;
+    minifmod::file_access.open = OpenCallback;
+    minifmod::file_access.close = CloseCallback;
+    minifmod::file_access.read = ReadCallback;
+    minifmod::file_access.seek = SeekCallback;
+    minifmod::file_access.tell = TellCallback;
 }

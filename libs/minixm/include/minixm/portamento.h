@@ -16,14 +16,15 @@
 
 class Portamento
 {
-	int target_;
-	int speed_;
-public:
-	void setTarget(int target) noexcept { target_ = target; }
-	void setSpeed(int speed) noexcept { if (speed) speed_ = speed; }
+    int target_;
+    int speed_;
 
-	int operator ()(int period) const noexcept
-	{
-		return std::clamp(target_, period - speed_, period + speed_);
-	}
+public:
+    void setTarget(int target) noexcept { target_ = target; }
+    void setSpeed(int speed) noexcept { if (speed) speed_ = speed; }
+
+    int operator ()(int period) const noexcept
+    {
+        return std::clamp(target_, period - speed_, period + speed_);
+    }
 };

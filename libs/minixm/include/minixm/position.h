@@ -14,6 +14,6 @@
 
 struct Position final
 {
-	int row;				// current row in pattern
-	int order;				// current song order position
+    int row; // current row in pattern
+    int order; // current song order position
 };

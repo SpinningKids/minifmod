@@ -13,8 +13,9 @@
 #ifndef SYSTEM_FILE_H_
 #define SYSTEM_FILE_H_
 
-namespace minifmod {
-    using FFileOpen = void* (const char* name);
+namespace minifmod
+{
+    using FFileOpen = void*(const char* name);
     using FFileClose = void(void* handle);
     using FFileRead = int(void* buffer, int size, void* handle);
     using FFileSeek = void(void* handle, int pos, int mode);
