@@ -22,10 +22,13 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 		"$<$<CONFIG:RELEASE>:/vd0>"
 		"$<$<CONFIG:RELEASE>:/fpcvt:BC>"
 		"$<$<CONFIG:RELEASE>:/fp:except->"
-
+		"/Zi"
 		#"/d2noftol3" # it actually makes the code bigger!
 	)
 	add_link_options(
+		"/DEBUG"
+		"/OPT:REF"
+		"/OPT:ICF"
 		"/MAP:out.map"
 		"$<$<CONFIG:RELEASE>:/LTCG>"
 	)
