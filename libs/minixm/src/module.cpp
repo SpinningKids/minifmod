@@ -89,10 +89,9 @@ Module::Module(const minifmod::FileAccess& fileAccess, void* fp,
         {
             fileAccess.read(&instrument.instrument_sample_header, sizeof(instrument.instrument_sample_header), fp);
 
-            auto adjust_envelope = [](int count, const XMEnvelopePoint (&original_points)[12], int offset, float scale,
+            auto initialize_envelope = [](EnvelopePoints &e, int count, const XMEnvelopePoint (&original_points)[12], int offset, float scale,
                                       XMEnvelopeFlags flags)
             {
-                EnvelopePoints e;
                 e.count = (count < 2 || !(flags & XMEnvelopeFlagsOn)) ? 0 : count;
                 for (int i = 0; i < e.count; ++i)
                 {
@@ -112,15 +111,14 @@ Module::Module(const minifmod::FileAccess& fileAccess, void* fp,
                 {
                     e.envelope[e.count - 1].delta = 0.f;
                 }
-                return e;
             };
 #ifdef FMUSIC_XM_VOLUMEENVELOPE_ACTIVE
-            instrument.volume_envelope = adjust_envelope(instrument.instrument_sample_header.volume_envelope_count,
+            initialize_envelope(instrument.volume_envelope, instrument.instrument_sample_header.volume_envelope_count,
                                                          instrument.instrument_sample_header.volume_envelope, 0, 64,
                                                          instrument.instrument_sample_header.volume_envelope_flags);
 #endif
 #ifdef FMUSIC_XM_PANENVELOPE_ACTIVE
-            instrument.pan_envelope = adjust_envelope(instrument.instrument_sample_header.pan_envelope_count,
+            initialize_envelope(instrument.pan_envelope, instrument.instrument_sample_header.pan_envelope_count,
                                                       instrument.instrument_sample_header.pan_envelope, 32, 32,
                                                       instrument.instrument_sample_header.pan_envelope_flags);
 #endif
@@ -210,7 +208,7 @@ Module::Module(const minifmod::FileAccess& fileAccess, void* fp,
         }
         else
         {
-            instrument.instrument_sample_header = XMInstrumentSampleHeader{};
+            new (&instrument.instrument_sample_header) XMInstrumentSampleHeader{};
             fileAccess.seek(fp, first_sample_offset, SEEK_SET);
         }
     }
