@@ -12,7 +12,6 @@
 
 #pragma once
 
-#include <functional>
 #include <memory>
 
 class IPlaybackDriver
@@ -39,7 +38,9 @@ public:
     [[nodiscard]] uint32_t mix_rate() const noexcept { return mix_rate_; }
     [[nodiscard]] uint32_t buffer_size() const noexcept { return buffer_size_; }
 
-    virtual void start(std::function<void(size_t block, short data[])>&& fill) = 0;
+    using FillFunction = void(void* arg, size_t block, short data[]) noexcept;
+
+    virtual void start(FillFunction* fill, void* arg) = 0;
     virtual void stop() = 0;
 
     [[nodiscard]] virtual size_t current_block_played() const = 0;

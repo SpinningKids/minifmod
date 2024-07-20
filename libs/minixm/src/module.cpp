@@ -17,7 +17,7 @@
 #include <xmformat/pattern_header.h>
 
 Module::Module(const minifmod::FileAccess& fileAccess, void* fp,
-               const std::function<void(int16_t*, size_t, int, int)>& sample_load_callback)
+               SampleLoadFunction* sample_load_callback)
 {
     fileAccess.seek(fp, 0, SEEK_SET);
     fileAccess.read(&header_, sizeof(header_), fp);
@@ -89,8 +89,9 @@ Module::Module(const minifmod::FileAccess& fileAccess, void* fp,
         {
             fileAccess.read(&instrument.instrument_sample_header, sizeof(instrument.instrument_sample_header), fp);
 
-            auto initialize_envelope = [](EnvelopePoints &e, int count, const XMEnvelopePoint (&original_points)[12], int offset, float scale,
-                                      XMEnvelopeFlags flags)
+            auto initialize_envelope = [](EnvelopePoints& e, int count, const XMEnvelopePoint (&original_points)[12],
+                                          int offset, float scale,
+                                          XMEnvelopeFlags flags)
             {
                 e.count = (count < 2 || !(flags & XMEnvelopeFlagsOn)) ? 0 : count;
                 for (int i = 0; i < e.count; ++i)
@@ -114,13 +115,13 @@ Module::Module(const minifmod::FileAccess& fileAccess, void* fp,
             };
 #ifdef FMUSIC_XM_VOLUMEENVELOPE_ACTIVE
             initialize_envelope(instrument.volume_envelope, instrument.instrument_sample_header.volume_envelope_count,
-                                                         instrument.instrument_sample_header.volume_envelope, 0, 64,
-                                                         instrument.instrument_sample_header.volume_envelope_flags);
+                                instrument.instrument_sample_header.volume_envelope, 0, 64,
+                                instrument.instrument_sample_header.volume_envelope_flags);
 #endif
 #ifdef FMUSIC_XM_PANENVELOPE_ACTIVE
             initialize_envelope(instrument.pan_envelope, instrument.instrument_sample_header.pan_envelope_count,
-                                                      instrument.instrument_sample_header.pan_envelope, 32, 32,
-                                                      instrument.instrument_sample_header.pan_envelope_flags);
+                                instrument.instrument_sample_header.pan_envelope, 32, 32,
+                                instrument.instrument_sample_header.pan_envelope_flags);
 #endif
 
 
@@ -208,7 +209,7 @@ Module::Module(const minifmod::FileAccess& fileAccess, void* fp,
         }
         else
         {
-            new (&instrument.instrument_sample_header) XMInstrumentSampleHeader{};
+            new(&instrument.instrument_sample_header) XMInstrumentSampleHeader{};
             fileAccess.seek(fp, first_sample_offset, SEEK_SET);
         }
     }

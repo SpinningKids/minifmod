@@ -13,7 +13,6 @@
 #pragma once
 
 #include <cassert>
-#include <functional>
 
 #include "playback.h"
 #include "position.h"
@@ -51,8 +50,13 @@ struct TimeInfo final
 
 class Mixer final
 {
+public:
+    using TickFunction = Position(void* context);
+
+private:
     // mixing info
-    std::function<Position()> tick_callback_;
+    TickFunction *tick_function_;
+    void* tick_context_;
 
     std::unique_ptr<IPlaybackDriver> driver_;
     std::unique_ptr<TimeInfo[]> time_info_;
@@ -68,12 +72,13 @@ class Mixer final
     unsigned int bpm_;
     TimeInfo last_mixed_time_info_;
 
-    const TimeInfo& fill(short target[]);
-    void mix(float* mixptr, uint32_t len);
+    const TimeInfo& fill(short target[]) noexcept;
+    void mix(float* mixptr, uint32_t len) noexcept;
 
 public:
     explicit Mixer(
-        std::function<Position()>&& tick_callback,
+        TickFunction tick_function,
+        void* tick_context,
         uint16_t bpm,
         unsigned int mix_rate = 44100,
         unsigned int buffer_size_ms = 1000,

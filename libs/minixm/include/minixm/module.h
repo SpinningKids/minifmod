@@ -14,7 +14,6 @@
 
 #include <cassert>
 #include <cstdint>
-#include <functional>
 
 #include "channel.h"
 #include "instrument.h"
@@ -29,8 +28,10 @@ struct Module final
     Pattern pattern_[256]; // patterns array for this song
     Instrument instrument_[128]; // instrument array for this song (not used in MOD/S3M)
 
+    using SampleLoadFunction = void(int16_t*, size_t, int, int);
+
     Module(const minifmod::FileAccess& fileAccess, void* fp,
-           const std::function<void(int16_t*, size_t, int, int)>& sample_load_callback);
+           SampleLoadFunction* sample_load_callback);
 
     [[nodiscard]] const Instrument& getInstrument(int instrument) const
     {

@@ -31,9 +31,10 @@ namespace
     }
 }
 
-Mixer::Mixer(std::function<Position()>&& tick_callback, uint16_t bpm, unsigned int mix_rate,
+Mixer::Mixer(TickFunction* tick_function, void* tick_context, uint16_t bpm, unsigned int mix_rate,
              unsigned int buffer_size_ms, unsigned int latency, float volume_filter_time_constant) :
-    tick_callback_{std::move(tick_callback)},
+    tick_function_{tick_function},
+    tick_context_{tick_context},
     driver_{IPlaybackDriver::create(mix_rate, buffer_size_ms, latency)},
     time_info_{std::make_unique_for_overwrite<TimeInfo[]>(driver_->blocks())},
     volume_filter_k_{1.f / (1.f + static_cast<float>(driver_->mix_rate()) * volume_filter_time_constant)},
@@ -61,7 +62,11 @@ TimeInfo Mixer::getTimeInfo() const
 
 void Mixer::start()
 {
-    driver_->start([this](size_t block, short data[]) { time_info_[block] = fill(data); });
+    driver_->start([](void* arg, size_t block, short data[]) noexcept
+    {
+        const auto self = static_cast<Mixer*>(arg);
+        self->time_info_[block] = self->fill(data);
+    }, this);
 }
 
 void Mixer::stop()
@@ -75,7 +80,7 @@ float Mixer::timeFromSamples() const
         mix_rate());
 }
 
-void Mixer::mix(float* mixptr, uint32_t len)
+void Mixer::mix(float* mixptr, uint32_t len) noexcept
 {
     //==============================================================================================
     // LOOP THROUGH CHANNELS
@@ -186,7 +191,7 @@ void Mixer::mix(float* mixptr, uint32_t len)
     }
 }
 
-const TimeInfo& Mixer::fill(short target[])
+const TimeInfo& Mixer::fill(short target[]) noexcept
 {
     const auto block_size = driver_->block_size();
     //==============================================================================
@@ -208,7 +213,7 @@ const TimeInfo& Mixer::fill(short target[])
     {
         if (!mixer_samples_left_)
         {
-            last_mixed_time_info_.position = tick_callback_(); // update new mod tick
+            last_mixed_time_info_.position = tick_function_(tick_context_); // update new mod tick
             mixer_samples_left_ = driver_->mix_rate() * 5 / (bpm_ * 2);
         }
 

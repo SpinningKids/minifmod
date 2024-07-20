@@ -38,13 +38,13 @@ public:
     {
     }
 
-    void start(std::function<void(size_t block, short data[])>&& fill) override
+    void start(FillFunction* fill, void* arg) override
     {
         if (software_thread_exit_)
         {
             software_thread_exit_ = false;
             software_thread_ = std::thread{
-                [this, fill = std::move(fill)]()
+                [this, fill, arg]()
                 {
                     software_thread_exit_ = false;
 
@@ -81,7 +81,7 @@ public:
                     // pre-fill
                     for (DWORD i = 0; i < blocks(); ++i)
                     {
-                        fill(i, buffer_.get() + i * block_size() * 2);
+                        fill(arg, i, buffer_.get() + i * block_size() * 2);
                     }
 
                     // ========================================================================================================
@@ -96,7 +96,7 @@ public:
                     {
                         while (software_fill_block != current_block_played())
                         {
-                            fill(software_fill_block, buffer_.get() + software_fill_block * block_size() * 2);
+                            fill(arg, software_fill_block, buffer_.get() + software_fill_block * block_size() * 2);
                             software_fill_block = (software_fill_block + 1) % blocks();
                         }
 

@@ -838,7 +838,7 @@ void PlayerState::updateTick()
 
 PlayerState::PlayerState(std::unique_ptr<Module> module, unsigned int mix_rate) :
     module_{std::move(module)},
-    mixer_{[this] { return this->tick(); }, module_->header_.default_bpm, mix_rate},
+    mixer_{[](void* context) { return static_cast<PlayerState*>(context)->tick(); }, this, module_->header_.default_bpm, mix_rate},
     global_volume_{64},
     tick_{0},
     ticks_per_row_{module_->header_.default_tempo},
