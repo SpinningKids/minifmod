@@ -3,3 +3,4 @@
 add_subdirectory ("minifmod")
 add_subdirectory ("minixm")
 add_subdirectory ("xmformat")
+add_subdirectory ("winmm_playback")

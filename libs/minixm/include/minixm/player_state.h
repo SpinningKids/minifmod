@@ -48,7 +48,7 @@ private:
     Position tick();
 
 public:
-    PlayerState(std::unique_ptr<Module> module, unsigned int mix_rate);
+    PlayerState(std::unique_ptr<IPlaybackDriver> driver, std::unique_ptr<Module> module);
 
     void start()
     {

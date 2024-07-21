@@ -32,7 +32,7 @@ public:
 
 private:
     // mixing info
-    TickFunction *tick_function_;
+    TickFunction* tick_function_;
     void* tick_context_;
 
     std::unique_ptr<IPlaybackDriver> driver_;
@@ -52,14 +52,8 @@ private:
     const TimeInfo& fill(short target[]) noexcept;
 
 public:
-    explicit Mixer(
-        TickFunction tick_function,
-        void* tick_context,
-        uint16_t bpm,
-        unsigned int mix_rate = 44100,
-        unsigned int buffer_size_ms = 1000,
-        unsigned int latency = 20,
-        float volume_filter_time_constant = 0.003f);
+    explicit Mixer(std::unique_ptr<IPlaybackDriver> driver, TickFunction tick_function, void* tick_context,
+                   uint16_t bpm, float volume_filter_time_constant = 0.003f);
 
     [[nodiscard]] MixerChannel& getChannel(int index)
     {

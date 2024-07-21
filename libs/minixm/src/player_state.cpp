@@ -836,9 +836,12 @@ void PlayerState::updateTick()
     }
 }
 
-PlayerState::PlayerState(std::unique_ptr<Module> module, unsigned int mix_rate) :
+PlayerState::PlayerState(std::unique_ptr<IPlaybackDriver> driver, std::unique_ptr<Module> module) :
     module_{std::move(module)},
-    mixer_{[](void* context) { return static_cast<PlayerState*>(context)->tick(); }, this, module_->header_.default_bpm, mix_rate},
+    mixer_{
+        std::move(driver), [](void* context) { return static_cast<PlayerState*>(context)->tick(); }, this,
+        module_->header_.default_bpm
+    },
     global_volume_{64},
     tick_{0},
     ticks_per_row_{module_->header_.default_tempo},

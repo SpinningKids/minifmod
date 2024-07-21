@@ -30,6 +30,8 @@
 #include <minixm/module.h>
 #include <minixm/player_state.h>
 
+#include <winmm_playback/winmm_playback.h>
+
 // this is if you want to replace the samples with your own (in case you have compressed them)
 void sample_load_callback(void* buff, int lenbytes, int numbits, int instno, int sampno)
 {
@@ -221,7 +223,7 @@ int main(int argc, char* argv[])
     // PLAY SONG
     // ==========================================================================================
 
-    PlayerState player_state{(std::move(mod)), mix_rate};
+    PlayerState player_state{std::make_unique<WindowsPlayback>(mix_rate), std::move(mod)};
 
     player_state.start();
 

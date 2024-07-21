@@ -24,8 +24,6 @@ protected:
     IPlaybackDriver(unsigned int mix_rate, unsigned int buffer_size_ms, unsigned int latency);
 
 public:
-    static std::unique_ptr<IPlaybackDriver> create(uint32_t mix_rate, uint32_t buffer_size_ms, uint32_t latency);
-
     IPlaybackDriver() = default;
     IPlaybackDriver(const IPlaybackDriver&) = delete;
     IPlaybackDriver(IPlaybackDriver&&) = delete;

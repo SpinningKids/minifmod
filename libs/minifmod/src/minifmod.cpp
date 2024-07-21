@@ -16,6 +16,8 @@
 #include <minixm/player_state.h>
 #include <minixm/system_file.h>
 
+#include <winmm_playback/winmm_playback.h>
+
 namespace
 {
     unsigned int FSOUND_MixRate = 44100;
@@ -107,8 +109,8 @@ PlayerState* FMUSIC_PlaySong(Module* module)
     {
         return nullptr;
     }
-
-    FSOUND_last_player_state = new PlayerState(std::unique_ptr<Module>{module}, FSOUND_MixRate);
+    FSOUND_last_player_state = new PlayerState(std::make_unique<WindowsPlayback>(FSOUND_MixRate),
+                                               std::unique_ptr<Module>{module});
     FSOUND_last_player_state->start();
     return FSOUND_last_player_state;
 }
