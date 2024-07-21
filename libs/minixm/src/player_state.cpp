@@ -11,6 +11,7 @@
 /******************************************************************************/
 
 #include <minixm/player_state.h>
+
 #include <minixm/xmeffects.h>
 
 #include <xmformat/sample_header.h>
@@ -71,7 +72,7 @@ Position PlayerState::tick()
         updateTick(); // Else update the inbetween row effects
     }
 
-    clampGlobalVolume();
+    global_volume_ = std::clamp(global_volume_, 0, 64);
     for (int channel_index = 0; channel_index < module_->header_.channels_count; channel_index++)
     {
         Channel& channel = channels_[channel_index];

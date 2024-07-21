@@ -12,7 +12,8 @@
 
 #pragma once
 
-#include <memory>
+#include <cstddef>
+#include <cstdint>
 
 class IPlaybackDriver
 {

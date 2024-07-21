@@ -18,6 +18,7 @@
 #include "envelope.h"
 #include "sample.h"
 #include "xmeffects.h"
+
 #include <xmformat/instrument_header.h>
 #include <xmformat/instrument_sample_header.h>
 #include <xmformat/note.h>

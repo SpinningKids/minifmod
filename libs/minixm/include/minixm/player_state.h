@@ -40,11 +40,6 @@ private:
     void updateNote();
     void updateTick();
 
-    void clampGlobalVolume() noexcept
-    {
-        global_volume_ = std::clamp(global_volume_, 0, 64);
-    }
-
     Position tick();
 
 public:

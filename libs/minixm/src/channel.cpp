@@ -10,8 +10,9 @@
 /* This library (minixm) is maintained by Pan/SpinningKids, 2022-2024         */
 /******************************************************************************/
 
-#include <algorithm>
 #include <minixm/channel.h>
+
+#include <algorithm>
 
 #include <minixm/xmeffects.h>
 

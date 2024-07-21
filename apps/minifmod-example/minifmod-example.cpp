@@ -10,6 +10,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+
 #ifdef WIN32
 #include <conio.h>
 #endif
@@ -75,6 +76,7 @@ void* memopen(const char* name)
     FSOUND_Init(96000);
     const auto memfile = static_cast<MEMFILE*>(calloc(sizeof(MEMFILE), 1));
 
+    if (memfile)
 #ifndef USEMEMLOADRESOURCE
     {
         // load an external file and read it

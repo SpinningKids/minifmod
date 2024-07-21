@@ -7,7 +7,7 @@
 /* Firelight Technologies is a registered company.                            */
 /* This source must not be redistributed without this notice.                 */
 /******************************************************************************/
-/* This library (minixm) is maintained by Pan/SpinningKids, 2022-2024         */
+/* This library (winmm_playvack) is maintained by Pan/SpinningKids, 2022-2024 */
 /******************************************************************************/
 
 #include <winmm_playback/winmm_playback.h>

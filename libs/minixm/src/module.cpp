@@ -11,6 +11,7 @@
 /******************************************************************************/
 
 #include <minixm/module.h>
+
 #include <minixm/channel.h>
 #include <minixm/xmeffects.h>
 

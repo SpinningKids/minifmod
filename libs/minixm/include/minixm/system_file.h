@@ -10,8 +10,7 @@
 /* This library (minixm) is maintained by Pan/SpinningKids, 2022-2024         */
 /******************************************************************************/
 
-#ifndef SYSTEM_FILE_H_
-#define SYSTEM_FILE_H_
+#pragma once
 
 namespace minifmod
 {
@@ -32,5 +31,3 @@ namespace minifmod
 
     inline FileAccess file_access;
 }
-
-#endif
