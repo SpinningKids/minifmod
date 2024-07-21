@@ -40,7 +40,7 @@ struct Channel
     int volume_delta; // delta for volume commands.. tremolo/tremor etc
 
     int fade_out_volume; // volume fade out
-    bool key_off; // flag whether keyoff has been hit or not
+    bool key_off; // flag whether key off has been hit or not
 
     int instrument_index; // last instrument set in channel (0-127)
     XMNote real_note; // last real note set in channel

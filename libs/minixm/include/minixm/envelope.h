@@ -40,7 +40,7 @@ public:
     }
 
     void process(const EnvelopePoints& envelope, XMEnvelopeFlags flags, unsigned char loop_start_index,
-                 unsigned char loop_end_index, unsigned char sustain_index, bool keyoff);
+                 unsigned char loop_end_index, unsigned char sustain_index, bool key_off);
     float operator()() const noexcept { return value_; }
     void setPosition(int position) noexcept { position_ = position; }
 };

@@ -20,7 +20,7 @@
 struct XMNote
 {
     static constexpr uint8_t KEY_OFF = 97;
-    uint8_t value{}; // note to play at     (0-133) 132=none,133=keyoff <- This comment is WRONG.
+    uint8_t value{};
 
     [[nodiscard]] bool isKeyOff() const noexcept { return value == KEY_OFF; }
     [[nodiscard]] bool isValid() const noexcept { return value && value != KEY_OFF; }

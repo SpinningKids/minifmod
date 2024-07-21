@@ -13,7 +13,7 @@
 #include <minixm/envelope.h>
 
 void EnvelopeState::process(const EnvelopePoints& envelope, XMEnvelopeFlags flags, unsigned char loop_start_index,
-                            unsigned char loop_end_index, unsigned char sustain_index, bool keyoff)
+                            unsigned char loop_end_index, unsigned char sustain_index, bool key_off)
 {
     if (envelope.count > 0)
     {
@@ -36,7 +36,7 @@ void EnvelopeState::process(const EnvelopePoints& envelope, XMEnvelopeFlags flag
         // Envelope
         // if it is at the last position, abort the envelope and continue last value
         // same if we're at sustain point
-        if (keyoff || current_index != sustain_index || !(flags & XMEnvelopeFlagsSustain))
+        if (key_off || current_index != sustain_index || !(flags & XMEnvelopeFlagsSustain))
         {
             ++position_;
         }
