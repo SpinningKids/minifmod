@@ -14,33 +14,10 @@
 
 #include <cassert>
 
+#include "mixer_channel.h"
 #include "playback.h"
 #include "position.h"
 #include "sample.h"
-
-enum class MixDir
-{
-    Forwards,
-    Backwards
-};
-
-struct MixerChannel final
-{
-    unsigned int sample_offset; // sample offset (sample starts playing from here).
-
-    const Sample* sample_ptr; // currently playing sample
-
-    // software mixer stuff
-    float left_volume; // mixing information. adjusted volume for left channel (panning involved)
-    float right_volume; // mixing information. adjusted volume for right channel (panning involved)
-    float mix_position; // mixing information. floating point fractional position in sample.
-    float speed; // mixing information. playback rate - floating point.
-    MixDir speed_direction; // mixing information. playback direction - forwards or backwards
-
-    // software mixer volume ramping stuff
-    float filtered_left_volume;
-    float filtered_right_volume;
-};
 
 struct TimeInfo final
 {
@@ -73,7 +50,6 @@ private:
     TimeInfo last_mixed_time_info_;
 
     const TimeInfo& fill(short target[]) noexcept;
-    void mix(float* mixptr, uint32_t len) noexcept;
 
 public:
     explicit Mixer(

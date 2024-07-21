@@ -251,7 +251,7 @@ void Channel::sendToMixer(Mixer& mixer, const Instrument& instrument, int global
         }
 
         sound_channel.mix_position = static_cast<float>(sound_channel.sample_offset);
-        sound_channel.speed_direction = MixDir::Forwards;
+        sound_channel.speed = fabsf(sound_channel.speed);
         sound_channel.sample_offset = 0; // reset it (in case other samples come in and get corrupted etc...)
 
         // volume ramping

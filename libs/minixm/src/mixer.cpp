@@ -80,117 +80,6 @@ float Mixer::timeFromSamples() const
         mix_rate());
 }
 
-void Mixer::mix(float* mixptr, uint32_t len) noexcept
-{
-    //==============================================================================================
-    // LOOP THROUGH CHANNELS
-    //==============================================================================================
-    for (auto& channel : channel_)
-    {
-        uint32_t sample_index = 0;
-
-        //==============================================================================================
-        // LOOP THROUGH CHANNELS
-        //==============================================================================================
-        while (channel.sample_ptr && len > sample_index)
-        {
-            const auto loop_end = static_cast<float>(channel.sample_ptr->header.loop_start + channel.sample_ptr->header.
-                loop_length);
-
-            float samples_to_mix; // This can occasionally be < 0
-            if (channel.speed_direction == MixDir::Forwards)
-            {
-                samples_to_mix = loop_end - channel.mix_position;
-                if (samples_to_mix <= 0)
-                {
-                    samples_to_mix = static_cast<float>(channel.sample_ptr->header.length) - channel.mix_position;
-                }
-            }
-            else
-            {
-                samples_to_mix = channel.mix_position - static_cast<float>(channel.sample_ptr->header.loop_start);
-            }
-
-            // Ensure that we don't try to mix a negative amount of samples
-            const auto samples_to_mix_target = static_cast<unsigned int>(std::max(
-                0.f, ceilf(samples_to_mix / fabsf(channel.speed)))); // round up the division
-
-            // =========================================================================================
-            // the following code sets up a mix counter. it sees what will happen first, will the output buffer
-            // end be reached first or will the end of the sample be reached first?
-            // whatever is smallest will be the mix_count.
-            const unsigned int mix_count = std::min(len - sample_index, samples_to_mix_target);
-
-            float speed = channel.speed;
-
-            if (channel.speed_direction != MixDir::Forwards)
-            {
-                speed = -speed;
-            }
-
-            //= SET UP VOLUME MULTIPLIERS ==================================================
-
-            for (unsigned int i = 0; i < mix_count; ++i)
-            {
-                const auto mixpos = static_cast<uint32_t>(channel.mix_position);
-                const float frac = channel.mix_position - static_cast<float>(mixpos);
-                const auto samp1 = channel.sample_ptr->buff[mixpos];
-                const float newsamp = static_cast<float>(channel.sample_ptr->buff[mixpos + 1] - samp1) * frac +
-                    static_cast<float>(samp1);
-                mixptr[0 + (sample_index + i) * 2] += channel.filtered_left_volume * newsamp;
-                mixptr[1 + (sample_index + i) * 2] += channel.filtered_right_volume * newsamp;
-                channel.filtered_left_volume += (channel.left_volume - channel.filtered_left_volume) * volume_filter_k_;
-                channel.filtered_right_volume += (channel.right_volume - channel.filtered_right_volume) *
-                    volume_filter_k_;
-                channel.mix_position += speed;
-            }
-
-            sample_index += mix_count;
-
-            //=============================================================================================
-            // SWITCH ON LOOP MODE TYPE
-            //=============================================================================================
-            if (mix_count == samples_to_mix_target)
-            {
-                if (channel.sample_ptr->header.loop_mode == XMLoopMode::Normal)
-                {
-                    do
-                    {
-                        channel.mix_position -= static_cast<float>(channel.sample_ptr->header.loop_length);
-                    }
-                    while (channel.mix_position >= loop_end);
-                }
-                else if (channel.sample_ptr->header.loop_mode == XMLoopMode::Bidi)
-                {
-                    do
-                    {
-                        if (channel.speed_direction != MixDir::Forwards)
-                        {
-                            //BidiBackwards
-                            channel.mix_position = static_cast<float>(2 * channel.sample_ptr->header.loop_start) -
-                                channel.mix_position - 1;
-                            channel.speed_direction = MixDir::Forwards;
-                            if (channel.mix_position < loop_end)
-                            {
-                                break;
-                            }
-                        }
-                        //BidiForward
-                        channel.mix_position = 2 * loop_end - channel.mix_position - 1;
-                        channel.speed_direction = MixDir::Backwards;
-                    }
-                    while (channel.mix_position < static_cast<float>(channel.sample_ptr->header.loop_start));
-                }
-                else
-                {
-                    channel.mix_position = 0;
-                    channel.sample_ptr = nullptr;
-                }
-            }
-        }
-    }
-}
-
 const TimeInfo& Mixer::fill(short target[]) noexcept
 {
     const auto block_size = driver_->block_size();
@@ -219,7 +108,13 @@ const TimeInfo& Mixer::fill(short target[]) noexcept
 
         const uint32_t SamplesToMix = std::min(mixer_samples_left_, block_size - MixedSoFar);
 
-        mix(MixPtr, SamplesToMix);
+        //==============================================================================================
+        // LOOP THROUGH CHANNELS
+        //==============================================================================================
+        for (auto& channel : channel_)
+        {
+            channel.mix(MixPtr, SamplesToMix, volume_filter_k_);
+        }
 
         MixedSoFar += SamplesToMix;
         MixPtr += static_cast<size_t>(SamplesToMix) * 2;
