@@ -90,8 +90,7 @@ Module::Module(const minifmod::FileAccess& fileAccess, void* fp,
             fileAccess.read(&instrument.instrument_sample_header, sizeof(instrument.instrument_sample_header), fp);
 
             auto initialize_envelope = [](EnvelopePoints& e, int count, const XMEnvelopePoint (&original_points)[12],
-                                          int offset, float scale,
-                                          XMEnvelopeFlags flags)
+                                          int offset, float scale, XMEnvelopeFlags flags)
             {
                 e.count = (count < 2 || !(flags & XMEnvelopeFlagsOn)) ? 0 : count;
                 for (int i = 0; i < e.count; ++i)
