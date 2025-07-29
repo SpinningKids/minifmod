@@ -15,7 +15,7 @@
 #include <conio.h>
 #endif
 
-#define USEMEMLOAD
+//#define USEMEMLOAD
 //#define USEMEMLOADRESOURCE
 
 #ifdef USEMEMLOAD
