@@ -18,6 +18,8 @@
 #ifndef MINIFMOD_H_
 #define MINIFMOD_H_
 
+#include <cstddef>
+
 #ifdef __cplusplus
 extern "C" {
 #define MINIFMOD_NOEXCEPT noexcept

@@ -13,6 +13,7 @@
 #pragma once
 
 #include <cassert>
+#include <cmath>
 #include <numbers>
 
 #include "envelope.h"

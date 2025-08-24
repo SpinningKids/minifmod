@@ -30,7 +30,11 @@
 #include <minixm/module.h>
 #include <minixm/player_state.h>
 
+#ifdef WIN32
 #include <winmm_playback/winmm_playback.h>
+#else
+#include <pulseaudio_playback/pulseaudio_playback.h>
+#endif
 
 // this is if you want to replace the samples with your own (in case you have compressed them)
 void sample_load_callback(void* buff, int lenbytes, int numbits, int instno, int sampno)
@@ -222,8 +226,13 @@ int main(int argc, char* argv[])
     // ==========================================================================================
     // PLAY SONG
     // ==========================================================================================
-
-    PlayerState player_state{std::make_unique<WindowsPlayback>(mix_rate), std::move(mod)};
+    std::unique_ptr<IPlaybackDriver> playback;
+#ifdef WIN32
+    playback = std::make_unique<WindowsPlayback>(mix_rate);
+#else
+    playback = std::make_unique<PulseAudioPlayback>(mix_rate);
+#endif
+    PlayerState player_state{std::move(playback), std::move(mod)};
 
     player_state.start();
 

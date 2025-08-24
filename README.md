@@ -1,6 +1,6 @@
 # minifmod
 
-MiniFMOD 2.0.0 C++ version
+MiniFMOD 2.1.0 C++ version
 
 Copyright Firelight Technologies, 1999-2003.
 
@@ -34,10 +34,13 @@ AGAIN : DONT NAG ME WITH QUESTIONS ABOUT THE SOURCE, ASK SOMEONE ELSE.
   would love to hear from you, and it would be great if you can contribute it
   back to the community.
 
-  MiniFMOD 2.0.0, minixm and xmformat libraries are diverged from FMOD in early 2000s,
-  and heavily refactored, so they should be considered by now completely different 
-  codebases - please don't consider this code as representative of FMOD features or
-  quality.
+  MiniFMOD from version 2.0.0, minixm and xmformat libraries are diverged from
+  FMOD in early 2000s, and are now maintained from a different person, who do
+  not belong or have contacts with the MiniFMOD and/or FMOD original author(s).
+  This should be considered a derivative work, heavily refactored, and
+  developed independently under completely different premises - please don't
+  consider this code as representative in any way of FMOD features or quality,
+  or of other derivatives (including the original MiniFMOD).
 
 ### Usage Instructions
 
@@ -88,6 +91,15 @@ Update since v2.0.0:
 - The format of xmeffects.h isn't changed, but it's part of the minixm library.
 
 ## Revision History
+
+### Version 2.1.0 (2025/08/24 Pan/SK)
+
+- Linux support added!
+    - I'm not happy with it, the interface is clunky, but we have something.
+
+- Removed unnecessary modern C++ (std::function), removed warnings, code cleanup
+
+- Update to min cmake 3.10 (required for compatibility with cmake 4+)
 
 ### Version 2.0.0 (2024/07/16 Pan/SK)
 

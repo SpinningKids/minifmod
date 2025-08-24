@@ -12,6 +12,9 @@
 
 #include <minixm/mixer_channel.h>
 
+#include <cmath>
+#include <limits>
+
 void MixerChannel::mix(float* mixptr, uint32_t len, float filter_k)
 {
     uint32_t sample_index = 0;

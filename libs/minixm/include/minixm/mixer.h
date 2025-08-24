@@ -21,8 +21,8 @@
 
 struct TimeInfo final
 {
-    Position position;
-    uint32_t samples;
+    Position position{};
+    uint32_t samples{};
 };
 
 class Mixer final

@@ -8,5 +8,10 @@ get_filename_component(TARGET_NAME ${CMAKE_CURRENT_LIST_DIR} NAME)
 
 # Add source to this project's executable.
 add_executable(${TARGET_NAME} "minixm-example.cpp")
-target_link_libraries(${TARGET_NAME} PUBLIC minixm winmm_playback)
+target_link_libraries(${TARGET_NAME} PUBLIC minixm)
+if (WIN32)
+target_link_libraries(${TARGET_NAME} PUBLIC winmm_playback)
+else()
+target_link_libraries(${TARGET_NAME} PUBLIC pulseaudio_playback)
+endif()
 set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD 20)

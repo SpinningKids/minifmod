@@ -12,8 +12,10 @@
 
 #include <minixm/mixer.h>
 
-#include <cassert>
 #include <algorithm>
+#include <cassert>
+#include <cstring>
+#include <limits>
 
 namespace
 {
@@ -36,7 +38,7 @@ Mixer::Mixer(std::unique_ptr<IPlaybackDriver> driver, TickFunction* tick_functio
     tick_function_{tick_function},
     tick_context_{tick_context},
     driver_{std::move(driver)},
-    time_info_{std::make_unique_for_overwrite<TimeInfo[]>(driver_->blocks())},
+    time_info_{std::make_unique<TimeInfo[]>(driver_->blocks())},
     volume_filter_k_{1.f / (1.f + static_cast<float>(driver_->mix_rate()) * volume_filter_time_constant)},
     mix_buffer_{std::make_unique_for_overwrite<float[]>(driver_->block_size() * 2)},
     channel_{},
