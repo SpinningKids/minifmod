@@ -1,10 +1,10 @@
 # minifmod
 
-MiniFMOD 2.1.0 C++ version
+MiniFMOD 2.2.0 C++ version
 
 Copyright Firelight Technologies, 1999-2003.
 
-CMake adaption and heavy refactoring/cleanup/rewrite by Pan/SpinningKids 2022-2024
+Heavy refactoring/cleanup/rewrite and CMake adaption by Pan/SpinningKids 2022-2025
 
 ## DOCUMENTATION 
 
@@ -34,21 +34,20 @@ AGAIN : DONT NAG ME WITH QUESTIONS ABOUT THE SOURCE, ASK SOMEONE ELSE.
   would love to hear from you, and it would be great if you can contribute it
   back to the community.
 
-  MiniFMOD from version 2.0.0, minixm and xmformat libraries are diverged from
-  FMOD in early 2000s, and are now maintained from a different person, who do
-  not belong or have contacts with the MiniFMOD and/or FMOD original author(s).
+  All this work is completely diverged from FMOD in early 2000s, and even more since
+  2022, and are now maintained from a different person, who do does not belong nor 
+  have contacts with the MiniFMOD and/or FMOD original author(s).
   This should be considered a derivative work, heavily refactored, and
   developed independently under completely different premises - please don't
-  consider this code as representative in any way of FMOD features or quality,
-  or of other derivatives (including the original MiniFMOD).
+  consider this code as representative in any way of FMOD or the original MiniFMOD
+  features or quality.
 
 ### Usage Instructions
 
 - See `apps` subdirectory for an example of how to use minifmod and minixm.
 - You MUST set file IO callbacks for MiniFMOD to use. This is a very flexible way to
-  work, and saves having multiple file routines for file, memory or wad loading!
-  Just rip the sample if you dont know what it is about, or get the full FMOD 3 API and
-  read the documentation entries on the functions in the help file provided.
+  work, and saves having multiple file routines for file, memory or resource loading!
+  Just rip the sample if you dont know what it is about.
 - There are no error codes.  All functions return true or false, and it should be obvious why they fail.
 - Compile your exe with SIZE optimizations ON. (like the test example)
 - Compress your exe with UPX or other packer. You can find UPX at https://upx.github.io/
@@ -91,6 +90,11 @@ Update since v2.0.0:
 - The format of xmeffects.h isn't changed, but it's part of the minixm library.
 
 ## Revision History
+
+### Version 2.2.0 (2025/12/15 Pan/SK)
+
+- Support for both MingW and MSVC on Windows: minor breaking change on file support
+  (callback definition changed)
 
 ### Version 2.1.0 (2025/08/24 Pan/SK)
 

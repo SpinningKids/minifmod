@@ -243,10 +243,11 @@ bool FSOUND_Init(int mixrate, int /* vcmmode */) noexcept
     return true;
 }
 
-void FSOUND_File_SetCallbacks(void* (*OpenCallback)(const char* name), void (*CloseCallback)(void* handle),
-                              int (*ReadCallback)(void* buffer, int size, void* handle),
-                              void (*SeekCallback)(void*, int pos, int mode),
-                              int (*TellCallback)(void* handle)) noexcept
+void FSOUND_File_SetCallbacks(void* (*OpenCallback)(const char* name),
+                              void (*CloseCallback)(void* handle),
+                              size_t (*ReadCallback)(void* buffer, size_t size, void* handle),
+                              void (*SeekCallback)(void*, long pos, int mode),
+                              long (*TellCallback)(void* handle)) noexcept
 {
     minifmod::file_access.open = OpenCallback;
     minifmod::file_access.close = CloseCallback;

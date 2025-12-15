@@ -47,17 +47,17 @@ void fileclose(void* handle)
     fclose((FILE*)handle);
 }
 
-int fileread(void* buffer, int size, void* handle)
+size_t fileread(void* buffer, size_t size, void* handle)
 {
     return fread(buffer, 1, size, (FILE*)handle);
 }
 
-void fileseek(void* handle, int pos, int mode)
+void fileseek(void* handle, long pos, int mode)
 {
     fseek((FILE*)handle, pos, mode);
 }
 
-int filetell(void* handle)
+long filetell(void* handle)
 {
     return ftell((FILE*)handle);
 }

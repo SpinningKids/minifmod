@@ -124,9 +124,9 @@ bool FSOUND_Init(int mixrate, int vcmmode = 0) MINIFMOD_NOEXCEPT;
 */
 void FSOUND_File_SetCallbacks(void* (*OpenCallback)(const char* name),
                               void (*CloseCallback)(void* handle),
-                              int (*ReadCallback)(void* buffer, int size, void* handle),
-                              void (*SeekCallback)(void* handle, int pos, int mode),
-                              int (*TellCallback)(void* handle)) MINIFMOD_NOEXCEPT;
+                              size_t (*ReadCallback)(void* buffer, size_t size, void* handle),
+                              void (*SeekCallback)(void*, long pos, int mode),
+                              long (*TellCallback)(void* handle)) MINIFMOD_NOEXCEPT;
 
 // =============================================================================================
 // FMUSIC API

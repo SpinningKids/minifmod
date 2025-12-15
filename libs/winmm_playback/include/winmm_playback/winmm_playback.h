@@ -16,7 +16,9 @@
 
 #include <minixm/playback.h>
 
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 #include <Windows.h>
 
 class WindowsPlayback final : public IPlaybackDriver

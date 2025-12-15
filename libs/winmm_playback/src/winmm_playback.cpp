@@ -52,7 +52,7 @@ void WindowsPlayback::start(FillFunction* fill, void* arg)
 
                 WAVEHDR wave_header{
                     .lpData = reinterpret_cast<LPSTR>(buffer_.get()),
-                    .dwBufferLength = buffer_size() * sizeof(short) * 2,
+                    .dwBufferLength = static_cast<DWORD>(buffer_size() * sizeof(short) * 2),
                     .dwFlags = WHDR_BEGINLOOP | WHDR_ENDLOOP,
                     .dwLoops = static_cast<DWORD>(-1)
                 };

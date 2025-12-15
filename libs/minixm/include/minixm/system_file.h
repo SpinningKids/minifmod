@@ -16,9 +16,9 @@ namespace minifmod
 {
     using FFileOpen = void*(const char* name);
     using FFileClose = void(void* handle);
-    using FFileRead = int(void* buffer, int size, void* handle);
-    using FFileSeek = void(void* handle, int pos, int mode);
-    using FFileTell = int(void* handle);
+    using FFileRead = size_t(void* buffer, size_t count, void* handle);
+    using FFileSeek = void(void* handle, long pos, int mode);
+    using FFileTell = long(void* handle);
 
     struct FileAccess
     {

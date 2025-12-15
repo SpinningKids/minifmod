@@ -54,17 +54,17 @@ void fileclose(void* handle)
     fclose((FILE*)handle);
 }
 
-int fileread(void* buffer, int size, void* handle)
+size_t fileread(void* buffer, size_t count, void* handle)
 {
-    return fread(buffer, 1, size, (FILE*)handle);
+    return fread(buffer, 1, count, (FILE*)handle);
 }
 
-void fileseek(void* handle, int pos, int mode)
+void fileseek(void* handle, long pos, int mode)
 {
     fseek((FILE*)handle, pos, mode);
 }
 
-int filetell(void* handle)
+long filetell(void* handle)
 {
     return ftell((FILE*)handle);
 }
@@ -123,7 +123,7 @@ void memclose(void* handle)
     free(memfile);
 }
 
-int memread(void* buffer, int size, void* handle)
+size_t memread(void* buffer, size_t size, void* handle)
 {
     const auto memfile = static_cast<MEMFILE*>(handle);
 
@@ -136,7 +136,7 @@ int memread(void* buffer, int size, void* handle)
     return size;
 }
 
-void memseek(void* handle, int pos, int mode)
+void memseek(void* handle, long pos, int mode)
 {
     const auto memfile = static_cast<MEMFILE*>(handle);
 
@@ -151,7 +151,7 @@ void memseek(void* handle, int pos, int mode)
         memfile->pos = memfile->length;
 }
 
-int memtell(void* handle)
+long memtell(void* handle)
 {
     const MEMFILE* memfile = static_cast<MEMFILE*>(handle);
 
