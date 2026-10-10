@@ -1,6 +1,6 @@
 # minifmod
 
-MiniFMOD 2.2.1 C++ version
+MiniFMOD 2.2.2 C++ version
 
 Copyright Firelight Technologies, 1999-2003.
 
@@ -90,6 +90,14 @@ Update since v2.0.0:
 - The format of xmeffects.h isn't changed, but it's part of the minixm library.
 
 ## Revision History
+
+### Version 2.2.2 (2026/10/10 Pan/SK)
+
+- Dropped /FAs (assembly listing side-output) from the MSVC release flags:
+  with /GL + /LTCG the linker re-reads the compiler-generated .asm files
+  during code generation, and under parallel builds on GitHub Actions this
+  failed with C1083 "Permission denied" (e.g. 'envelope.asm'). The listing
+  file is a pure side output, no codegen or size effect.
 
 ### Version 2.2.1 (2026/10/10 Pan/SK)
 

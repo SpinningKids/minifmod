@@ -9,7 +9,6 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 	add_compile_options(
 		"$<$<CONFIG:RELEASE>:/Oxsi>"
 		"$<$<CONFIG:RELEASE>:/Ob3>"
-		"$<$<CONFIG:RELEASE>:/FAs>"
 		"$<$<CONFIG:RELEASE>:/GL>"
 		"$<$<CONFIG:RELEASE>:/GS->"
 		"$<$<CONFIG:RELEASE>:/GR->"
