@@ -1,6 +1,6 @@
 # minifmod
 
-MiniFMOD 2.2.0 C++ version
+MiniFMOD 2.2.1 C++ version
 
 Copyright Firelight Technologies, 1999-2003.
 
@@ -90,6 +90,13 @@ Update since v2.0.0:
 - The format of xmeffects.h isn't changed, but it's part of the minixm library.
 
 ## Revision History
+
+### Version 2.2.1 (2026/10/10 Pan/SK)
+
+- Dropped the stray /Gr from the MSVC release flags: on MSVC x86 it silently
+  flips the default calling convention of C-linkage functions to fastcall
+  (exports come out as @FMUSIC_LoadSong@8), breaking C consumers with LNK2001.
+  RTTI was already off via /GR-, so this changes nothing else.
 
 ### Version 2.2.0 (2025/12/15 Pan/SK)
 

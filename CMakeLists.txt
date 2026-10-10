@@ -13,7 +13,6 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 		"$<$<CONFIG:RELEASE>:/GL>"
 		"$<$<CONFIG:RELEASE>:/GS->"
 		"$<$<CONFIG:RELEASE>:/GR->"
-		"$<$<CONFIG:RELEASE>:/Gr>"
 		"$<$<CONFIG:RELEASE>:/arch:SSE2>"
 		"$<$<CONFIG:RELEASE>:/fp:fast>"
 		"$<$<CONFIG:RELEASE>:/Gw>"
