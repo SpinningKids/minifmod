@@ -19,7 +19,7 @@
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
-#include <Windows.h>
+#include <windows.h>
 
 class WindowsPlayback final : public IPlaybackDriver
 {
